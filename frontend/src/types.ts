@@ -15,6 +15,18 @@ export interface TimelineEntry {
   type: string;
   content: string;
   provenance_pointer: string | null;
+  version: number;
+}
+
+export interface EntryVersion {
+  id: string;
+  entry_id: string;
+  version_number: number;
+  content: string;
+  provenance_pointer: string | null;
+  changed_by: string;
+  changed_by_role: string;
+  created_at: string;
 }
 
 export interface Highlight {

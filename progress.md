@@ -50,3 +50,12 @@
 - Final verification passed: 23 backend tests in 0.66s and frontend production build in 107ms; the known third-party Starlette warning remains.
 - Existing SQLite lifespan smoke check passed with 2 seeded threaded comments and 3 open assignments.
 - `git diff --check` passed; scope review confirmed only inline collaboration, tasks, tests, UI, and planning files changed.
+- Began revision history by inspecting the clean Phase 5 repository and choosing immutable full snapshots with max-version optimistic concurrency.
+- Added EntryVersion and AuditLog models, metadata-safe schemas, history/audit reads, versioned edit, and snapshot-producing revert.
+- Added required expected-version handling; stale same-entry edits return 409 while separate role-owned entries update independently.
+- Changed fixed timeline seeding to insert missing rows only and initialized version 1 for both seed and newly created notes.
+- Added frontend Revision History with concise snapshots, permission-aligned revert controls, and full data refresh after revert.
+- Focused revision/concurrency verification passed: 5 tests in 0.34s.
+- Final backend verification passed: 28 tests in 1.07s; one known third-party Starlette deprecation warning remains.
+- Frontend TypeScript checks and Vite production build passed; 17 modules transformed in 100ms.
+- Existing SQLite lifespan smoke check passed: 7 timeline entries and version history returned HTTP 200.

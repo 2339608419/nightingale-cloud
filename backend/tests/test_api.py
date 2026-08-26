@@ -52,6 +52,7 @@ def test_entries_have_supported_roles_types_and_required_fields(client: TestClie
         "type",
         "content",
         "provenance_pointer",
+        "version",
     }
 
     assert all(set(entry) == required_fields for entry in entries)

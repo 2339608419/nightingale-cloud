@@ -3,16 +3,19 @@ import {
   completeAssignment,
   createComment,
   getEntryComments,
+  getEntryVersions,
   getOpenAssignments,
   getPatient,
   getPatientEntries,
   getPatientHighlights,
   setCommentResolution,
+  revertEntry,
 } from "./api";
 import type {
   ApiIdentity,
   Comment,
   DemoRole,
+  EntryVersion,
   Highlight,
   Patient,
   TaskAssignment,
@@ -33,6 +36,11 @@ const DEMO_IDENTITIES: Record<DemoRole, ApiIdentity> = {
 
 const isAiGenerated = (entry: TimelineEntry) => entry.type.startsWith("ai_");
 
+const canRevertEntry = (role: DemoRole, entry: TimelineEntry) =>
+  (role === "staff" && entry.author_role === "staff" && entry.type === "staff_note") ||
+  (role === "clinician" && entry.author_role === "clinician" &&
+    ["clinician_note", "instruction"].includes(entry.type));
+
 const formatLabel = (value: string) =>
   value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 
@@ -42,8 +50,10 @@ export default function App() {
   const [entries, setEntries] = useState<TimelineEntry[]>([]);
   const [highlights, setHighlights] = useState<Highlight[]>([]);
   const [commentsByEntry, setCommentsByEntry] = useState<Record<string, Comment[]>>({});
+  const [versionsByEntry, setVersionsByEntry] = useState<Record<string, EntryVersion[]>>({});
   const [assignments, setAssignments] = useState<TaskAssignment[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [reloadToken, setReloadToken] = useState(0);
 
   useEffect(() => {
     const identity = DEMO_IDENTITIES[demoRole];
@@ -51,6 +61,7 @@ export default function App() {
     setPatient(null);
     setError(null);
     setCommentsByEntry({});
+    setVersionsByEntry({});
     setAssignments([]);
 
     const load = async () => {
@@ -63,7 +74,7 @@ export default function App() {
         let commentData: Record<string, Comment[]> = {};
         let assignmentData: TaskAssignment[] = [];
         if (demoRole !== "patient") {
-          const [openAssignments, entryComments] = await Promise.all([
+          const [openAssignments, entryComments, entryVersions] = await Promise.all([
             getOpenAssignments(DEMO_PATIENT_ID, identity),
             Promise.all(
               entryData.map(async (entry) => [
@@ -71,9 +82,16 @@ export default function App() {
                 await getEntryComments(entry.id, identity),
               ] as const),
             ),
+            Promise.all(
+              entryData.map(async (entry) => [
+                entry.id,
+                await getEntryVersions(entry.id, identity),
+              ] as const),
+            ),
           ]);
           assignmentData = openAssignments;
           commentData = Object.fromEntries(entryComments);
+          if (!cancelled) setVersionsByEntry(Object.fromEntries(entryVersions));
         }
         if (cancelled) return;
         setPatient(patientData);
@@ -88,7 +106,7 @@ export default function App() {
     };
     void load();
     return () => { cancelled = true; };
-  }, [demoRole]);
+  }, [demoRole, reloadToken]);
 
   if (error) {
     return <main className="page"><DemoIdentity role={demoRole} onChange={setDemoRole} /><div className="error">{error}</div></main>;
@@ -138,6 +156,15 @@ export default function App() {
   const finishAssignment = async (assignment: TaskAssignment) => {
     await completeAssignment(assignment.id, DEMO_IDENTITIES[demoRole]);
     setAssignments((current) => current.filter((item) => item.id !== assignment.id));
+  };
+
+  const revertVersion = async (entry: TimelineEntry, versionNumber: number) => {
+    try {
+      await revertEntry(entry.id, versionNumber, entry.version, DEMO_IDENTITIES[demoRole]);
+      setReloadToken((value) => value + 1);
+    } catch (reason: unknown) {
+      setError(reason instanceof Error ? reason.message : "Unable to revert entry");
+    }
   };
 
   return (
@@ -230,6 +257,14 @@ export default function App() {
                   <div className="source"><span>Source</span><code>{entry.provenance_pointer}</code></div>
                 )}
                 {demoRole !== "patient" && (
+                  <RevisionHistory
+                    entry={entry}
+                    versions={versionsByEntry[entry.id] ?? []}
+                    canRevert={canRevertEntry(demoRole, entry)}
+                    onRevert={(versionNumber) => revertVersion(entry, versionNumber)}
+                  />
+                )}
+                {demoRole !== "patient" && (
                   <EntryComments
                     comments={commentsByEntry[entry.id] ?? []}
                     onAdd={(content, parentId) => addComment(entry.id, content, parentId)}
@@ -242,6 +277,41 @@ export default function App() {
         </ol>
       </section>
     </main>
+  );
+}
+
+function RevisionHistory({
+  entry,
+  versions,
+  canRevert,
+  onRevert,
+}: {
+  entry: TimelineEntry;
+  versions: EntryVersion[];
+  canRevert: boolean;
+  onRevert: (versionNumber: number) => Promise<void>;
+}) {
+  return (
+    <details className="revision-panel">
+      <summary>Revision History <span>v{entry.version}</span></summary>
+      <ol>
+        {versions.map((version) => (
+          <li key={version.id}>
+            <div className="revision-meta">
+              <strong>Version {version.version_number}</strong>
+              <time dateTime={version.created_at}>{new Date(version.created_at).toLocaleString()}</time>
+            </div>
+            <p>Changed by {version.changed_by} · {formatLabel(version.changed_by_role)}</p>
+            <p className="revision-preview">{version.content}</p>
+            {canRevert && version.version_number !== entry.version && (
+              <button type="button" onClick={() => void onRevert(version.version_number)}>
+                Revert to this version
+              </button>
+            )}
+          </li>
+        ))}
+      </ol>
+    </details>
   );
 }
 

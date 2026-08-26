@@ -9,10 +9,13 @@ from app.schemas.collaboration import (
 from app.schemas.highlight import HighlightRead
 from app.schemas.internal_comment import InternalCommentRead
 from app.schemas.patient import PatientRead
+from app.schemas.revision import AuditLogRead, EntryVersionRead, RevertRequest
 from app.schemas.timeline_entry import TimelineEntryCreate, TimelineEntryRead, TimelineEntryUpdate
 
 __all__ = [
     "HighlightRead",
+    "AuditLogRead",
+    "EntryVersionRead",
     "InternalCommentRead",
     "PatientRead",
     "CommentCreate",
@@ -24,4 +27,5 @@ __all__ = [
     "TimelineEntryCreate",
     "TimelineEntryRead",
     "TimelineEntryUpdate",
+    "RevertRequest",
 ]

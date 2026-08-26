@@ -16,6 +16,7 @@ from app.models import (
     TimelineEntryType,
     TaskAssignment,
     TaskStatus,
+    EntryVersion,
 )
 from app.services.importance_service import calculate_importance_score
 
@@ -155,7 +156,24 @@ def seed_demo_data(db: Session) -> None:
         ),
     ]
     for entry in entries:
-        db.merge(entry)
+        if db.get(TimelineEntry, entry.id) is None:
+            db.add(entry)
+    db.flush()
+    for entry_spec in entries:
+        entry = db.get(TimelineEntry, entry_spec.id)
+        if entry is not None and db.query(EntryVersion).filter_by(entry_id=entry.id).first() is None:
+            db.add(
+                EntryVersion(
+                    id=f"version-{entry.id}-001",
+                    entry_id=entry.id,
+                    version_number=1,
+                    content=entry.content,
+                    provenance_pointer=entry.provenance_pointer,
+                    changed_by=entry.author_id,
+                    changed_by_role=entry.author_role.value,
+                    created_at=entry.timestamp,
+                )
+            )
 
     db.merge(
         Comment(

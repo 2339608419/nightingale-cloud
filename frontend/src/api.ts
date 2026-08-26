@@ -1,6 +1,7 @@
 import type {
   ApiIdentity,
   Comment,
+  EntryVersion,
   Highlight,
   Patient,
   TaskAssignment,
@@ -74,4 +75,18 @@ export const completeAssignment = (assignmentId: string, identity: ApiIdentity) 
   requestJson<TaskAssignment>(`/assignments/${assignmentId}`, identity, {
     method: "PATCH",
     body: JSON.stringify({ status: "completed" }),
+  });
+
+export const getEntryVersions = (entryId: string, identity: ApiIdentity) =>
+  requestJson<EntryVersion[]>(`/entries/${entryId}/versions`, identity);
+
+export const revertEntry = (
+  entryId: string,
+  versionNumber: number,
+  expectedVersion: number,
+  identity: ApiIdentity,
+) =>
+  requestJson<TimelineEntry>(`/entries/${entryId}/revert/${versionNumber}`, identity, {
+    method: "POST",
+    body: JSON.stringify({ expected_version: expectedVersion }),
   });

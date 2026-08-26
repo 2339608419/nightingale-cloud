@@ -1,30 +1,25 @@
-# Nightingale Inline Collaboration Plan
+# Nightingale Revision History Plan
 
 ## Goal
-Add clinic-scoped internal comment threads, mentions, resolution state, and simple task assignments on top of the existing RBAC boundaries.
+Add full-snapshot note history, metadata-only auditing, safe revert, and deterministic optimistic concurrency without changing existing authorization boundaries.
 
 ## Phases
-- [x] Inspect existing RBAC, models, routes, seed, frontend API, and timeline UI
-- [x] Add Comment and TaskAssignment persistence models and schemas
-- [x] Add mention parsing, threaded comment, resolution, and task services
-- [x] Add clinic-scoped collaboration endpoints and seed demo collaboration data
-- [x] Add required backend collaboration tests
-- [x] Add timeline comment UI and Glance Open Actions UI
-- [x] Run collaboration tests, all backend tests, and frontend production build
-- [x] Review scope and report results
+- [x] Inspect existing models, update route/service, RBAC rules, tests, seed, and frontend timeline
+- [x] Add EntryVersion and AuditLog persistence plus response/request schemas
+- [x] Add transactional versioned edit, history, audit, and revert services/routes
+- [x] Initialize version 1 for seeded and newly created entries
+- [x] Add required revision-history and concurrent-edit backend tests
+- [x] Add timeline Revision History UI with permitted revert and refresh
+- [x] Run focused tests, all backend tests, frontend production build, and scope review
 
 ## Constraints
-- Preserve existing server-side RBAC and clinic isolation.
-- No revision history, notification system, LLM integration, self-learning, or voice.
-- Preserve clean boundaries for future prompts.
-- Claim only commands actually executed.
+- Full snapshots; no diff storage.
+- Audit logs contain metadata only, never note content.
+- Preserve existing clinic scope and role/ownership edit rules.
+- Stale same-entry writes return HTTP 409; separate entries remain independent.
+- No unrelated Phase 7 functionality.
 
 ## Errors Encountered
 | Error | Attempt | Resolution |
 |---|---:|---|
-| `python` was not on PATH during session catchup | 1 | Located the bundled Python runtime before implementation. |
-| Dependency installs were blocked by sandbox networking | 1 | Re-ran approved installs with network access; both completed. |
-| Frontend build could not find `node` from pnpm child process | 1 | Re-run with the bundled Node `bin` directory prepended to the process PATH. |
-| TypeScript build lacked Vite ambient types and rejected an unnecessary node-config option | 1 | Added `vite/client` types and removed `allowImportingTsExtensions`. |
-| Existing Phase 1 SQLite contained legacy `patient_insight`, which strict Phase 2 enum loading rejected during seed merge | 1 | Normalize only the known fixed demo entry to `staff_note` before ORM upserts. |
-| Mention parser included sentence-ending `.` in `@lab_team.` | 1 | Require mention handles to end in an alphanumeric or underscore character. |
+| Focused pytest path was repeated after setting the working directory to `backend` | 1 | Re-run with paths relative to `backend`. |

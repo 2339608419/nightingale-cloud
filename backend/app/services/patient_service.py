@@ -5,6 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models import AuthorRole, Patient, TimelineEntry, TimelineEntryType
+from app.services.revision_service import ensure_initial_version
 
 
 def get_patient(db: Session, patient_id: str) -> Patient | None:
@@ -47,20 +48,8 @@ def create_patient_entry(
         provenance_pointer=provenance_pointer,
     )
     db.add(entry)
-    db.commit()
-    db.refresh(entry)
-    return entry
-
-
-def update_entry(
-    db: Session,
-    entry: TimelineEntry,
-    *,
-    content: str,
-    provenance_pointer: str | None,
-) -> TimelineEntry:
-    entry.content = content
-    entry.provenance_pointer = provenance_pointer
+    db.flush()
+    ensure_initial_version(db, entry)
     db.commit()
     db.refresh(entry)
     return entry

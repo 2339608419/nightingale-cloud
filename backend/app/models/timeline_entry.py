@@ -72,3 +72,12 @@ class TimelineEntry(Base):
     assignments: Mapped[list["TaskAssignment"]] = relationship(  # noqa: F821
         back_populates="entry"
     )
+    versions: Mapped[list["EntryVersion"]] = relationship(  # noqa: F821
+        back_populates="entry",
+        cascade="all, delete-orphan",
+        order_by="EntryVersion.version_number",
+    )
+
+    @property
+    def version(self) -> int:
+        return max((snapshot.version_number for snapshot in self.versions), default=1)

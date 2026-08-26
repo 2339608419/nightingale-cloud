@@ -16,6 +16,7 @@ class TimelineEntryRead(BaseModel):
     type: TimelineEntryType
     content: str
     provenance_pointer: str | None
+    version: int
 
 
 class TimelineEntryCreate(BaseModel):
@@ -27,3 +28,4 @@ class TimelineEntryCreate(BaseModel):
 class TimelineEntryUpdate(BaseModel):
     content: str = Field(min_length=1, max_length=10000)
     provenance_pointer: str | None = Field(default=None, max_length=500)
+    expected_version: int = Field(ge=1)

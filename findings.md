@@ -23,3 +23,6 @@
 - Existing unresolved highlights already receive the deterministic +20 action weight; seeded assignments can mirror those actions without changing scoring architecture.
 - Thread APIs return a stable flat list keyed by `parent_comment_id`; the frontend recursively renders it without coupling persistence to a nested response shape.
 - Patient mode skips all comments and assignment requests in the UI, while backend 403 enforcement remains independently tested.
+- Timeline entries currently have no revision column; deriving the current revision from the highest immutable snapshot avoids a runtime SQLite column migration.
+- SQLAlchemy reserves the declarative attribute name `metadata`; the audit model should map a Python attribute such as `metadata_json` to the database column named `metadata`.
+- Existing note edit authorization is already centralized and can be reused unchanged for both edits and reverts.

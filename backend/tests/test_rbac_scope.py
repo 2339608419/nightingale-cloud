@@ -25,7 +25,7 @@ def test_staff_cannot_write_or_edit_clinician_notes(client: TestClient) -> None:
     edit_response = client.patch(
         "/entries/entry-demo-001",
         headers=STAFF,
-        json={"content": "Unauthorized overwrite"},
+        json={"content": "Unauthorized overwrite", "expected_version": 1},
     )
 
     assert create_response.status_code == 403
@@ -36,7 +36,7 @@ def test_clinician_cannot_overwrite_staff_notes(client: TestClient) -> None:
     response = client.patch(
         "/entries/entry-demo-003",
         headers=CLINICIAN,
-        json={"content": "Unauthorized staff overwrite"},
+        json={"content": "Unauthorized staff overwrite", "expected_version": 1},
     )
     assert response.status_code == 403
 
@@ -89,7 +89,7 @@ def test_staff_and_clinician_can_create_and_edit_only_their_note_types(
     assert client.patch(
         f"/entries/{staff_created.json()['id']}",
         headers=STAFF,
-        json={"content": "Synthetic staff update edited"},
+        json={"content": "Synthetic staff update edited", "expected_version": 1},
     ).status_code == 200
 
     clinician_created = client.post(
@@ -102,7 +102,7 @@ def test_staff_and_clinician_can_create_and_edit_only_their_note_types(
     assert client.patch(
         f"/entries/{clinician_created.json()['id']}",
         headers=CLINICIAN,
-        json={"content": "Synthetic clinician update edited"},
+        json={"content": "Synthetic clinician update edited", "expected_version": 1},
     ).status_code == 200
 
 
