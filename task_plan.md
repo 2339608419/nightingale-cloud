@@ -1,24 +1,23 @@
-# Nightingale AI Scribe and PHI Redaction Plan
+# Nightingale Required Micro-tests and Adaptive Importance Plan
 
 ## Goal
-Add a synthetic-only AI-scribe ingestion pipeline that redacts PHI before provider invocation and creates provenance-linked AI timeline entries reliably without external services.
+Complete the required candidate micro-test set and add a deterministic, inspectable adaptive heuristic for future highlight ranking.
 
 ## Phases
-- [x] Inspect current timeline creation, version initialization, authorization, dependencies, and documentation
-- [x] Add deterministic PHI redaction with structured non-sensitive metadata
-- [x] Add provider abstraction, deterministic mock, and opt-in external provider
-- [x] Add clinic-scoped AI-scribe schemas, service, and endpoint
-- [x] Add fake-provider, provenance, entry-type, and log-safety tests
-- [x] Document redaction call chain, provider selection, and raw transcript non-persistence
-- [x] Run dedicated tests, complete backend suite, frontend build, and final scope review
+- [x] Inspect all backend tests and existing highlight model/service/scoring/frontend paths
+- [x] Add clinic-scoped adaptive preference persistence and explainable scoring
+- [x] Add highlight suggestion generation plus clinician accept/reject endpoints
+- [x] Add frontend status presentation and accept/reject controls
+- [x] Add `test_self_learning_importance.py` and verify all five required micro-test files
+- [x] Document adaptive heuristic weights and remaining limitations
+- [x] Run complete backend suite, frontend production build, and final scope review
 
 ## Constraints
-- Synthetic data only; reject requests not explicitly marked synthetic.
-- Redaction must occur before every provider call.
-- Never log or persist the raw transcript.
-- Provenance is a stable source identifier, never the summary text.
-- Offline mock mode must remain the reliable default.
-- No voice recording or unrelated features.
+- No complex ML model; use deterministic counters and capped additive bonuses.
+- Preserve base risk/recency/entity/task/confirmation scoring and provenance requirements.
+- Preference state is clinic-scoped and inspectable.
+- Clinician remains final authority for accept/reject.
+- Do not implement unrelated features.
 
 ## Errors Encountered
 | Error | Attempt | Resolution |

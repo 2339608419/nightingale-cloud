@@ -27,8 +27,9 @@ dd { margin: 4px 0 0; font-weight: 650; }
 .highlight-list { display: grid; gap: 8px; }
 .highlight-item { padding: 0; border: 0; }
 .highlight-item::before { display: none; }
-.highlight-item button { width: 100%; padding: 13px 14px; border: 1px solid #dbe5e2; border-radius: 10px; color: inherit; background: #f8fbfa; cursor: pointer; font: inherit; text-align: left; transition: border-color 120ms ease, background 120ms ease; }
-.highlight-item button:hover, .highlight-item button:focus-visible { border-color: #76a99e; background: #f1f7f5; outline: none; }
+.highlight-item { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+.highlight-source { width: 100%; padding: 13px 14px; border: 1px solid #dbe5e2; border-radius: 10px; color: inherit; background: #f8fbfa; cursor: pointer; font: inherit; text-align: left; transition: border-color 120ms ease, background 120ms ease; }
+.highlight-source:hover, .highlight-source:focus-visible { border-color: #76a99e; background: #f1f7f5; outline: none; }
 .highlight-topline { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
 .highlight-topline strong { font-size: .95rem; }
 .risk { flex: none; padding: 3px 7px; border-radius: 5px; color: #4f5f5b; background: #e9efed; font-size: .68rem; font-weight: 800; text-transform: uppercase; }
@@ -39,7 +40,13 @@ dd { margin: 4px 0 0; font-weight: 650; }
 .highlight-state { display: flex; flex-wrap: wrap; gap: 7px 12px; margin-top: 9px; color: #627872; font-size: .7rem; font-weight: 700; }
 .state-open { color: #8a4c16; }
 .state-confirmed { color: #276457; }
+.highlight-status { padding: 2px 6px; border-radius: 4px; color: #50645f; background: #e5ecea; text-transform: uppercase; }
+.status-accepted { color: #276457; background: #dceee9; }
+.status-rejected { color: #7c3e3e; background: #f5dddd; }
 .provenance { margin-left: auto; color: #326e62; }
+.highlight-decisions { display: grid; gap: 5px; align-content: center; }
+.highlight-decisions button { padding: 5px 8px; border: 1px solid #bacac6; border-radius: 5px; color: #315e54; background: #fff; cursor: pointer; font: inherit; font-size: .68rem; }
+.highlight-decisions button:last-child { color: #7c3e3e; }
 .open-actions { padding-top: 15px; border-top: 1px solid #dce6e3; }
 .open-actions-heading { display: flex; justify-content: space-between; align-items: center; margin-bottom: 9px; }
 .open-actions h3 { margin: 0; font-size: .84rem; letter-spacing: .06em; text-transform: uppercase; }
@@ -106,6 +113,8 @@ li:last-child { border-left-color: transparent; }
   .demo-identity { align-items: stretch; flex-direction: column; }
   .patient-header, dl { align-items: flex-start; flex-direction: column; }
   .glance { grid-template-columns: 1fr; }
+  .highlight-item { grid-template-columns: 1fr; }
+  .highlight-decisions { grid-template-columns: auto auto; justify-content: end; }
   .open-actions li { align-items: flex-start; flex-direction: column; }
   .entry-meta { align-items: flex-start; flex-direction: column; }
   .page { padding-top: 28px; }

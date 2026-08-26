@@ -44,6 +44,12 @@ export const getPatientEntries = (patientId: string, identity: ApiIdentity) =>
 export const getPatientHighlights = (patientId: string, identity: ApiIdentity) =>
   requestJson<Highlight[]>(`/patients/${patientId}/highlights`, identity);
 
+export const acceptHighlight = (highlightId: string, identity: ApiIdentity) =>
+  requestJson<Highlight>(`/highlights/${highlightId}/accept`, identity, { method: "POST" });
+
+export const rejectHighlight = (highlightId: string, identity: ApiIdentity) =>
+  requestJson<Highlight>(`/highlights/${highlightId}/reject`, identity, { method: "POST" });
+
 export const getEntryComments = (entryId: string, identity: ApiIdentity) =>
   requestJson<Comment[]>(`/entries/${entryId}/comments`, identity);
 

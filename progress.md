@@ -21,6 +21,15 @@
 - Verification passed: 6 backend tests passed in 0.10s; one third-party Starlette deprecation warning remains.
 - Frontend TypeScript checks and Vite production build passed; 17 modules transformed in 102ms.
 - Final re-run after persistence assertions passed: 11 dedicated tests in 0.38s and all 39 backend tests in 1.35s.
+- Began adaptive importance work by reading the planning skill, confirming a clean Phase 7 tree, inspecting every backend test, and tracing highlight scoring through API and frontend.
+- Added clinic-scoped entity and entry-type preference counters with deterministic `+5/+2` acceptance and `-2/-1` rejection weights, capped to `[-10, +25]`.
+- Added provenance-valid suggestion generation, clinician-only accept/reject, and an inspectable preference endpoint with calculation explanations.
+- Added frontend status pills and clinician accept/reject controls while keeping rejected items out of subsequent Glance loads.
+- Added `test_self_learning_importance.py`; all five required candidate micro-test files passed together: 18 tests in 0.79s.
+- Documented the adaptive heuristic and explicitly identified comment-frequency and keyword-topic learning as future extensions.
+- Complete backend verification passed: 41 tests in 1.46s; one known Starlette TestClient deprecation warning remains.
+- Frontend TypeScript checks and Vite production build passed; 17 modules transformed in 109ms.
+- Existing SQLite lifespan compatibility passed: the new clinic preference endpoint returned HTTP 200 without a manual migration.
 - `git diff --check` found no whitespace errors; review confirmed only timeline implementation and planning files changed.
 - Began the Glance/Highlights phase by inspecting the clean Phase 2 repository and the complete backend/frontend data path.
 - Added the Highlight model, constrained risk/status/entity fields, source relationships, response schema, and indexed patient/status/score access path.

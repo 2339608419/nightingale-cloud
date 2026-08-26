@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import {
+  acceptHighlight,
   completeAssignment,
   createComment,
   getEntryComments,
@@ -10,6 +11,7 @@ import {
   getPatientHighlights,
   setCommentResolution,
   revertEntry,
+  rejectHighlight,
 } from "./api";
 import type {
   ApiIdentity,
@@ -158,6 +160,17 @@ export default function App() {
     setAssignments((current) => current.filter((item) => item.id !== assignment.id));
   };
 
+  const decideHighlight = async (highlight: Highlight, decision: "accept" | "reject") => {
+    try {
+      const updated = decision === "accept"
+        ? await acceptHighlight(highlight.id, DEMO_IDENTITIES[demoRole])
+        : await rejectHighlight(highlight.id, DEMO_IDENTITIES[demoRole]);
+      setHighlights((current) => current.map((item) => item.id === updated.id ? updated : item));
+    } catch (reason: unknown) {
+      setError(reason instanceof Error ? reason.message : "Unable to update highlight");
+    }
+  };
+
   const revertVersion = async (entry: TimelineEntry, versionNumber: number) => {
     try {
       await revertEntry(entry.id, versionNumber, entry.version, DEMO_IDENTITIES[demoRole]);
@@ -191,7 +204,7 @@ export default function App() {
           <ol className="highlight-list">
             {highlights.map((highlight) => (
               <li key={highlight.id} className="highlight-item">
-                <button type="button" onClick={() => navigateToSource(highlight)}>
+                <button className="highlight-source" type="button" onClick={() => navigateToSource(highlight)}>
                   <span className="highlight-topline">
                     <strong>{highlight.text}</strong>
                     <span className={`risk risk-${highlight.risk_level}`}>{formatLabel(highlight.risk_level)}</span>
@@ -200,9 +213,16 @@ export default function App() {
                   <span className="highlight-state">
                     {highlight.unresolved_action && <span className="state-open">Action unresolved</span>}
                     {highlight.clinician_confirmed && <span className="state-confirmed">Clinician confirmed</span>}
+                    <span className={`highlight-status status-${highlight.status}`}>{formatLabel(highlight.status)}</span>
                     <span className="provenance">View source ↓</span>
                   </span>
                 </button>
+                {demoRole === "clinician" && highlight.status === "suggested" && (
+                  <div className="highlight-decisions" aria-label={`Review ${highlight.text}`}>
+                    <button type="button" onClick={() => void decideHighlight(highlight, "accept")}>Accept</button>
+                    <button type="button" onClick={() => void decideHighlight(highlight, "reject")}>Reject</button>
+                  </div>
+                )}
               </li>
             ))}
           </ol>

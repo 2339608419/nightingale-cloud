@@ -11,6 +11,7 @@ from app.routes import (
     collaboration_router,
     entries_router,
     health_router,
+    highlights_router,
     patients_router,
 )
 from app.services.seed import seed_demo_data
@@ -37,3 +38,4 @@ app.include_router(patients_router)
 app.include_router(entries_router)
 app.include_router(collaboration_router)
 app.include_router(ai_scribe_router)
+app.include_router(highlights_router)

@@ -81,6 +81,16 @@ $env:OPENAI_MODEL = "gpt-5-mini" # optional
 
 If either explicit provider selection or the key is absent, the application stays in deterministic mock mode. Only already-redacted text is sent to the external provider.
 
+## Adaptive importance heuristic
+
+Highlight ranking uses an explainable additive heuristic, not an ML model. The existing risk, recency, unresolved-action, clinical-entity, and clinician-confirmation score remains the base. Clinic-scoped feedback counters add a learned bonus to future similar suggestions:
+
+- accepted entity category: `+5`; rejected entity category: `-2`
+- accepted source entry type: `+2`; rejected source entry type: `-1`
+- combined learned bonus is capped between `-10` and `+25`
+
+Only clinicians can accept or reject suggestions. Feedback is idempotent for repeated identical decisions, and changing a decision reverses the prior counter before applying the new one. `GET /importance-preferences` exposes counts, weights, and a plain-language calculation for the current clinic. Each suggestion response separately returns its base score, learned bonus, and contributing preference explanations.
+
 ## Current limitations
 
-Development identity headers simulate authentication; this is not production authentication and the application is not suitable for real patient data. AI summaries are deterministic by default, redaction is intentionally prototype-grade, and synthetic source transcripts are not retained or retrievable.
+Development identity headers simulate authentication; this is not production authentication and the application is not suitable for real patient data. AI summaries are deterministic by default, redaction is intentionally prototype-grade, and synthetic source transcripts are not retained or retrievable. Adaptive importance learns only from explicit highlight decisions; comment-frequency and keyword-topic learning remain future extensions.

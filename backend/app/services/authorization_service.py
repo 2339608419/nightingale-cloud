@@ -68,6 +68,14 @@ def require_ai_scribe_access(user: CurrentUser) -> None:
         )
 
 
+def require_highlight_decision_access(user: CurrentUser) -> None:
+    if user.role != UserRole.CLINICIAN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only clinicians can accept or reject highlights",
+        )
+
+
 def require_entry_collaboration_access(user: CurrentUser, entry: TimelineEntry) -> None:
     require_internal_comments_access(user)
     if not can_view_entry(user, entry):
