@@ -87,6 +87,14 @@ export default function App() {
           getPatientHighlights(DEMO_PATIENT_ID, identity),
           getDataDecayPreview(DEMO_PATIENT_ID, identity),
         ]);
+        if (cancelled) return;
+        // Render the patient and Glance View as soon as their core requests finish.
+        // Collaboration/history data is intentionally loaded afterward so an N-entry
+        // request fan-out cannot delay the clinically important top card.
+        setPatient(patientData);
+        setEntries(entryData);
+        setHighlights(highlightData);
+        setDecayByEntry(Object.fromEntries(decayData.map((item) => [item.entry_id, item])));
         let commentData: Record<string, Comment[]> = {};
         let assignmentData: TaskAssignment[] = [];
         let completedAssignmentData: TaskAssignment[] = [];
@@ -116,10 +124,6 @@ export default function App() {
           if (!cancelled) setVersionsByEntry(Object.fromEntries(entryVersions));
         }
         if (cancelled) return;
-        setPatient(patientData);
-        setEntries(entryData);
-        setHighlights(highlightData);
-        setDecayByEntry(Object.fromEntries(decayData.map((item) => [item.entry_id, item])));
         setCommentsByEntry(commentData);
         setAssignments(assignmentData);
         setCompletedAssignments(completedAssignmentData);

@@ -37,3 +37,9 @@
 - The frontend lacks staff note creation and clinician note editing controls even though both server APIs already exist.
 - Seeded tasks are all open and seeded comments unresolved; a completed action and resolved collaboration item are needed for Scenario C.
 - A safe data-decay prototype can return alternate display representations while leaving TimelineEntry content and provenance untouched.
+- Final audit inspected all backend models, schemas, routes, services, tests, frontend source/config, Git history, and ignored runtime artifacts.
+- Corrected fixed synthetic AI seed entries (including existing demo DB compatibility) to use system authorship and added a regression assertion.
+- Changed frontend loading order so core patient/Glance data renders before comments and revision-history fan-out completes.
+- Added a repeatable Glance benchmark: 200 requests after 20 warmups, median 4.221 ms, P95 5.048 ms on the documented Windows/TestClient/in-memory SQLite environment.
+- Added the required technical brief and PASS/PARTIAL/MISSING audit report. Main gaps: contradiction detection, directly viewable AI transcript sources, and audit coverage beyond note edits/reverts.
+- Final verification: 43 backend tests passed in 1.61s; frontend production build passed in 108ms; lifespan smoke confirmed all seeded AI entries are system-authored and four highlights return.

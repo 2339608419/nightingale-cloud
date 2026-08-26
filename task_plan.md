@@ -1,26 +1,25 @@
-# Nightingale Demo Readiness and Documentation Plan
+# Nightingale Final Submission Audit Plan
 
 ## Goal
-Make the existing application reliably demonstrate the three candidate scenarios, add a reversible data-decay preview, and complete handoff documentation.
+Audit the completed prototype against the candidate brief, add a measured warm-path benchmark, fix only concrete hard-requirement issues, and produce an evidence-backed final report.
 
 ## Phases
-- [x] Inspect clean repository, demo seed, timeline/Glance/collaboration UI, tests, dependencies, and README
-- [x] Strengthen primary-patient seed for Scenarios A–C without weakening RBAC
-- [x] Add read-only, reversible data-decay preview service/API/tests
-- [x] Add demo UI paths for staff note creation, clinician editing, completed actions, learning feedback, and decay states
-- [x] Polish clinical hierarchy, AI origin, provenance, Glance dominance, and action visibility
-- [x] Rewrite README with all 17 required sections and add ATTRIBUTION.txt
-- [x] Run complete backend tests, frontend production build, runtime smoke checks, and scope review
+- [x] Read project requirements, README, attribution, and enumerate all backend/frontend/test files
+- [x] Read and audit every backend model/schema/route/service plus all tests
+- [x] Read and audit all frontend source and runtime/build configuration
+- [x] Build requirement checklist with PASS/PARTIAL/MISSING evidence
+- [x] Add and run repeatable warm-path Glance benchmark with median/P95 reporting
+- [x] Fix only concrete hard-requirement, security, provenance, test, or demo blockers
+- [x] Run full backend tests, frontend production build, runtime/config checks, and final diff review
+- [x] Write and deliver final audit report with top five remaining risks
 
 ## Constraints
-- Synthetic data only.
-- Preserve existing RBAC and raw AI-note visibility rules.
-- Data decay is a read-only representation; originals and provenance remain available.
-- Avoid architectural rewrites and unnecessary animation.
-- Keep demo flows reliable without external services.
+- No redesign, major feature work, broad refactors, or cosmetic-only changes.
+- Never fabricate benchmark numbers; record request count, median, P95, environment, and limitations.
+- Prioritize hard requirements, demo blockers, security/provenance, required tests, performance, then docs.
+- Treat claims as unverified until supported by code inspection and executed commands.
 
 ## Errors Encountered
 | Error | Attempt | Resolution |
 |---|---:|---|
-| Browser could not reach `127.0.0.1:5173` because the pnpm argument form left Vite bound to localhost | 1 | Navigate to the advertised `http://localhost:5173` origin instead. |
-| In-app browser remained isolated from the host localhost server even though shell HTTP checks returned 200 | 2 | Stop browser retries; verify demo data and routes through real application lifespan/API smoke tests. |
+| Initial documentation patch expected a README line that differed from the file | 1 | Re-anchored to the exact Known Limitations section; no application effect. |

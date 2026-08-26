@@ -65,6 +65,11 @@ def test_entries_have_supported_roles_types_and_required_fields(client: TestClie
         "ai_nurse_consult_summary",
         "ai_patient_session_summary",
     } <= {entry["type"] for entry in entries}
+    assert all(
+        entry["author_role"] == "system"
+        for entry in entries
+        if entry["type"].startswith("ai_")
+    )
 
 
 def test_entries_span_required_longitudinal_dates(client: TestClient) -> None:

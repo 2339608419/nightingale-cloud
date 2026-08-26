@@ -27,7 +27,7 @@ DEMO_REFERENCE_TIME = datetime(2026, 8, 26, 8, 0, tzinfo=timezone.utc)
 
 
 def _normalize_legacy_demo_data(db: Session) -> None:
-    """Bring the one Phase 1 demo-only entry type into the constrained vocabulary."""
+    """Keep fixed synthetic seed rows compatible with earlier prototype phases."""
     db.execute(
         text(
             "UPDATE timeline_entries SET type = :current_type "
@@ -37,6 +37,31 @@ def _normalize_legacy_demo_data(db: Session) -> None:
             "current_type": TimelineEntryType.STAFF_NOTE.value,
             "entry_id": "entry-demo-003",
             "legacy_type": "patient_insight",
+        },
+    )
+    db.execute(
+        text(
+            "UPDATE timeline_entries SET author_role = :system_role "
+            "WHERE id IN (:doctor_id, :nurse_id, :patient_session_id)"
+        ),
+        {
+            "system_role": AuthorRole.SYSTEM.value,
+            "doctor_id": "entry-demo-002",
+            "nurse_id": "entry-demo-004",
+            "patient_session_id": "entry-demo-005",
+        },
+    )
+    db.execute(
+        text(
+            "UPDATE entry_versions SET changed_by_role = :system_role "
+            "WHERE entry_id IN (:doctor_id, :nurse_id, :patient_session_id) "
+            "AND version_number = 1"
+        ),
+        {
+            "system_role": AuthorRole.SYSTEM.value,
+            "doctor_id": "entry-demo-002",
+            "nurse_id": "entry-demo-004",
+            "patient_session_id": "entry-demo-005",
         },
     )
 
@@ -79,7 +104,7 @@ def seed_demo_data(db: Session) -> None:
         TimelineEntry(
             id="entry-demo-002",
             patient_id=SYNTHETIC_PATIENT_ID,
-            author_role=AuthorRole.CLINICIAN,
+            author_role=AuthorRole.SYSTEM,
             author_id="ai-scribe-doctor-001",
             timestamp=datetime(2025, 4, 15, 10, 5, tzinfo=timezone.utc),
             type=TimelineEntryType.AI_DOCTOR_CONSULT_SUMMARY,
@@ -105,7 +130,7 @@ def seed_demo_data(db: Session) -> None:
         TimelineEntry(
             id="entry-demo-004",
             patient_id=SYNTHETIC_PATIENT_ID,
-            author_role=AuthorRole.STAFF,
+            author_role=AuthorRole.SYSTEM,
             author_id="ai-scribe-nurse-001",
             timestamp=datetime(2026, 2, 6, 14, 20, tzinfo=timezone.utc),
             type=TimelineEntryType.AI_NURSE_CONSULT_SUMMARY,
@@ -118,7 +143,7 @@ def seed_demo_data(db: Session) -> None:
         TimelineEntry(
             id="entry-demo-005",
             patient_id=SYNTHETIC_PATIENT_ID,
-            author_role=AuthorRole.PATIENT,
+            author_role=AuthorRole.SYSTEM,
             author_id="ai-session-demo-001",
             timestamp=datetime(2026, 8, 20, 19, 10, tzinfo=timezone.utc),
             type=TimelineEntryType.AI_PATIENT_SESSION_SUMMARY,

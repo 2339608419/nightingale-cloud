@@ -195,6 +195,22 @@ The service never mutates or deletes `TimelineEntry`. It demonstrates future hot
 - Data decay is a representation preview, not physical cold-tier storage.
 - No browser E2E suite, voice capture, notification delivery, or deployment configuration.
 
+### Warm-path Glance benchmark
+
+Run the repeatable backend approximation from `backend/`:
+
+```bash
+python scripts/benchmark_glance.py --requests 200 --warmups 20
+```
+
+Final-audit measurement on Windows 11, Python 3.12.13, FastAPI 0.141.1,
+SQLAlchemy 2.0.52, and in-memory SQLite: 200 measured requests after 20 warmups,
+median 4.221 ms and P95 5.048 ms for
+`GET /patients/patient-demo-001/highlights`. This in-process TestClient measurement
+includes routing, authorization, SQLAlchemy query work, and serialization, but
+excludes network latency, other frontend requests, and browser rendering. It is a
+warm-path approximation, not a production SLA result.
+
 ## 17. Synthetic-data security notice
 
 **Use synthetic data only.** Seeded names, identifiers, encounters, comments, transcripts, and clinical facts are fictional. This prototype is not an EHR, does not provide medical advice, and is not approved for real PHI. TLS and encryption at rest are deployment assumptions, not implemented infrastructure here.

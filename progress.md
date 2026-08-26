@@ -20,6 +20,8 @@
 - Expanded backend tests for descending order, required fields, supported vocabularies, content mix, and required longitudinal dates.
 - Verification passed: 6 backend tests passed in 0.10s; one third-party Starlette deprecation warning remains.
 - Frontend TypeScript checks and Vite production build passed; 17 modules transformed in 102ms.
+- Completed the final submission audit with a requirement matrix, technical brief, repeatable Glance benchmark, minimal AI-seed and Glance-loading fixes, full test/build verification, and runtime smoke check.
+- Final evidence: 43 backend tests passed in 1.61s; Vite production build passed in 108ms; benchmark 200 requests after 20 warmups, median 4.221ms and P95 5.048ms (in-process approximation).
 - Final re-run after persistence assertions passed: 11 dedicated tests in 0.38s and all 39 backend tests in 1.35s.
 - Began adaptive importance work by reading the planning skill, confirming a clean Phase 7 tree, inspecting every backend test, and tracing highlight scoring through API and frontend.
 - Added clinic-scoped entity and entry-type preference counters with deterministic `+5/+2` acceptance and `-2/-1` rejection weights, capped to `[-10, +25]`.
@@ -39,6 +41,7 @@
 - Complete backend verification passed: 43 tests in 1.60s; one known Starlette TestClient deprecation warning remains.
 - Frontend TypeScript checks and Vite production build passed; 17 modules transformed in 96ms.
 - Runtime staff smoke check passed: 5 visible entries, 4 highlights with resolving pointers, 3 open and 1 completed action, 1 cold preview, and 2 durable exemptions.
+- Began final audit by reading the planning skill, confirming a clean Phase 9 commit, reading requirements/README/attribution, and enumerating every application and test file.
 - `git diff --check` found no whitespace errors; review confirmed only timeline implementation and planning files changed.
 - Began the Glance/Highlights phase by inspecting the clean Phase 2 repository and the complete backend/frontend data path.
 - Added the Highlight model, constrained risk/status/entity fields, source relationships, response schema, and indexed patient/status/score access path.
