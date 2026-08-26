@@ -13,3 +13,8 @@
 - The existing startup uses SQLAlchemy metadata creation, so importing a Highlight model is sufficient to add its SQLite table without redesigning persistence.
 - Highlight provenance pointers use the exact stable DOM target ID while `source_span` is separately verified against the originating timeline content.
 - Demo importance scores use an explicit 2026-08-26 reference time so seed output is reproducible; the scoring function accepts a current or supplied reference time.
+- Existing API routes have no identity dependency, existing tests send no auth headers, and CORS currently allows only GET.
+- Patient-visible timeline data needs server-side filtering; highlight visibility must follow its source entry to avoid provenance leakage.
+- Manual edit permissions must check both author role and entry type so clinician/staff users cannot overwrite AI-scribed entries that share a contextual role.
+- Patient highlight visibility follows the visibility of each source entry, preventing a Glance provenance link from revealing a filtered AI or internal source.
+- Entry author role and author ID are assigned from the validated server-side identity; clients submit only type, content, and optional provenance.

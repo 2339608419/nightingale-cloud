@@ -1,8 +1,18 @@
 import { useEffect, useState } from "react";
 import { getPatient, getPatientEntries, getPatientHighlights } from "./api";
-import type { Highlight, Patient, TimelineEntry } from "./types";
+import type { ApiIdentity, DemoRole, Highlight, Patient, TimelineEntry } from "./types";
 
 const DEMO_PATIENT_ID = "patient-demo-001";
+const DEMO_IDENTITIES: Record<DemoRole, ApiIdentity> = {
+  patient: { userId: DEMO_PATIENT_ID, role: "patient", clinicId: "clinic-demo-001" },
+  staff: { userId: "staff-demo-001", role: "staff", clinicId: "clinic-demo-001" },
+  clinician: {
+    userId: "clinician-demo-001",
+    role: "clinician",
+    clinicId: "clinic-demo-001",
+  },
+  admin: { userId: "admin-demo-001", role: "admin", clinicId: "clinic-demo-001" },
+};
 
 const isAiGenerated = (entry: TimelineEntry) => entry.type.startsWith("ai_");
 
@@ -10,16 +20,20 @@ const formatLabel = (value: string) =>
   value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 
 export default function App() {
+  const [demoRole, setDemoRole] = useState<DemoRole>("clinician");
   const [patient, setPatient] = useState<Patient | null>(null);
   const [entries, setEntries] = useState<TimelineEntry[]>([]);
   const [highlights, setHighlights] = useState<Highlight[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const identity = DEMO_IDENTITIES[demoRole];
+    setPatient(null);
+    setError(null);
     Promise.all([
-      getPatient(DEMO_PATIENT_ID),
-      getPatientEntries(DEMO_PATIENT_ID),
-      getPatientHighlights(DEMO_PATIENT_ID),
+      getPatient(DEMO_PATIENT_ID, identity),
+      getPatientEntries(DEMO_PATIENT_ID, identity),
+      getPatientHighlights(DEMO_PATIENT_ID, identity),
     ])
       .then(([patientData, entryData, highlightData]) => {
         setPatient(patientData);
@@ -29,14 +43,14 @@ export default function App() {
       .catch((reason: unknown) => {
         setError(reason instanceof Error ? reason.message : "Unable to load patient");
       });
-  }, []);
+  }, [demoRole]);
 
   if (error) {
-    return <main className="page"><div className="error">{error}</div></main>;
+    return <main className="page"><DemoIdentity role={demoRole} onChange={setDemoRole} /><div className="error">{error}</div></main>;
   }
 
   if (!patient) {
-    return <main className="page"><p>Loading patient…</p></main>;
+    return <main className="page"><DemoIdentity role={demoRole} onChange={setDemoRole} /><p>Loading patient…</p></main>;
   }
 
   const navigateToSource = (highlight: Highlight) => {
@@ -51,6 +65,7 @@ export default function App() {
 
   return (
     <main className="page">
+      <DemoIdentity role={demoRole} onChange={setDemoRole} />
       <header className="patient-header">
         <div>
           <p className="eyebrow">Longitudinal care note</p>
@@ -123,5 +138,31 @@ export default function App() {
         </ol>
       </section>
     </main>
+  );
+}
+
+function DemoIdentity({
+  role,
+  onChange,
+}: {
+  role: DemoRole;
+  onChange: (role: DemoRole) => void;
+}) {
+  return (
+    <aside className="demo-identity" aria-label="Demo identity simulation">
+      <div>
+        <strong>Demo identity simulation</strong>
+        <span>Server authorization remains enforced</span>
+      </div>
+      <label>
+        Role
+        <select value={role} onChange={(event) => onChange(event.target.value as DemoRole)}>
+          <option value="patient">Patient</option>
+          <option value="staff">Staff</option>
+          <option value="clinician">Clinician</option>
+          <option value="admin">Admin</option>
+        </select>
+      </label>
+    </aside>
   );
 }

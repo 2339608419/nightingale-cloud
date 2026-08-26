@@ -32,3 +32,13 @@
 - Existing runtime-database smoke check passed after the compatibility fix: HTTP 200 with four highlights and valid timeline anchor pointers.
 - Final verification passed: 10 backend tests in 0.21s and the frontend production build in 105ms; the known third-party Starlette warning remains.
 - `git diff --check` passed and scope review found only Glance View, highlights, provenance, deterministic scoring, tests, and planning changes.
+- Began server-side RBAC by inspecting the clean Phase 3 repository and defining centralized clinic, visibility, creation, edit, and internal-comment policies.
+- Added required development identity headers with 401 handling and centralized authorization policies for clinic scope, patient self-access, entry visibility, note creation/editing, and internal comments.
+- Protected all patient, timeline, and highlight reads; patient results are filtered to patient-facing instructions and source-visible highlights.
+- Added server-authored note creation and content update endpoints with strict staff/clinician ownership rules and AI-entry edit protection.
+- Added a second-clinic synthetic patient plus `test_rbac_scope.py` covering all five required denial cases and positive role-owned write paths.
+- Added a clearly labeled frontend Demo Identity Simulation that sends headers for patient, staff, clinician, and admin roles.
+- Preserved an entry's provenance pointer when a permitted PATCH updates only content; explicit `null` still clears it.
+- Required RBAC micro-test passed independently: 7 tests in 0.23s.
+- Final verification passed after all edits: 17 backend tests in 0.44s and frontend production build in 101ms; the known third-party Starlette warning remains.
+- `git diff --check` passed; scope review confirmed only RBAC, clinic scoping, note writes, demo identity, tests, and planning files changed.

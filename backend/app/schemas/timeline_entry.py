@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.timeline_entry import AuthorRole, TimelineEntryType
 
@@ -16,3 +16,14 @@ class TimelineEntryRead(BaseModel):
     type: TimelineEntryType
     content: str
     provenance_pointer: str | None
+
+
+class TimelineEntryCreate(BaseModel):
+    type: TimelineEntryType
+    content: str = Field(min_length=1, max_length=10000)
+    provenance_pointer: str | None = Field(default=None, max_length=500)
+
+
+class TimelineEntryUpdate(BaseModel):
+    content: str = Field(min_length=1, max_length=10000)
+    provenance_pointer: str | None = Field(default=None, max_length=500)

@@ -33,3 +33,11 @@ export interface Highlight {
   unresolved_action: boolean;
   clinical_entity_type: string;
 }
+
+export type DemoRole = "patient" | "staff" | "clinician" | "admin";
+
+export interface ApiIdentity {
+  userId: string;
+  role: DemoRole;
+  clinicId: string;
+}

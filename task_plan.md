@@ -1,20 +1,21 @@
-# Nightingale Glance View and Highlights Plan
+# Nightingale Server-Side RBAC Plan
 
 ## Goal
-Add a fast Glance View backed by deterministic highlights with verifiable navigation to existing timeline sources.
+Add reusable header-based development identity, server-side role authorization, and clinic isolation without redesigning existing product modules.
 
 ## Phases
-- [x] Inspect existing models, startup, routes, seed, tests, API client, and timeline anchors
-- [x] Add Highlight persistence model and response schema
-- [x] Centralize deterministic importance scoring
-- [x] Seed source-grounded synthetic highlights
-- [x] Add ranked highlights retrieval endpoint and provenance tests
-- [x] Build Glance View with provenance navigation and source emphasis
-- [x] Run and fix all backend tests and frontend production build
+- [x] Inspect routes, models, schemas, services, seed, tests, and frontend API path
+- [x] Add reusable development identity dependency and centralized authorization policies
+- [x] Protect patient, timeline, highlight, and internal-comment placeholder reads
+- [x] Add authorized note creation and update endpoints
+- [x] Seed a second-clinic patient and implement required RBAC micro-tests
+- [x] Add clearly labeled frontend demo identity simulation
+- [x] Run new RBAC tests, all backend tests, and frontend production build
 - [x] Review scope and report results
 
 ## Constraints
-- No authentication/RBAC, revision history, comments, LLM integration, self-learning, or voice.
+- Development headers simulate identity; this is authorization, not production authentication.
+- No comment persistence, revision history, LLM integration, self-learning, or voice.
 - Preserve clean boundaries for future prompts.
 - Claim only commands actually executed.
 

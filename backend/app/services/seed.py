@@ -17,6 +17,7 @@ from app.services.importance_service import calculate_importance_score
 
 
 SYNTHETIC_PATIENT_ID = "patient-demo-001"
+OTHER_CLINIC_PATIENT_ID = "patient-demo-other-clinic"
 DEMO_REFERENCE_TIME = datetime(2026, 8, 26, 8, 0, tzinfo=timezone.utc)
 
 
@@ -45,6 +46,15 @@ def seed_demo_data(db: Session) -> None:
         created_at=datetime(2026, 8, 20, 8, 0, tzinfo=timezone.utc),
     )
     db.merge(patient)
+    db.merge(
+        Patient(
+            id=OTHER_CLINIC_PATIENT_ID,
+            clinic_id="clinic-demo-002",
+            name="Jordan Lee (Synthetic)",
+            date_of_birth=date(1978, 11, 2),
+            created_at=datetime(2026, 8, 20, 8, 0, tzinfo=timezone.utc),
+        )
+    )
     db.flush()
 
     entries = [

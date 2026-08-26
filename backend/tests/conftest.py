@@ -27,6 +27,13 @@ def client() -> TestClient:
 
     app.dependency_overrides[get_db] = override_get_db
     test_client = TestClient(app)
+    test_client.headers.update(
+        {
+            "X-User-Id": "clinician-demo-001",
+            "X-Role": "clinician",
+            "X-Clinic-Id": "clinic-demo-001",
+        }
+    )
     yield test_client
     test_client.close()
     app.dependency_overrides.clear()
