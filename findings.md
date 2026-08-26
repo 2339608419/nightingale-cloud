@@ -18,3 +18,8 @@
 - Manual edit permissions must check both author role and entry type so clinician/staff users cannot overwrite AI-scribed entries that share a contextual role.
 - Patient highlight visibility follows the visibility of each source entry, preventing a Glance provenance link from revealing a filtered AI or internal source.
 - Entry author role and author ID are assigned from the validated server-side identity; clients submit only type, content, and optional provenance.
+- The Phase 4 internal-comments endpoint is an empty permission seam and can remain for RBAC compatibility while real entry-scoped comment APIs are added separately.
+- Comment access must combine internal-role permission, clinic scope, and the existing source-entry visibility policy.
+- Existing unresolved highlights already receive the deterministic +20 action weight; seeded assignments can mirror those actions without changing scoring architecture.
+- Thread APIs return a stable flat list keyed by `parent_comment_id`; the frontend recursively renders it without coupling persistence to a nested response shape.
+- Patient mode skips all comments and assignment requests in the UI, while backend 403 enforcement remains independently tested.

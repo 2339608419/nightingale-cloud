@@ -6,12 +6,16 @@ from sqlalchemy.orm import Session
 from app.models import (
     AuthorRole,
     ClinicalEntityType,
+    CollaborationRole,
+    Comment,
     Highlight,
     HighlightStatus,
     Patient,
     RiskLevel,
     TimelineEntry,
     TimelineEntryType,
+    TaskAssignment,
+    TaskStatus,
 )
 from app.services.importance_service import calculate_importance_score
 
@@ -152,6 +156,70 @@ def seed_demo_data(db: Session) -> None:
     ]
     for entry in entries:
         db.merge(entry)
+
+    db.merge(
+        Comment(
+            id="comment-demo-001",
+            entry_id="entry-demo-007",
+            author_id="clinician-demo-001",
+            author_role=CollaborationRole.CLINICIAN,
+            content="@nurse_amy please arrange repeat blood test next week.",
+            parent_comment_id=None,
+            resolved=False,
+            created_at=datetime(2026, 8, 25, 8, 0, tzinfo=timezone.utc),
+        )
+    )
+    db.flush()
+    db.merge(
+        Comment(
+            id="comment-demo-002",
+            entry_id="entry-demo-007",
+            author_id="staff-demo-001",
+            author_role=CollaborationRole.STAFF,
+            content="Booked for Tuesday morning; awaiting patient confirmation.",
+            parent_comment_id="comment-demo-001",
+            resolved=False,
+            created_at=datetime(2026, 8, 25, 9, 0, tzinfo=timezone.utc),
+        )
+    )
+
+    assignments = [
+        TaskAssignment(
+            id="assignment-demo-lab",
+            patient_id=SYNTHETIC_PATIENT_ID,
+            entry_id="entry-demo-007",
+            title="Arrange pending renal function and potassium labs",
+            assigned_role=CollaborationRole.STAFF,
+            assigned_user_id="staff-demo-001",
+            status=TaskStatus.OPEN,
+            created_at=datetime(2026, 8, 25, 8, 5, tzinfo=timezone.utc),
+            resolved_at=None,
+        ),
+        TaskAssignment(
+            id="assignment-demo-nurse",
+            patient_id=SYNTHETIC_PATIENT_ID,
+            entry_id="entry-demo-004",
+            title="Complete nurse follow-up on home readings",
+            assigned_role=CollaborationRole.STAFF,
+            assigned_user_id="nurse_amy",
+            status=TaskStatus.OPEN,
+            created_at=datetime(2026, 8, 25, 8, 10, tzinfo=timezone.utc),
+            resolved_at=None,
+        ),
+        TaskAssignment(
+            id="assignment-demo-review",
+            patient_id=SYNTHETIC_PATIENT_ID,
+            entry_id="entry-demo-006",
+            title="Clinician review after medication dose change",
+            assigned_role=CollaborationRole.CLINICIAN,
+            assigned_user_id="clinician-demo-001",
+            status=TaskStatus.OPEN,
+            created_at=datetime(2026, 8, 25, 8, 15, tzinfo=timezone.utc),
+            resolved_at=None,
+        ),
+    ]
+    for assignment in assignments:
+        db.merge(assignment)
 
     entry_timestamps = {entry.id: entry.timestamp for entry in entries}
     highlight_specs = [

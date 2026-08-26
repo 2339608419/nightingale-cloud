@@ -60,6 +60,15 @@ def require_internal_comments_access(user: CurrentUser) -> None:
         )
 
 
+def require_entry_collaboration_access(user: CurrentUser, entry: TimelineEntry) -> None:
+    require_internal_comments_access(user)
+    if not can_view_entry(user, entry):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Role cannot collaborate on this entry",
+        )
+
+
 def author_role_for_new_entry(user: CurrentUser, entry_type: TimelineEntryType) -> AuthorRole:
     if user.role == UserRole.STAFF and entry_type == TimelineEntryType.STAFF_NOTE:
         return AuthorRole.STAFF
@@ -89,4 +98,3 @@ def require_entry_edit_access(user: CurrentUser, entry: TimelineEntry) -> None:
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Role cannot edit this entry",
         )
-

@@ -42,3 +42,11 @@
 - Required RBAC micro-test passed independently: 7 tests in 0.23s.
 - Final verification passed after all edits: 17 backend tests in 0.44s and frontend production build in 101ms; the known third-party Starlette warning remains.
 - `git diff --check` passed; scope review confirmed only RBAC, clinic scoping, note writes, demo identity, tests, and planning files changed.
+- Began inline collaboration by inspecting the clean Phase 4 code and defining entry-scoped comments plus patient-scoped task assignments within existing RBAC.
+- Added Comment and TaskAssignment models, schemas, services, routes, fixed demo threads/actions, and six collaboration tests.
+- First collaboration test run had 5 passes and one mention-boundary failure; tightened the parser so punctuation is excluded from handles.
+- Collaboration tests passed after the parser fix: 6 tests in 0.24s.
+- Added frontend API/types and timeline comment UI for add, reply, mentions, resolve/unresolve, plus Glance Open Actions with completion controls.
+- Final verification passed: 23 backend tests in 0.66s and frontend production build in 107ms; the known third-party Starlette warning remains.
+- Existing SQLite lifespan smoke check passed with 2 seeded threaded comments and 3 open assignments.
+- `git diff --check` passed; scope review confirmed only inline collaboration, tasks, tests, UI, and planning files changed.

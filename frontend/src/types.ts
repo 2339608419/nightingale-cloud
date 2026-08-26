@@ -41,3 +41,27 @@ export interface ApiIdentity {
   role: DemoRole;
   clinicId: string;
 }
+
+export interface Comment {
+  id: string;
+  entry_id: string;
+  author_id: string;
+  author_role: "staff" | "clinician" | "admin";
+  content: string;
+  parent_comment_id: string | null;
+  resolved: boolean;
+  created_at: string;
+  mentions: string[];
+}
+
+export interface TaskAssignment {
+  id: string;
+  patient_id: string;
+  entry_id: string | null;
+  title: string;
+  assigned_role: "staff" | "clinician" | "admin";
+  assigned_user_id: string | null;
+  status: "open" | "completed";
+  created_at: string;
+  resolved_at: string | null;
+}

@@ -1,6 +1,23 @@
 import { useEffect, useState } from "react";
-import { getPatient, getPatientEntries, getPatientHighlights } from "./api";
-import type { ApiIdentity, DemoRole, Highlight, Patient, TimelineEntry } from "./types";
+import {
+  completeAssignment,
+  createComment,
+  getEntryComments,
+  getOpenAssignments,
+  getPatient,
+  getPatientEntries,
+  getPatientHighlights,
+  setCommentResolution,
+} from "./api";
+import type {
+  ApiIdentity,
+  Comment,
+  DemoRole,
+  Highlight,
+  Patient,
+  TaskAssignment,
+  TimelineEntry,
+} from "./types";
 
 const DEMO_PATIENT_ID = "patient-demo-001";
 const DEMO_IDENTITIES: Record<DemoRole, ApiIdentity> = {
@@ -24,25 +41,53 @@ export default function App() {
   const [patient, setPatient] = useState<Patient | null>(null);
   const [entries, setEntries] = useState<TimelineEntry[]>([]);
   const [highlights, setHighlights] = useState<Highlight[]>([]);
+  const [commentsByEntry, setCommentsByEntry] = useState<Record<string, Comment[]>>({});
+  const [assignments, setAssignments] = useState<TaskAssignment[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const identity = DEMO_IDENTITIES[demoRole];
+    let cancelled = false;
     setPatient(null);
     setError(null);
-    Promise.all([
-      getPatient(DEMO_PATIENT_ID, identity),
-      getPatientEntries(DEMO_PATIENT_ID, identity),
-      getPatientHighlights(DEMO_PATIENT_ID, identity),
-    ])
-      .then(([patientData, entryData, highlightData]) => {
+    setCommentsByEntry({});
+    setAssignments([]);
+
+    const load = async () => {
+      try {
+        const [patientData, entryData, highlightData] = await Promise.all([
+          getPatient(DEMO_PATIENT_ID, identity),
+          getPatientEntries(DEMO_PATIENT_ID, identity),
+          getPatientHighlights(DEMO_PATIENT_ID, identity),
+        ]);
+        let commentData: Record<string, Comment[]> = {};
+        let assignmentData: TaskAssignment[] = [];
+        if (demoRole !== "patient") {
+          const [openAssignments, entryComments] = await Promise.all([
+            getOpenAssignments(DEMO_PATIENT_ID, identity),
+            Promise.all(
+              entryData.map(async (entry) => [
+                entry.id,
+                await getEntryComments(entry.id, identity),
+              ] as const),
+            ),
+          ]);
+          assignmentData = openAssignments;
+          commentData = Object.fromEntries(entryComments);
+        }
+        if (cancelled) return;
         setPatient(patientData);
         setEntries(entryData);
         setHighlights(highlightData);
-      })
-      .catch((reason: unknown) => {
+        setCommentsByEntry(commentData);
+        setAssignments(assignmentData);
+      } catch (reason: unknown) {
+        if (cancelled) return;
         setError(reason instanceof Error ? reason.message : "Unable to load patient");
-      });
+      }
+    };
+    void load();
+    return () => { cancelled = true; };
   }, [demoRole]);
 
   if (error) {
@@ -61,6 +106,38 @@ export default function App() {
     source.classList.remove("source-focus");
     requestAnimationFrame(() => source.classList.add("source-focus"));
     window.setTimeout(() => source.classList.remove("source-focus"), 2200);
+  };
+
+  const addComment = async (entryId: string, content: string, parentId: string | null) => {
+    const comment = await createComment(
+      entryId,
+      content,
+      parentId,
+      DEMO_IDENTITIES[demoRole],
+    );
+    setCommentsByEntry((current) => ({
+      ...current,
+      [entryId]: [...(current[entryId] ?? []), comment],
+    }));
+  };
+
+  const toggleComment = async (comment: Comment) => {
+    const updated = await setCommentResolution(
+      comment.id,
+      !comment.resolved,
+      DEMO_IDENTITIES[demoRole],
+    );
+    setCommentsByEntry((current) => ({
+      ...current,
+      [comment.entry_id]: (current[comment.entry_id] ?? []).map((item) =>
+        item.id === updated.id ? updated : item,
+      ),
+    }));
+  };
+
+  const finishAssignment = async (assignment: TaskAssignment) => {
+    await completeAssignment(assignment.id, DEMO_IDENTITIES[demoRole]);
+    setAssignments((current) => current.filter((item) => item.id !== assignment.id));
   };
 
   return (
@@ -83,24 +160,44 @@ export default function App() {
           <h2 id="glance-heading">Glance View</h2>
           <p>Highest-priority current items</p>
         </div>
-        <ol className="highlight-list">
-          {highlights.map((highlight) => (
-            <li key={highlight.id} className="highlight-item">
-              <button type="button" onClick={() => navigateToSource(highlight)}>
-                <span className="highlight-topline">
-                  <strong>{highlight.text}</strong>
-                  <span className={`risk risk-${highlight.risk_level}`}>{formatLabel(highlight.risk_level)}</span>
-                </span>
-                <span className="risk-reason">{highlight.risk_reason}</span>
-                <span className="highlight-state">
-                  {highlight.unresolved_action && <span className="state-open">Action unresolved</span>}
-                  {highlight.clinician_confirmed && <span className="state-confirmed">Clinician confirmed</span>}
-                  <span className="provenance">View source ↓</span>
-                </span>
-              </button>
-            </li>
-          ))}
-        </ol>
+        <div className="glance-content">
+          <ol className="highlight-list">
+            {highlights.map((highlight) => (
+              <li key={highlight.id} className="highlight-item">
+                <button type="button" onClick={() => navigateToSource(highlight)}>
+                  <span className="highlight-topline">
+                    <strong>{highlight.text}</strong>
+                    <span className={`risk risk-${highlight.risk_level}`}>{formatLabel(highlight.risk_level)}</span>
+                  </span>
+                  <span className="risk-reason">{highlight.risk_reason}</span>
+                  <span className="highlight-state">
+                    {highlight.unresolved_action && <span className="state-open">Action unresolved</span>}
+                    {highlight.clinician_confirmed && <span className="state-confirmed">Clinician confirmed</span>}
+                    <span className="provenance">View source ↓</span>
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ol>
+          {demoRole !== "patient" && (
+            <section className="open-actions" aria-labelledby="open-actions-heading">
+              <div className="open-actions-heading">
+                <h3 id="open-actions-heading">Open actions</h3>
+                <span>{assignments.length}</span>
+              </div>
+              {assignments.length === 0 ? <p>All current actions completed.</p> : (
+                <ul>
+                  {assignments.map((assignment) => (
+                    <li key={assignment.id}>
+                      <div><strong>{assignment.title}</strong><span>{formatLabel(assignment.assigned_role)}{assignment.assigned_user_id ? ` · ${assignment.assigned_user_id}` : ""}</span></div>
+                      <button type="button" onClick={() => void finishAssignment(assignment)}>Complete</button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          )}
+        </div>
       </section>
 
       <section className="timeline" aria-labelledby="timeline-heading">
@@ -132,12 +229,116 @@ export default function App() {
                 {entry.provenance_pointer && (
                   <div className="source"><span>Source</span><code>{entry.provenance_pointer}</code></div>
                 )}
+                {demoRole !== "patient" && (
+                  <EntryComments
+                    comments={commentsByEntry[entry.id] ?? []}
+                    onAdd={(content, parentId) => addComment(entry.id, content, parentId)}
+                    onToggle={toggleComment}
+                  />
+                )}
               </article>
             </li>
           ))}
         </ol>
       </section>
     </main>
+  );
+}
+
+function EntryComments({
+  comments,
+  onAdd,
+  onToggle,
+}: {
+  comments: Comment[];
+  onAdd: (content: string, parentId: string | null) => Promise<void>;
+  onToggle: (comment: Comment) => Promise<void>;
+}) {
+  const [content, setContent] = useState("");
+  const roots = comments.filter((comment) => comment.parent_comment_id === null);
+  const submit = async () => {
+    const value = content.trim();
+    if (!value) return;
+    await onAdd(value, null);
+    setContent("");
+  };
+  return (
+    <details className="comments-panel">
+      <summary>Comments <span>{comments.length}</span></summary>
+      <div className="comment-thread">
+        {roots.map((comment) => (
+          <CommentNode
+            key={comment.id}
+            comment={comment}
+            comments={comments}
+            onAdd={onAdd}
+            onToggle={onToggle}
+          />
+        ))}
+        {roots.length === 0 && <p className="empty-comments">No internal comments.</p>}
+      </div>
+      <div className="comment-compose">
+        <input
+          value={content}
+          onChange={(event) => setContent(event.target.value)}
+          placeholder="Add comment or @mention"
+          aria-label="Add internal comment"
+        />
+        <button type="button" onClick={() => void submit()}>Add comment</button>
+      </div>
+    </details>
+  );
+}
+
+function CommentNode({
+  comment,
+  comments,
+  onAdd,
+  onToggle,
+}: {
+  comment: Comment;
+  comments: Comment[];
+  onAdd: (content: string, parentId: string | null) => Promise<void>;
+  onToggle: (comment: Comment) => Promise<void>;
+}) {
+  const [replying, setReplying] = useState(false);
+  const [reply, setReply] = useState("");
+  const replies = comments.filter((item) => item.parent_comment_id === comment.id);
+  const submitReply = async () => {
+    const value = reply.trim();
+    if (!value) return;
+    await onAdd(value, comment.id);
+    setReply("");
+    setReplying(false);
+  };
+  return (
+    <div className={`comment${comment.resolved ? " comment-resolved" : ""}`}>
+      <div className="comment-meta">
+        <strong>{formatLabel(comment.author_role)}</strong>
+        <time dateTime={comment.created_at}>{new Date(comment.created_at).toLocaleString()}</time>
+      </div>
+      <p>{comment.content}</p>
+      {comment.mentions.length > 0 && (
+        <div className="mentions">{comment.mentions.map((mention) => <span key={mention}>@{mention}</span>)}</div>
+      )}
+      <div className="comment-actions">
+        <button type="button" onClick={() => setReplying((value) => !value)}>Reply</button>
+        <button type="button" onClick={() => void onToggle(comment)}>{comment.resolved ? "Unresolve" : "Resolve"}</button>
+      </div>
+      {replying && (
+        <div className="comment-compose reply-compose">
+          <input value={reply} onChange={(event) => setReply(event.target.value)} placeholder="Reply or @mention" />
+          <button type="button" onClick={() => void submitReply()}>Reply</button>
+        </div>
+      )}
+      {replies.length > 0 && (
+        <div className="comment-replies">
+          {replies.map((item) => (
+            <CommentNode key={item.id} comment={item} comments={comments} onAdd={onAdd} onToggle={onToggle} />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 

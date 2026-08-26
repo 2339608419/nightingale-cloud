@@ -25,3 +25,6 @@ class Patient(Base):
     highlights: Mapped[list["Highlight"]] = relationship(  # noqa: F821
         back_populates="patient", cascade="all, delete-orphan"
     )
+    assignments: Mapped[list["TaskAssignment"]] = relationship(  # noqa: F821
+        back_populates="patient", cascade="all, delete-orphan"
+    )
