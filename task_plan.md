@@ -1,25 +1,26 @@
-# Nightingale Revision History Plan
+# Nightingale AI Scribe and PHI Redaction Plan
 
 ## Goal
-Add full-snapshot note history, metadata-only auditing, safe revert, and deterministic optimistic concurrency without changing existing authorization boundaries.
+Add a synthetic-only AI-scribe ingestion pipeline that redacts PHI before provider invocation and creates provenance-linked AI timeline entries reliably without external services.
 
 ## Phases
-- [x] Inspect existing models, update route/service, RBAC rules, tests, seed, and frontend timeline
-- [x] Add EntryVersion and AuditLog persistence plus response/request schemas
-- [x] Add transactional versioned edit, history, audit, and revert services/routes
-- [x] Initialize version 1 for seeded and newly created entries
-- [x] Add required revision-history and concurrent-edit backend tests
-- [x] Add timeline Revision History UI with permitted revert and refresh
-- [x] Run focused tests, all backend tests, frontend production build, and scope review
+- [x] Inspect current timeline creation, version initialization, authorization, dependencies, and documentation
+- [x] Add deterministic PHI redaction with structured non-sensitive metadata
+- [x] Add provider abstraction, deterministic mock, and opt-in external provider
+- [x] Add clinic-scoped AI-scribe schemas, service, and endpoint
+- [x] Add fake-provider, provenance, entry-type, and log-safety tests
+- [x] Document redaction call chain, provider selection, and raw transcript non-persistence
+- [x] Run dedicated tests, complete backend suite, frontend build, and final scope review
 
 ## Constraints
-- Full snapshots; no diff storage.
-- Audit logs contain metadata only, never note content.
-- Preserve existing clinic scope and role/ownership edit rules.
-- Stale same-entry writes return HTTP 409; separate entries remain independent.
-- No unrelated Phase 7 functionality.
+- Synthetic data only; reject requests not explicitly marked synthetic.
+- Redaction must occur before every provider call.
+- Never log or persist the raw transcript.
+- Provenance is a stable source identifier, never the summary text.
+- Offline mock mode must remain the reliable default.
+- No voice recording or unrelated features.
 
 ## Errors Encountered
 | Error | Attempt | Resolution |
 |---|---:|---|
-| Focused pytest path was repeated after setting the working directory to `backend` | 1 | Re-run with paths relative to `backend`. |
+| None yet | - | - |

@@ -1,6 +1,6 @@
-# Nightingale Care Note — Architecture Slice
+# Nightingale Care Note — Prototype
 
-A small working foundation for the Nightingale Cloud longitudinal patient care-note prototype. This first step intentionally implements only patient and timeline read paths.
+A synthetic-data-only longitudinal patient care-note prototype with timeline, highlights, collaboration, server-side RBAC, revision history, and AI-scribe ingestion.
 
 ## Repository layout
 
@@ -59,9 +59,28 @@ npm run build
 - `GET /health`
 - `GET /patients/{patient_id}`
 - `GET /patients/{patient_id}/entries`
+- `POST /ai-scribe`
 
 Unknown patient IDs return `404`. Timeline entries are returned newest first.
 
+## AI scribe and PHI redaction
+
+The ingestion call chain is:
+
+`POST /ai-scribe` → clinic/RBAC authorization → `redact_phi` → summary provider → timeline entry.
+
+Redaction occurs in `backend/app/services/ai_scribe_service.py` before the provider is called. Names, Singapore-style IC/ID values, and phone numbers are replaced by `[NAME]`, `[ID]`, and `[PHONE]`. Logs contain only the synthetic source ID, interaction type, and redaction count. The raw transcript is never stored; only the generated redacted summary is persisted. Provenance is a stable synthetic identifier such as `synthetic://ai-scribe/source-001#transcript`.
+
+The deterministic offline provider is the default and requires no credentials. External OpenAI summarization is opt-in:
+
+```powershell
+$env:AI_SCRIBE_PROVIDER = "openai"
+$env:OPENAI_API_KEY = "..."
+$env:OPENAI_MODEL = "gpt-5-mini" # optional
+```
+
+If either explicit provider selection or the key is absent, the application stays in deterministic mock mode. Only already-redacted text is sent to the external provider.
+
 ## Current limitations
 
-This architecture slice has no authentication or authorization and is not suitable for real patient data. It has no write APIs, collaboration, audit history, highlights, AI, or PHI redaction. The Glance View is deliberately a placeholder for a later step.
+Development identity headers simulate authentication; this is not production authentication and the application is not suitable for real patient data. AI summaries are deterministic by default, redaction is intentionally prototype-grade, and synthetic source transcripts are not retained or retrievable.

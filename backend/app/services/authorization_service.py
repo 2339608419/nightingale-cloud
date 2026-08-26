@@ -60,6 +60,14 @@ def require_internal_comments_access(user: CurrentUser) -> None:
         )
 
 
+def require_ai_scribe_access(user: CurrentUser) -> None:
+    if user.role not in {UserRole.STAFF, UserRole.CLINICIAN, UserRole.ADMIN}:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Role cannot ingest AI-scribed notes",
+        )
+
+
 def require_entry_collaboration_access(user: CurrentUser, entry: TimelineEntry) -> None:
     require_internal_comments_access(user)
     if not can_view_entry(user, entry):

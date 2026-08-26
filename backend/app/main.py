@@ -6,7 +6,13 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app import models  # noqa: F401 - registers SQLAlchemy metadata
 from app.database import Base, SessionLocal, engine
-from app.routes import collaboration_router, entries_router, health_router, patients_router
+from app.routes import (
+    ai_scribe_router,
+    collaboration_router,
+    entries_router,
+    health_router,
+    patients_router,
+)
 from app.services.seed import seed_demo_data
 
 
@@ -30,3 +36,4 @@ app.include_router(health_router)
 app.include_router(patients_router)
 app.include_router(entries_router)
 app.include_router(collaboration_router)
+app.include_router(ai_scribe_router)

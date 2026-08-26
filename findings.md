@@ -26,3 +26,6 @@
 - Timeline entries currently have no revision column; deriving the current revision from the highest immutable snapshot avoids a runtime SQLite column migration.
 - SQLAlchemy reserves the declarative attribute name `metadata`; the audit model should map a Python attribute such as `metadata_json` to the database column named `metadata`.
 - Existing note edit authorization is already centralized and can be reused unchanged for both edits and reverts.
+- AI entry types already exist and the frontend marks every `ai_` type as AI-generated, so ingestion needs no visual redesign.
+- `create_patient_entry` already initializes EntryVersion 1, allowing AI ingestion to reuse the normal timeline persistence path.
+- The backend has no external LLM SDK; a small provider protocol plus opt-in standard-library HTTP implementation avoids making the offline demo depend on a new package.

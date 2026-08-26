@@ -20,6 +20,7 @@
 - Expanded backend tests for descending order, required fields, supported vocabularies, content mix, and required longitudinal dates.
 - Verification passed: 6 backend tests passed in 0.10s; one third-party Starlette deprecation warning remains.
 - Frontend TypeScript checks and Vite production build passed; 17 modules transformed in 102ms.
+- Final re-run after persistence assertions passed: 11 dedicated tests in 0.38s and all 39 backend tests in 1.35s.
 - `git diff --check` found no whitespace errors; review confirmed only timeline implementation and planning files changed.
 - Began the Glance/Highlights phase by inspecting the clean Phase 2 repository and the complete backend/frontend data path.
 - Added the Highlight model, constrained risk/status/entity fields, source relationships, response schema, and indexed patient/status/score access path.
@@ -59,3 +60,11 @@
 - Final backend verification passed: 28 tests in 1.07s; one known third-party Starlette deprecation warning remains.
 - Frontend TypeScript checks and Vite production build passed; 17 modules transformed in 100ms.
 - Existing SQLite lifespan smoke check passed: 7 timeline entries and version history returned HTTP 200.
+- Began the AI-scribe phase by reading the planning skill and inspecting the clean Phase 6 repository, timeline creation path, RBAC, dependencies, and documentation.
+- Added name, Singapore IC/ID, and phone redaction with counts, plus a provider protocol, deterministic mock, and explicitly configured OpenAI Responses provider.
+- Added synthetic-only, clinic-scoped `POST /ai-scribe`; all created notes are system-authored AI entry types with stable synthetic source provenance.
+- Added fake-provider tests proving exact redacted provider input, safe logs, correct type mapping, provenance, role/clinic enforcement, and raw transcript non-persistence.
+- Documented the redaction boundary, provider configuration, log behavior, and decision not to persist synthetic source transcripts.
+- Dedicated AI-scribe/redaction verification passed: 11 tests in 0.33s.
+- Complete backend verification passed: 39 tests in 1.44s; one known Starlette TestClient deprecation warning remains.
+- Frontend TypeScript checks and Vite production build passed; 17 modules transformed in 102ms.
