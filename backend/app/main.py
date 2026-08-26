@@ -9,6 +9,7 @@ from app.database import Base, SessionLocal, engine
 from app.routes import (
     ai_scribe_router,
     collaboration_router,
+    conflicts_router,
     entries_router,
     health_router,
     highlights_router,
@@ -37,5 +38,6 @@ app.include_router(health_router)
 app.include_router(patients_router)
 app.include_router(entries_router)
 app.include_router(collaboration_router)
+app.include_router(conflicts_router)
 app.include_router(ai_scribe_router)
 app.include_router(highlights_router)

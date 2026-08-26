@@ -5,6 +5,7 @@ import {
   createComment,
   createNote,
   getCompletedAssignments,
+  getOpenConflicts,
   getDataDecayPreview,
   getEntryComments,
   getEntryVersions,
@@ -16,11 +17,13 @@ import {
   setCommentResolution,
   revertEntry,
   rejectHighlight,
+  resolveConflict,
   updateNote,
 } from "./api";
 import type {
   ApiIdentity,
   Comment,
+  ConflictRecord,
   DataDecayPreview,
   DemoRole,
   EntryVersion,
@@ -65,6 +68,7 @@ export default function App() {
   const [completedAssignments, setCompletedAssignments] = useState<TaskAssignment[]>([]);
   const [decayByEntry, setDecayByEntry] = useState<Record<string, DataDecayPreview>>({});
   const [preferences, setPreferences] = useState<ImportancePreference[]>([]);
+  const [conflicts, setConflicts] = useState<ConflictRecord[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
 
@@ -78,6 +82,7 @@ export default function App() {
     setAssignments([]);
     setCompletedAssignments([]);
     setPreferences([]);
+    setConflicts([]);
 
     const load = async () => {
       try {
@@ -99,11 +104,15 @@ export default function App() {
         let assignmentData: TaskAssignment[] = [];
         let completedAssignmentData: TaskAssignment[] = [];
         let preferenceData: ImportancePreference[] = [];
+        let conflictData: ConflictRecord[] = [];
         if (demoRole !== "patient") {
-          const [openAssignments, completed, learnedPreferences, entryComments, entryVersions] = await Promise.all([
+          const [openAssignments, completed, learnedPreferences, openConflicts, entryComments, entryVersions] = await Promise.all([
             getOpenAssignments(DEMO_PATIENT_ID, identity),
             getCompletedAssignments(DEMO_PATIENT_ID, identity),
             getImportancePreferences(identity),
+            demoRole === "clinician" || demoRole === "admin"
+              ? getOpenConflicts(DEMO_PATIENT_ID, identity)
+              : Promise.resolve([]),
             Promise.all(
               entryData.map(async (entry) => [
                 entry.id,
@@ -120,6 +129,7 @@ export default function App() {
           assignmentData = openAssignments;
           completedAssignmentData = completed;
           preferenceData = learnedPreferences;
+          conflictData = openConflicts;
           commentData = Object.fromEntries(entryComments);
           if (!cancelled) setVersionsByEntry(Object.fromEntries(entryVersions));
         }
@@ -128,6 +138,7 @@ export default function App() {
         setAssignments(assignmentData);
         setCompletedAssignments(completedAssignmentData);
         setPreferences(preferenceData);
+        setConflicts(conflictData);
       } catch (reason: unknown) {
         if (cancelled) return;
         setError(reason instanceof Error ? reason.message : "Unable to load patient");
@@ -145,14 +156,19 @@ export default function App() {
     return <main className="page"><DemoIdentity role={demoRole} onChange={setDemoRole} /><p>Loading patient…</p></main>;
   }
 
-  const navigateToSource = (highlight: Highlight) => {
-    const source = document.getElementById(highlight.provenance_pointer);
+  const navigateToSource = (provenancePointer: string) => {
+    const source = document.getElementById(provenancePointer);
     if (!source) return;
-    window.history.replaceState(null, "", `#${highlight.provenance_pointer}`);
+    window.history.replaceState(null, "", `#${provenancePointer}`);
     source.scrollIntoView({ behavior: "smooth", block: "center" });
     source.classList.remove("source-focus");
     requestAnimationFrame(() => source.classList.add("source-focus"));
     window.setTimeout(() => source.classList.remove("source-focus"), 2200);
+  };
+
+  const closeConflict = async (conflict: ConflictRecord) => {
+    await resolveConflict(conflict.id, DEMO_IDENTITIES[demoRole]);
+    setConflicts((current) => current.filter((item) => item.id !== conflict.id));
   };
 
   const addComment = async (entryId: string, content: string, parentId: string | null) => {
@@ -244,7 +260,7 @@ export default function App() {
           <ol className="highlight-list">
             {highlights.map((highlight) => (
               <li key={highlight.id} className="highlight-item">
-                <button className="highlight-source" type="button" onClick={() => navigateToSource(highlight)}>
+                <button className="highlight-source" type="button" onClick={() => navigateToSource(highlight.provenance_pointer)}>
                   <span className="highlight-topline">
                     <strong>{highlight.text}</strong>
                     <span className={`risk risk-${highlight.risk_level}`}>{formatLabel(highlight.risk_level)}</span>
@@ -306,6 +322,31 @@ export default function App() {
         </div>
       </section>
 
+      {(demoRole === "clinician" || demoRole === "admin") && conflicts.length > 0 && (
+        <section className="conflict-panel" aria-labelledby="conflict-heading">
+          <div className="conflict-heading">
+            <div><p className="eyebrow">Internal review</p><h2 id="conflict-heading">Clinical conflicts</h2></div>
+            <span>{conflicts.length} open</span>
+          </div>
+          <p>Clinician-authored information takes precedence. Prior AI/patient sources remain available for review.</p>
+          <ul>
+            {conflicts.map((conflict) => (
+              <li key={conflict.id}>
+                <div className="conflict-values">
+                  <span><b>Prior {formatLabel(conflict.entity_type)}</b>{formatLabel(conflict.entity_name)}: {conflict.prior_value}</span>
+                  <span className="authoritative-value"><b>Authoritative clinician value</b>{formatLabel(conflict.entity_name)}: {conflict.authoritative_value}</span>
+                </div>
+                <div className="conflict-actions">
+                  <button type="button" onClick={() => navigateToSource(conflict.conflicting_provenance_pointer)}>Prior source</button>
+                  <button type="button" onClick={() => navigateToSource(conflict.authoritative_provenance_pointer)}>Clinician source</button>
+                  {demoRole === "clinician" && <button type="button" onClick={() => void closeConflict(conflict)}>Mark resolved</button>}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <section className="timeline" aria-labelledby="timeline-heading">
         <div className="section-heading">
           <div><p className="eyebrow">Patient history</p><h2 id="timeline-heading">Timeline</h2></div>
@@ -325,6 +366,7 @@ export default function App() {
                   <div className="entry-badges">
                     <span className={`role role-${entry.author_role}`}>{formatLabel(entry.author_role)}</span>
                     {isAiGenerated(entry) && <span className="ai-badge">AI-generated</span>}
+                    {conflicts.some((item) => item.authoritative_entry_id === entry.id) && <span className="authoritative-badge">Clinician authoritative</span>}
                     {decayByEntry[entry.id]?.durable_exempt && <span className="decay-badge durable">Durable · full detail</span>}
                     {decayByEntry[entry.id]?.storage_tier === "cold_summary" && <span className="decay-badge">Cold summary preview</span>}
                   </div>

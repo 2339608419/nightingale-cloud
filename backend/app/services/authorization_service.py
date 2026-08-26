@@ -76,6 +76,22 @@ def require_highlight_decision_access(user: CurrentUser) -> None:
         )
 
 
+def require_conflict_review_access(user: CurrentUser) -> None:
+    if user.role not in {UserRole.CLINICIAN, UserRole.ADMIN}:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Clinical conflicts are internal clinician review data",
+        )
+
+
+def require_conflict_resolution_access(user: CurrentUser) -> None:
+    if user.role != UserRole.CLINICIAN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only clinicians can resolve clinical conflicts",
+        )
+
+
 def require_entry_collaboration_access(user: CurrentUser, entry: TimelineEntry) -> None:
     require_internal_comments_access(user)
     if not can_view_entry(user, entry):

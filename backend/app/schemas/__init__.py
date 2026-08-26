@@ -7,6 +7,7 @@ from app.schemas.collaboration import (
     TaskStatusUpdate,
 )
 from app.schemas.data_decay import DataDecayPreviewRead
+from app.schemas.conflict import ConflictRecordRead
 from app.schemas.ai_scribe import AiScribeRequest, AiScribeResponse, InteractionType
 from app.schemas.highlight import (
     HighlightRead,
@@ -34,6 +35,7 @@ __all__ = [
     "CommentCreate",
     "CommentRead",
     "CommentResolutionUpdate",
+    "ConflictRecordRead",
     "DataDecayPreviewRead",
     "TaskAssignmentCreate",
     "TaskAssignmentRead",

@@ -1,6 +1,7 @@
 import type {
   ApiIdentity,
   Comment,
+  ConflictRecord,
   DataDecayPreview,
   EntryVersion,
   Highlight,
@@ -57,6 +58,12 @@ export const getDataDecayPreview = (patientId: string, identity: ApiIdentity) =>
 
 export const getImportancePreferences = (identity: ApiIdentity) =>
   requestJson<ImportancePreference[]>("/importance-preferences", identity);
+
+export const getOpenConflicts = (patientId: string, identity: ApiIdentity) =>
+  requestJson<ConflictRecord[]>(`/patients/${patientId}/conflicts?status=open`, identity);
+
+export const resolveConflict = (conflictId: string, identity: ApiIdentity) =>
+  requestJson<ConflictRecord>(`/conflicts/${conflictId}/resolve`, identity, { method: "POST" });
 
 export const createNote = (
   patientId: string,

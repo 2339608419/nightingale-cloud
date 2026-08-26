@@ -22,6 +22,11 @@
 - Frontend TypeScript checks and Vite production build passed; 17 modules transformed in 102ms.
 - Completed the final submission audit with a requirement matrix, technical brief, repeatable Glance benchmark, minimal AI-seed and Glance-loading fixes, full test/build verification, and runtime smoke check.
 - Final evidence: 43 backend tests passed in 1.61s; Vite production build passed in 108ms; benchmark 200 requests after 20 warmups, median 4.221ms and P95 5.048ms (in-process approximation).
+- Began targeted conflict-detection work after confirming the clean Phase 10 checkpoint; scope is limited to clinician precedence over conflicting AI/patient-derived facts.
+- Added deterministic medication/dosage, allergy, and follow-up extraction; persisted internal conflicts with both timeline provenance pointers; clinician/admin review and clinician-only resolution are clinic-scoped.
+- Hooked clinician note creation and editing, preserved prior source content, and added a conflict warning with dual-source navigation and authoritative clinician labeling.
+- Focused conflict verification passed: 7 tests in 0.43s.
+- Added direct extractor coverage for allergy and follow-up, updated only conflict-related documentation, then reverified: 8 focused tests in 0.39s, 51 total tests in 2.01s, frontend build in 102ms.
 - Final re-run after persistence assertions passed: 11 dedicated tests in 0.38s and all 39 backend tests in 1.35s.
 - Began adaptive importance work by reading the planning skill, confirming a clean Phase 7 tree, inspecting every backend test, and tracing highlight scoring through API and frontend.
 - Added clinic-scoped entity and entry-type preference counters with deterministic `+5/+2` acceptance and `-2/-1` rejection weights, capped to `[-10, +25]`.

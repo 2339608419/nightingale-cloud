@@ -1,25 +1,24 @@
-# Nightingale Final Submission Audit Plan
+# Clinician-vs-AI/Patient Conflict Fix Plan
 
 ## Goal
-Audit the completed prototype against the candidate brief, add a measured warm-path benchmark, fix only concrete hard-requirement issues, and produce an evidence-backed final report.
+Add deterministic, clinic-scoped conflict detection and clinician resolution for medication/dosage, allergy status, and follow-up status without changing unrelated architecture.
 
 ## Phases
-- [x] Read project requirements, README, attribution, and enumerate all backend/frontend/test files
-- [x] Read and audit every backend model/schema/route/service plus all tests
-- [x] Read and audit all frontend source and runtime/build configuration
-- [x] Build requirement checklist with PASS/PARTIAL/MISSING evidence
-- [x] Add and run repeatable warm-path Glance benchmark with median/P95 reporting
-- [x] Fix only concrete hard-requirement, security, provenance, test, or demo blockers
-- [x] Run full backend tests, frontend production build, runtime/config checks, and final diff review
-- [x] Write and deliver final audit report with top five remaining risks
+- [x] Confirm clean Phase 10 checkpoint and recover prior context
+- [x] Inspect current persistence, clinician create/edit, authorization, schemas, and frontend data flow
+- [x] Define deterministic fact extraction and conflict lifecycle
+- [x] Add ConflictRecord model/schema/service/routes and hook clinician create/edit
+- [x] Add internal conflict warning, dual-source navigation, authoritative label, and resolve control
+- [x] Add focused conflict/RBAC/provenance tests
+- [x] Run focused tests, full backend suite, frontend production build, and scope review
 
 ## Constraints
-- No redesign, major feature work, broad refactors, or cosmetic-only changes.
-- Never fabricate benchmark numbers; record request count, median, P95, environment, and limitations.
-- Prioritize hard requirements, demo blockers, security/provenance, required tests, performance, then docs.
-- Treat claims as unverified until supported by code inspection and executed commands.
+- No general NLP, redesign, broad features, or unrelated audit fixes.
+- Clinician entry is authoritative; prior AI/patient entry remains unchanged.
+- Patient cannot access conflicts; clinic scope and server-side authorization are mandatory.
+- Provenance must resolve to both existing timeline entries.
 
 ## Errors Encountered
 | Error | Attempt | Resolution |
 |---|---:|---|
-| Initial documentation patch expected a README line that differed from the file | 1 | Re-anchored to the exact Known Limitations section; no application effect. |
+| None | - | - |

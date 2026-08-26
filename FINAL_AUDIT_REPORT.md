@@ -16,7 +16,7 @@ workspace; they are not production certification.
 | Revert | PASS | Authorized revert creates a new version restoring prior content. |
 | Provenance | PARTIAL | Entry/span integrity is tested and UI jumps to the entry; raw AI transcript segments are not retained/viewable. |
 | Conflict handling | PARTIAL | OCC returns 409 for stale same-entry writes; separate entries are independent, but no document-level CRDT exists. |
-| Clinician precedence/conflict review | MISSING | Accept/reject exists, but contradictory AI/patient versus clinician facts are not detected or flagged. |
+| Clinician precedence/conflict review | PASS | Deterministic medication, allergy, and follow-up conflicts retain both sources while marking the clinician entry authoritative. |
 
 ## RBAC
 
@@ -80,9 +80,9 @@ Glance data now renders before per-entry collaboration/history fan-out completes
 
 ## Final verification
 
-- Backend: `43 passed, 1 warning in 1.61s`.
-- Frontend: TypeScript checks and Vite build passed; 17 modules; JS 204.97 kB
-  (63.88 kB gzip), CSS 10.61 kB (2.96 kB gzip).
+- Backend: `51 passed, 1 warning in 2.01s`.
+- Frontend: TypeScript checks and Vite build passed; 17 modules; JS 206.73 kB
+  (64.23 kB gzip), CSS 12.01 kB (3.19 kB gzip).
 - Config: Vite `/api` proxy targets local FastAPI; CORS allows local Vite origins;
   default runtime SQLite file is ignored.
 - External LLM invoked during audit: **No**.
@@ -91,7 +91,8 @@ Glance data now renders before per-entry collaboration/history fan-out completes
 
 1. Demo identity headers are forgeable; verified authentication is mandatory before
    handling any real data.
-2. No explicit AI/patient-versus-clinician contradiction detection or review queue.
+2. Conflict extraction intentionally recognizes only the documented synthetic demo
+   vocabulary and is not general clinical NLP.
 3. AI provenance identifies a stable synthetic source, but the original transcript
    segment is not retained for direct review.
 4. Central AuditLog covers note edit/revert only; collaboration and highlight events

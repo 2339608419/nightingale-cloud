@@ -42,6 +42,8 @@ Patient 1 ---- * TimelineEntry 1 ---- * EntryVersion
    |                    |
    |                    +---------- * Comment
    |                                  | parent -> threaded replies
+   |                    +------ * ConflictRecord * ------+
+   |                         authoritative entry     conflicting entry
    +------ * Highlight * ------------+
    |          | entry_id + source_span + DOM provenance pointer
    +------ * TaskAssignment (optional entry_id)
@@ -62,6 +64,10 @@ clinician confirmation. Comments use a nullable parent for replies. Assignments 
 patient-scoped and optionally entry-linked. Versions are immutable full snapshots.
 Audit logs hold actor/action/entity/version metadata and omit note content. A unique
 `(entry_id, version_number)` constraint supports optimistic concurrency.
+
+Conflict records preserve normalized prior and clinician-authoritative values and
+reference both unchanged timeline entries. Open records are internal and may be
+resolved only by a clinician.
 
 ## Trust, privacy, and authorization
 
@@ -108,7 +114,8 @@ entries and provenance are never deleted.
 - AI provenance is stable, but raw transcript spans are not retained for viewing.
 - Seed data covers 15 April 2025, 6 February 2026, and recent August events.
 - Central AuditLog currently covers note edits/reverts, not every collaboration event.
-- No AI/patient-versus-clinician contradiction detector is implemented.
+- AI/patient-versus-clinician conflicts are detected for a deliberately small,
+  deterministic demo vocabulary; broader clinical language remains out of scope.
 
 ## Warm-path performance approximation
 

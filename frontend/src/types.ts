@@ -96,3 +96,19 @@ export interface ImportancePreference {
   weight: number;
   explanation: string;
 }
+
+export interface ConflictRecord {
+  id: string;
+  patient_id: string;
+  authoritative_entry_id: string;
+  conflicting_entry_id: string;
+  entity_type: "medication" | "allergy" | "follow_up";
+  entity_name: string;
+  prior_value: string;
+  authoritative_value: string;
+  status: "open" | "resolved";
+  created_at: string;
+  resolved_at: string | null;
+  authoritative_provenance_pointer: string;
+  conflicting_provenance_pointer: string;
+}

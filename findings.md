@@ -43,3 +43,9 @@
 - Added a repeatable Glance benchmark: 200 requests after 20 warmups, median 4.221 ms, P95 5.048 ms on the documented Windows/TestClient/in-memory SQLite environment.
 - Added the required technical brief and PASS/PARTIAL/MISSING audit report. Main gaps: contradiction detection, directly viewable AI transcript sources, and audit coverage beyond note edits/reverts.
 - Final verification: 43 backend tests passed in 1.61s; frontend production build passed in 108ms; lifespan smoke confirmed all seeded AI entries are system-authored and four highlights return.
+- Conflict fix inspection found clinician create and versioned edit commit through existing patient/revision services; a post-write conflict reconciliation service can be invoked without changing those transaction paths.
+- Existing stable timeline DOM anchors can represent both authoritative and conflicting provenance; no separate source navigation mechanism is needed.
+- Conflict visibility will use new centralized authorization helpers: clinician/admin review, clinician-only resolution, patient/staff denial, plus existing patient clinic scope.
+- Deterministic extraction takes the final medication dose in a medication sentence, normalizes allergy state to active/none/resolved, and follow-up state to unresolved/resolved.
+- Conflict records do not alter either timeline entry; response provenance is derived from both stable entry IDs, and the UI labels the clinician source authoritative.
+- Final targeted verification passed: 8 conflict tests; full backend suite passed with 51 tests; frontend production build passed.
