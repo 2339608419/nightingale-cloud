@@ -27,6 +27,9 @@
 - Hooked clinician note creation and editing, preserved prior source content, and added a conflict warning with dual-source navigation and authoritative clinician labeling.
 - Focused conflict verification passed: 7 tests in 0.43s.
 - Added direct extractor coverage for allergy and follow-up, updated only conflict-related documentation, then reverified: 8 focused tests in 0.39s, 51 total tests in 2.01s, frontend build in 102ms.
+- Began targeted metadata-only audit expansion after confirming a clean conflict-detection checkpoint.
+- Added a status-only audit writer and integrated seven actions across highlight, comment, assignment, and conflict services with idempotent no-op behavior.
+- Focused audit tests passed: 7 tests in 0.53s. Full backend suite passed: 58 tests in 2.52s. The configured frontend TypeScript checks and Vite production build passed in 104ms.
 - Final re-run after persistence assertions passed: 11 dedicated tests in 0.38s and all 39 backend tests in 1.35s.
 - Began adaptive importance work by reading the planning skill, confirming a clean Phase 7 tree, inspecting every backend test, and tracing highlight scoring through API and frontend.
 - Added clinic-scoped entity and entry-type preference counters with deterministic `+5/+2` acceptance and `-2/-1` rejection weights, capped to `[-10, +25]`.

@@ -90,7 +90,7 @@ def update_comment_resolution(
     if comment is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
     _authorized_entry(comment.entry_id, db, user)
-    return _comment_read(set_comment_resolved(db, comment, payload.resolved))
+    return _comment_read(set_comment_resolved(db, comment, payload.resolved, user))
 
 
 @router.get("/patients/{patient_id}/assignments", response_model=list[TaskAssignmentRead])
@@ -162,5 +162,5 @@ def update_assignment(
     require_patient_access(user, patient)
     require_internal_comments_access(user)
     return TaskAssignmentRead.model_validate(
-        set_assignment_status(db, assignment, payload.status)
+        set_assignment_status(db, assignment, payload.status, user)
     )

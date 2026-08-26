@@ -4,10 +4,12 @@ from uuid import uuid4
 
 from sqlalchemy.orm import Session
 
+from app.auth import CurrentUser
 from app.models import Highlight, HighlightStatus, Patient, TimelineEntry
 from app.schemas.highlight import HighlightSuggestionCreate
 from app.services.adaptive_importance_service import learned_bonus, record_feedback
 from app.services.importance_service import calculate_importance_score
+from app.services.audit_service import add_trust_action_audit
 
 
 GLANCE_LIMIT = 5
@@ -80,8 +82,11 @@ def set_highlight_status(
     highlight: Highlight,
     patient: Patient,
     new_status: HighlightStatus,
+    actor: CurrentUser,
 ) -> Highlight:
     previous_status = highlight.status
+    if previous_status == new_status:
+        return highlight
     record_feedback(
         db,
         clinic_id=patient.clinic_id,
@@ -96,6 +101,19 @@ def set_highlight_status(
         highlight.importance_score -= 15.0
     highlight.status = new_status
     highlight.clinician_confirmed = new_status == HighlightStatus.ACCEPTED
+    add_trust_action_audit(
+        db,
+        actor=actor,
+        action=(
+            "highlight.accepted"
+            if new_status == HighlightStatus.ACCEPTED
+            else "highlight.rejected"
+        ),
+        entity_type="highlight",
+        entity_id=highlight.id,
+        from_status=previous_status.value,
+        to_status=new_status.value,
+    )
     db.commit()
     db.refresh(highlight)
     return highlight

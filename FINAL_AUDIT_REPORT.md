@@ -80,7 +80,7 @@ Glance data now renders before per-entry collaboration/history fan-out completes
 
 ## Final verification
 
-- Backend: `51 passed, 1 warning in 2.01s`.
+- Backend: `58 passed, 1 warning in 2.52s`.
 - Frontend: TypeScript checks and Vite build passed; 17 modules; JS 206.73 kB
   (64.23 kB gzip), CSS 12.01 kB (3.19 kB gzip).
 - Config: Vite `/api` proxy targets local FastAPI; CORS allows local Vite origins;
@@ -95,7 +95,7 @@ Glance data now renders before per-entry collaboration/history fan-out completes
    vocabulary and is not general clinical NLP.
 3. AI provenance identifies a stable synthetic source, but the original transcript
    segment is not retained for direct review.
-4. Central AuditLog covers note edit/revert only; collaboration and highlight events
-   lack uniform immutable audit events.
+4. Audit events are persisted and tested, but there is no clinic-wide audit review
+   interface or export in this prototype.
 5. P95 is a single-process approximation; deployed/browser performance, contention,
    larger records, and frontend collaboration fan-out remain unmeasured.

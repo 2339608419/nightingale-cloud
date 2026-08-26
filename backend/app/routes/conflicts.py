@@ -62,4 +62,4 @@ def mark_conflict_resolved(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
     require_patient_access(user, patient)
     require_conflict_resolution_access(user)
-    return _read(resolve_conflict(db, conflict))
+    return _read(resolve_conflict(db, conflict, user))

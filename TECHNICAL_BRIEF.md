@@ -113,7 +113,9 @@ entries and provenance are never deleted.
 - OCC rejects stale writes with HTTP 409; clients reload and reconcile.
 - AI provenance is stable, but raw transcript spans are not retained for viewing.
 - Seed data covers 15 April 2025, 6 February 2026, and recent August events.
-- Central AuditLog currently covers note edits/reverts, not every collaboration event.
+- Central AuditLog covers note edits/reverts and supported trust-state transitions:
+  highlight decisions, comment resolution, assignment status, and conflict resolution.
+  Trust events contain status metadata only and skip denied or no-op requests.
 - AI/patient-versus-clinician conflicts are detected for a deliberately small,
   deterministic demo vocabulary; broader clinical language remains out of scope.
 

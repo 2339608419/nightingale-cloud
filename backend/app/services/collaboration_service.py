@@ -13,6 +13,7 @@ from app.models import (
     TaskStatus,
     TimelineEntry,
 )
+from app.services.audit_service import add_trust_action_audit
 
 
 MENTION_PATTERN = re.compile(
@@ -65,8 +66,23 @@ def create_comment(
     return comment
 
 
-def set_comment_resolved(db: Session, comment: Comment, resolved: bool) -> Comment:
+def set_comment_resolved(
+    db: Session, comment: Comment, resolved: bool, actor: CurrentUser
+) -> Comment:
+    if comment.resolved == resolved:
+        return comment
+    previous_status = "resolved" if comment.resolved else "open"
     comment.resolved = resolved
+    next_status = "resolved" if resolved else "open"
+    add_trust_action_audit(
+        db,
+        actor=actor,
+        action="comment.resolved" if resolved else "comment.unresolved",
+        entity_type="comment",
+        entity_id=comment.id,
+        from_status=previous_status,
+        to_status=next_status,
+    )
     db.commit()
     db.refresh(comment)
     return comment
@@ -113,11 +129,30 @@ def create_assignment(
 
 
 def set_assignment_status(
-    db: Session, assignment: TaskAssignment, task_status: TaskStatus
+    db: Session,
+    assignment: TaskAssignment,
+    task_status: TaskStatus,
+    actor: CurrentUser,
 ) -> TaskAssignment:
+    previous_status = assignment.status
+    if previous_status == task_status:
+        return assignment
     assignment.status = task_status
     assignment.resolved_at = (
         datetime.now(timezone.utc) if task_status == TaskStatus.COMPLETED else None
+    )
+    add_trust_action_audit(
+        db,
+        actor=actor,
+        action=(
+            "assignment.completed"
+            if task_status == TaskStatus.COMPLETED
+            else "assignment.reopened"
+        ),
+        entity_type="task_assignment",
+        entity_id=assignment.id,
+        from_status=previous_status.value,
+        to_status=task_status.value,
     )
     db.commit()
     db.refresh(assignment)

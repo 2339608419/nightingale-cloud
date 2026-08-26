@@ -1,24 +1,22 @@
-# Clinician-vs-AI/Patient Conflict Fix Plan
+# Metadata-only Trust Action Audit Plan
 
 ## Goal
-Add deterministic, clinic-scoped conflict detection and clinician resolution for medication/dosage, allergy status, and follow-up status without changing unrelated architecture.
+Extend the existing AuditLog to supported highlight, comment, assignment, and conflict state transitions without changing authorization or application semantics.
 
 ## Phases
-- [x] Confirm clean Phase 10 checkpoint and recover prior context
-- [x] Inspect current persistence, clinician create/edit, authorization, schemas, and frontend data flow
-- [x] Define deterministic fact extraction and conflict lifecycle
-- [x] Add ConflictRecord model/schema/service/routes and hook clinician create/edit
-- [x] Add internal conflict warning, dual-source navigation, authoritative label, and resolve control
-- [x] Add focused conflict/RBAC/provenance tests
-- [x] Run focused tests, full backend suite, frontend production build, and scope review
+- [x] Confirm clean conflict-fix checkpoint and recover prior context
+- [x] Inspect AuditLog and every supported mutation path
+- [x] Add a reusable metadata-only audit writer and integrate real state transitions
+- [x] Add focused tests for events, idempotency, content exclusion, and unauthorized attempts
+- [x] Run focused tests, full backend suite, frontend checks/build, and diff review
 
 ## Constraints
-- No general NLP, redesign, broad features, or unrelated audit fixes.
-- Clinician entry is authoritative; prior AI/patient entry remains unchanged.
-- Patient cannot access conflicts; clinic scope and server-side authorization are mandatory.
-- Provenance must resolve to both existing timeline entries.
+- Never place note, comment, transcript, highlight text, or PHI in AuditLog.
+- Preserve entry edit/revert auditing, RBAC, clinic scope, and existing endpoint semantics.
+- No success audit event for failed, unauthorized, or no-op state requests.
+- No frontend feature work or unrelated post-audit fixes.
 
 ## Errors Encountered
 | Error | Attempt | Resolution |
 |---|---:|---|
-| None | - | - |
+| Standalone `pnpm exec tsc` invocation did not resolve `tsc` under the bundled fallback wrapper | 1 | The project `pnpm run build` executed both configured `tsc --noEmit` checks successfully before Vite build. |

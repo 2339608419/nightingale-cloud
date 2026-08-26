@@ -84,6 +84,7 @@ def _decide_highlight(
         highlight=highlight,
         patient=patient,
         new_status=decision,
+        actor=user,
     )
     return HighlightRead.model_validate(updated)
 

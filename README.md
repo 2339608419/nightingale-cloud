@@ -168,7 +168,7 @@ timeline entries. Clinicians can resolve the warning; patients cannot access it.
 
 ## 13. Revision and version control
 
-Editable notes use immutable full snapshots in `EntryVersion`. Updates require `expected_version`; stale same-entry writes return HTTP `409`, while separate entries remain independent. Revert restores a selected snapshot as a new version. `AuditLog` stores actor/action/version metadata only, not note content. Git history is organized into feature commits; runtime databases and build artifacts are ignored.
+Editable notes use immutable full snapshots in `EntryVersion`. Updates require `expected_version`; stale same-entry writes return HTTP `409`, while separate entries remain independent. Revert restores a selected snapshot as a new version. `AuditLog` stores actor/action/status metadata only, never clinical content. It covers entry edit/revert plus highlight decisions, comment resolution changes, assignment completion/reopening, and conflict resolution. No-op and unauthorized requests do not create successful-action events. Git history is organized into feature commits; runtime databases and build artifacts are ignored.
 
 ## 14. Self-learning importance mechanism
 

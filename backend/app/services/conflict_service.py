@@ -6,6 +6,7 @@ from uuid import uuid4
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.auth import CurrentUser
 from app.models import (
     AuthorRole,
     ConflictEntityType,
@@ -14,6 +15,7 @@ from app.models import (
     TimelineEntry,
     TimelineEntryType,
 )
+from app.services.audit_service import add_trust_action_audit
 
 
 AI_ENTRY_TYPES = {
@@ -157,9 +159,23 @@ def detect_conflicts_for_clinician_entry(
     return created
 
 
-def resolve_conflict(db: Session, conflict: ConflictRecord) -> ConflictRecord:
+def resolve_conflict(
+    db: Session, conflict: ConflictRecord, actor: CurrentUser
+) -> ConflictRecord:
+    if conflict.status == ConflictStatus.RESOLVED:
+        return conflict
+    previous_status = conflict.status
     conflict.status = ConflictStatus.RESOLVED
     conflict.resolved_at = datetime.now(timezone.utc)
+    add_trust_action_audit(
+        db,
+        actor=actor,
+        action="conflict.resolved",
+        entity_type="conflict_record",
+        entity_id=conflict.id,
+        from_status=previous_status.value,
+        to_status=ConflictStatus.RESOLVED.value,
+    )
     db.commit()
     db.refresh(conflict)
     return conflict

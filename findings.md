@@ -49,3 +49,6 @@
 - Deterministic extraction takes the final medication dose in a medication sentence, normalizes allergy state to active/none/resolved, and follow-up state to unresolved/resolved.
 - Conflict records do not alter either timeline entry; response provenance is derived from both stable entry IDs, and the UI labels the clinician source authoritative.
 - Final targeted verification passed: 8 conflict tests; full backend suite passed with 51 tests; frontend production build passed.
+- Audit expansion inspection confirmed assignment reopening is already supported by the existing open/completed PATCH schema.
+- Highlight, comment, assignment, and conflict authorization occurs before their mutation services, so audit insertion inside those services cannot record denied requests.
+- New trust-action audit metadata can be restricted to `from_status` and `to_status`; no content or clinical value is needed for any requested event.
