@@ -1,0 +1,2 @@
+"""Nightingale backend application package."""
+
