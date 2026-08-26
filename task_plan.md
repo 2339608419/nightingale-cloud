@@ -1,19 +1,19 @@
-# Nightingale Step 1 Plan
+# Nightingale Longitudinal Timeline Plan
 
 ## Goal
-Initialize a maintainable React/FastAPI monorepo containing only the patient and timeline-entry read path requested for the first 72-hour build step.
+Expand the existing Nightingale timeline into a constrained, multi-date longitudinal feed without changing the established architecture or adding unrelated features.
 
 ## Phases
-- [x] Inspect repository and state architecture
-- [x] Scaffold backend, models, schemas, routes, services, database, seed data, and tests
-- [x] Scaffold React/Vite patient page and API integration
-- [x] Write project documentation
-- [x] Run and fix backend tests
-- [x] Run and fix frontend production build
+- [x] Inspect existing model, schema, service, seed, route, tests, and frontend
+- [x] Constrain timeline roles and entry types
+- [x] Seed realistic multi-date synthetic longitudinal data idempotently
+- [x] Add clinical timeline presentation, AI distinction, provenance, and stable anchors
+- [x] Expand retrieval and ordering tests
+- [x] Run and fix backend tests and frontend production build
 - [x] Review scope and report results
 
 ## Constraints
-- No authentication, RBAC, comments, revision history, highlights, AI, PHI redaction, self-learning, voice capture, or data decay.
+- No highlights, RBAC, revision history, comments, LLM integration, or self-learning.
 - Preserve clean boundaries for future prompts.
 - Claim only commands actually executed.
 

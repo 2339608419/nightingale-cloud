@@ -13,3 +13,11 @@
 - Frontend production build passed after fixes (17 modules transformed).
 - Cleaned generated TypeScript configuration outputs from the source tree and changed type-checking to no-emit mode.
 - Adjusted tests not to invoke the production application lifespan; route dependencies remain backed by the isolated in-memory SQLite database.
+- Began the longitudinal timeline phase by inspecting the existing clean repository and all timeline-related backend/frontend files.
+- Added SQLAlchemy/Python enums for the four supported author roles and eight supported entry types; response schemas now expose those constraints.
+- Replaced the early-exit demo seed with fixed-ID upserts containing seven realistic entries across April 15, 2025, February 6, 2026, and August 2026.
+- Updated the timeline UI with stable entry IDs, explicit role/type/timestamp/source presentation, and restrained AI-generated labeling.
+- Expanded backend tests for descending order, required fields, supported vocabularies, content mix, and required longitudinal dates.
+- Verification passed: 6 backend tests passed in 0.10s; one third-party Starlette deprecation warning remains.
+- Frontend TypeScript checks and Vite production build passed; 17 modules transformed in 102ms.
+- `git diff --check` found no whitespace errors; review confirmed only timeline implementation and planning files changed.

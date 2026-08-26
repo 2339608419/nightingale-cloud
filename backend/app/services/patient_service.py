@@ -14,7 +14,6 @@ def get_patient_entries(db: Session, patient_id: str) -> list[TimelineEntry] | N
     statement = (
         select(TimelineEntry)
         .where(TimelineEntry.patient_id == patient_id)
-        .order_by(TimelineEntry.timestamp.desc())
+        .order_by(TimelineEntry.timestamp.desc(), TimelineEntry.id.desc())
     )
     return list(db.scalars(statement))
-

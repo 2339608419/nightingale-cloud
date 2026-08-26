@@ -12,7 +12,6 @@ body { margin: 0; min-width: 320px; min-height: 100vh; }
 h1, h2, h3, p { margin-top: 0; }
 h1 { margin-bottom: 0; font-size: clamp(2rem, 5vw, 3.5rem); letter-spacing: -0.04em; }
 h2 { margin-bottom: 0; font-size: 1.5rem; }
-h3 { margin: 14px 0 8px; text-transform: capitalize; }
 .eyebrow { margin-bottom: 8px; color: #42786d; font-size: .75rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
 dl { display: flex; gap: 24px; margin: 0; }
 dt { color: #668079; font-size: .75rem; }
@@ -27,17 +26,24 @@ ol { margin: 0; padding: 0; list-style: none; }
 li { position: relative; padding: 0 0 18px 28px; border-left: 2px solid #c6d8d3; }
 li::before { position: absolute; top: 22px; left: -7px; width: 12px; height: 12px; border-radius: 50%; background: #397f70; content: ""; }
 li:last-child { border-left-color: transparent; }
-.entry-card { padding: 22px; }
+.entry-card { padding: 22px; scroll-margin-top: 24px; }
+.entry-card-ai { border-left: 4px solid #5f6f8e; background: #fbfcfe; }
 .entry-card > p { line-height: 1.6; color: #3e5752; }
-.entry-card small { color: #71847f; overflow-wrap: anywhere; }
 .entry-meta { display: flex; justify-content: space-between; gap: 16px; color: #71847f; font-size: .8rem; }
+.entry-badges { display: flex; flex-wrap: wrap; gap: 7px; }
 .role { padding: 4px 9px; border-radius: 999px; color: #28594f; background: #dceee9; font-weight: 750; text-transform: capitalize; }
 .role-staff { color: #67501c; background: #f6eccf; }
 .role-patient { color: #4e487b; background: #e9e6f7; }
+.role-system { color: #4d5a61; background: #e8edef; }
+.ai-badge { padding: 4px 9px; border: 1px solid #aeb8ca; border-radius: 999px; color: #43516c; background: #f1f3f8; font-weight: 750; }
+.entry-type { margin: 15px 0 6px; color: #244d45 !important; font-size: .82rem; font-weight: 800; letter-spacing: .045em; text-transform: uppercase; }
+.source { display: grid; grid-template-columns: auto 1fr; gap: 10px; padding-top: 13px; border-top: 1px solid #e4ebe8; color: #71847f; font-size: .75rem; }
+.source span { font-weight: 750; text-transform: uppercase; }
+.source code { overflow-wrap: anywhere; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
 .error { padding: 18px; border: 1px solid #e7b8b8; border-radius: 10px; color: #8a2424; background: #fff0f0; }
 @media (max-width: 680px) {
   .patient-header, dl { align-items: flex-start; flex-direction: column; }
   .glance { grid-template-columns: 1fr; }
+  .entry-meta { align-items: flex-start; flex-direction: column; }
   .page { padding-top: 28px; }
 }
-

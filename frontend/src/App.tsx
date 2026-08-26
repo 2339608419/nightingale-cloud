@@ -4,6 +4,11 @@ import type { Patient, TimelineEntry } from "./types";
 
 const DEMO_PATIENT_ID = "patient-demo-001";
 
+const isAiGenerated = (entry: TimelineEntry) => entry.type.startsWith("ai_");
+
+const formatLabel = (value: string) =>
+  value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+
 export default function App() {
   const [patient, setPatient] = useState<Patient | null>(null);
   const [entries, setEntries] = useState<TimelineEntry[]>([]);
@@ -57,14 +62,27 @@ export default function App() {
         <ol>
           {entries.map((entry) => (
             <li key={entry.id}>
-              <article className="entry-card">
+              <article
+                className={`entry-card${isAiGenerated(entry) ? " entry-card-ai" : ""}`}
+                id={`timeline-entry-${entry.id}`}
+              >
                 <div className="entry-meta">
-                  <span className={`role role-${entry.author_role}`}>{entry.author_role}</span>
-                  <time dateTime={entry.timestamp}>{new Date(entry.timestamp).toLocaleString()}</time>
+                  <div className="entry-badges">
+                    <span className={`role role-${entry.author_role}`}>{formatLabel(entry.author_role)}</span>
+                    {isAiGenerated(entry) && <span className="ai-badge">AI-generated</span>}
+                  </div>
+                  <time dateTime={entry.timestamp}>
+                    {new Date(entry.timestamp).toLocaleString(undefined, {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })}
+                  </time>
                 </div>
-                <h3>{entry.type.replaceAll("_", " ")}</h3>
+                <p className="entry-type">{formatLabel(entry.type)}</p>
                 <p>{entry.content}</p>
-                {entry.provenance_pointer && <small>Source: {entry.provenance_pointer}</small>}
+                {entry.provenance_pointer && (
+                  <div className="source"><span>Source</span><code>{entry.provenance_pointer}</code></div>
+                )}
               </article>
             </li>
           ))}
@@ -73,4 +91,3 @@ export default function App() {
     </main>
   );
 }
-
