@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.auth import CurrentUser, get_current_user
 from app.database import get_db
 from app.schemas import (
+    DataDecayPreviewRead,
     HighlightRead,
     InternalCommentRead,
     PatientRead,
@@ -20,6 +21,7 @@ from app.services.authorization_service import (
     require_patient_access,
 )
 from app.services.highlight_service import get_patient_highlights
+from app.services.data_decay_service import build_decay_preview
 from app.services.patient_service import create_patient_entry, get_patient, get_patient_entries
 
 router = APIRouter(prefix="/patients", tags=["patients"])
@@ -47,6 +49,24 @@ def read_patient_entries(patient_id: str, db: DbSession, user: Identity) -> list
     require_patient_access(user, patient)
     visible_entries = filter_visible_entries(user, entries)
     return [TimelineEntryRead.model_validate(entry) for entry in visible_entries]
+
+
+@router.get("/{patient_id}/decay-preview", response_model=list[DataDecayPreviewRead])
+def read_decay_preview(
+    patient_id: str, db: DbSession, user: Identity
+) -> list[DataDecayPreviewRead]:
+    entries = get_patient_entries(db, patient_id)
+    highlights = get_patient_highlights(db, patient_id)
+    if entries is None or highlights is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
+    patient = get_patient(db, patient_id)
+    if patient is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
+    require_patient_access(user, patient)
+    visible_entries = filter_visible_entries(user, entries)
+    visible_ids = {entry.id for entry in visible_entries}
+    visible_highlights = [item for item in filter_visible_highlights(user, highlights) if item.entry_id in visible_ids]
+    return build_decay_preview(visible_entries, visible_highlights)
 
 
 @router.get("/{patient_id}/highlights", response_model=list[HighlightRead])

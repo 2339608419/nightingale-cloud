@@ -154,6 +154,19 @@ def seed_demo_data(db: Session) -> None:
             ),
             provenance_pointer="synthetic://upload/bp-log-2026-08-25",
         ),
+        TimelineEntry(
+            id="entry-demo-008",
+            patient_id=SYNTHETIC_PATIENT_ID,
+            author_role=AuthorRole.SYSTEM,
+            author_id="ai-scribe:deterministic-mock",
+            timestamp=datetime(2026, 8, 25, 11, 15, tzinfo=timezone.utc),
+            type=TimelineEntryType.SYSTEM_EVENT,
+            content=(
+                "AI-derived care coordination summary: home readings are improving, but nurse "
+                "follow-up remains unresolved before the medication safety review."
+            ),
+            provenance_pointer="synthetic://ai-scribe/nurse-handoff-2026-08-25#transcript",
+        ),
     ]
     for entry in entries:
         if db.get(TimelineEntry, entry.id) is None:
@@ -196,7 +209,7 @@ def seed_demo_data(db: Session) -> None:
             author_role=CollaborationRole.STAFF,
             content="Booked for Tuesday morning; awaiting patient confirmation.",
             parent_comment_id="comment-demo-001",
-            resolved=False,
+            resolved=True,
             created_at=datetime(2026, 8, 25, 9, 0, tzinfo=timezone.utc),
         )
     )
@@ -234,6 +247,17 @@ def seed_demo_data(db: Session) -> None:
             status=TaskStatus.OPEN,
             created_at=datetime(2026, 8, 25, 8, 15, tzinfo=timezone.utc),
             resolved_at=None,
+        ),
+        TaskAssignment(
+            id="assignment-demo-resolved",
+            patient_id=SYNTHETIC_PATIENT_ID,
+            entry_id="entry-demo-003",
+            title="Medication reconciliation call completed",
+            assigned_role=CollaborationRole.STAFF,
+            assigned_user_id="staff-demo-001",
+            status=TaskStatus.COMPLETED,
+            created_at=datetime(2026, 2, 6, 8, 30, tzinfo=timezone.utc),
+            resolved_at=datetime(2026, 2, 6, 8, 45, tzinfo=timezone.utc),
         ),
     ]
     for assignment in assignments:
@@ -279,8 +303,8 @@ def seed_demo_data(db: Session) -> None:
         },
         {
             "id": "highlight-demo-follow-up",
-            "entry_id": "entry-demo-004",
-            "source_span": "Nurse follow-up remains unresolved.",
+            "entry_id": "entry-demo-008",
+            "source_span": "nurse follow-up remains unresolved",
             "text": "Nurse follow-up unresolved",
             "risk_level": RiskLevel.LOW,
             "risk_reason": "Open follow-up action may delay review of home readings.",

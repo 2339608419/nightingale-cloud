@@ -33,10 +33,10 @@ def test_get_entries_newest_first(client: TestClient) -> None:
     response = client.get(f"/patients/{SYNTHETIC_PATIENT_ID}/entries")
     assert response.status_code == 200
     entries = response.json()
-    assert len(entries) == 7
+    assert len(entries) == 8
     timestamps = [entry["timestamp"] for entry in entries]
     assert timestamps == sorted(timestamps, reverse=True)
-    assert entries[0]["id"] == "entry-demo-007"
+    assert entries[0]["id"] == "entry-demo-008"
     assert all(entry["patient_id"] == SYNTHETIC_PATIENT_ID for entry in entries)
     assert all(entry["provenance_pointer"] for entry in entries)
 

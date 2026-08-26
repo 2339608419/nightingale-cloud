@@ -30,6 +30,15 @@
 - Complete backend verification passed: 41 tests in 1.46s; one known Starlette TestClient deprecation warning remains.
 - Frontend TypeScript checks and Vite production build passed; 17 modules transformed in 109ms.
 - Existing SQLite lifespan compatibility passed: the new clinic preference endpoint returned HTTP 200 without a manual migration.
+- Began demo-readiness work by reading the planning skill, confirming a clean Phase 8 tree, and auditing seed data, RBAC visibility, UI interactions, tests, dependencies, and README coverage.
+- Added a staff-visible, AI-derived system source while preserving staff denial of raw AI note types; seeded one resolved reply and one completed action.
+- Added a reversible data-decay preview with 180-day hot detail, cold summaries, durable-fact exemptions, preserved provenance, and non-mutation tests.
+- Added staff/clinician note creation, role-owned editing, learning feedback, completed actions, decay badges/previews, and clearer exact-source UI.
+- Rewrote README as a 17-section handoff with architecture and three-scenario runbook; added license/model ATTRIBUTION.txt and refreshed PROJECT_REQUIREMENTS.md.
+- Focused seed/decay/provenance/collaboration verification passed: 18 tests in 0.74s.
+- Complete backend verification passed: 43 tests in 1.60s; one known Starlette TestClient deprecation warning remains.
+- Frontend TypeScript checks and Vite production build passed; 17 modules transformed in 96ms.
+- Runtime staff smoke check passed: 5 visible entries, 4 highlights with resolving pointers, 3 open and 1 completed action, 1 cold preview, and 2 durable exemptions.
 - `git diff --check` found no whitespace errors; review confirmed only timeline implementation and planning files changed.
 - Began the Glance/Highlights phase by inspecting the clean Phase 2 repository and the complete backend/frontend data path.
 - Added the Highlight model, constrained risk/status/entity fields, source relationships, response schema, and indexed patient/status/score access path.

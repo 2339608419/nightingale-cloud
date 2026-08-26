@@ -33,3 +33,7 @@
 - Highlight status exists in persistence and schema, but there are no accept/reject or suggestion-generation endpoints yet.
 - Existing importance scores use a 0–110 additive scale; learned preference can remain explainable by adding capped entity and entry-type bonuses without changing base weights.
 - Rejected highlights are deliberately filtered from the persisted Glance query, so the frontend should retain an updated rejected item locally for immediate state feedback while keeping future Glance loads uncluttered.
+- Staff cannot view raw AI entry types, so Scenario A needs an AI-derived, staff-safe system event rather than weakening the established RBAC rule.
+- The frontend lacks staff note creation and clinician note editing controls even though both server APIs already exist.
+- Seeded tasks are all open and seeded comments unresolved; a completed action and resolved collaboration item are needed for Scenario C.
+- A safe data-decay prototype can return alternate display representations while leaving TimelineEntry content and provenance untouched.

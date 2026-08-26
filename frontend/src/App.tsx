@@ -3,22 +3,29 @@ import {
   acceptHighlight,
   completeAssignment,
   createComment,
+  createNote,
+  getCompletedAssignments,
+  getDataDecayPreview,
   getEntryComments,
   getEntryVersions,
   getOpenAssignments,
   getPatient,
   getPatientEntries,
   getPatientHighlights,
+  getImportancePreferences,
   setCommentResolution,
   revertEntry,
   rejectHighlight,
+  updateNote,
 } from "./api";
 import type {
   ApiIdentity,
   Comment,
+  DataDecayPreview,
   DemoRole,
   EntryVersion,
   Highlight,
+  ImportancePreference,
   Patient,
   TaskAssignment,
   TimelineEntry,
@@ -36,7 +43,8 @@ const DEMO_IDENTITIES: Record<DemoRole, ApiIdentity> = {
   admin: { userId: "admin-demo-001", role: "admin", clinicId: "clinic-demo-001" },
 };
 
-const isAiGenerated = (entry: TimelineEntry) => entry.type.startsWith("ai_");
+const isAiGenerated = (entry: TimelineEntry) =>
+  entry.type.startsWith("ai_") || entry.author_id.startsWith("ai-scribe:");
 
 const canRevertEntry = (role: DemoRole, entry: TimelineEntry) =>
   (role === "staff" && entry.author_role === "staff" && entry.type === "staff_note") ||
@@ -54,6 +62,9 @@ export default function App() {
   const [commentsByEntry, setCommentsByEntry] = useState<Record<string, Comment[]>>({});
   const [versionsByEntry, setVersionsByEntry] = useState<Record<string, EntryVersion[]>>({});
   const [assignments, setAssignments] = useState<TaskAssignment[]>([]);
+  const [completedAssignments, setCompletedAssignments] = useState<TaskAssignment[]>([]);
+  const [decayByEntry, setDecayByEntry] = useState<Record<string, DataDecayPreview>>({});
+  const [preferences, setPreferences] = useState<ImportancePreference[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
 
@@ -65,19 +76,26 @@ export default function App() {
     setCommentsByEntry({});
     setVersionsByEntry({});
     setAssignments([]);
+    setCompletedAssignments([]);
+    setPreferences([]);
 
     const load = async () => {
       try {
-        const [patientData, entryData, highlightData] = await Promise.all([
+        const [patientData, entryData, highlightData, decayData] = await Promise.all([
           getPatient(DEMO_PATIENT_ID, identity),
           getPatientEntries(DEMO_PATIENT_ID, identity),
           getPatientHighlights(DEMO_PATIENT_ID, identity),
+          getDataDecayPreview(DEMO_PATIENT_ID, identity),
         ]);
         let commentData: Record<string, Comment[]> = {};
         let assignmentData: TaskAssignment[] = [];
+        let completedAssignmentData: TaskAssignment[] = [];
+        let preferenceData: ImportancePreference[] = [];
         if (demoRole !== "patient") {
-          const [openAssignments, entryComments, entryVersions] = await Promise.all([
+          const [openAssignments, completed, learnedPreferences, entryComments, entryVersions] = await Promise.all([
             getOpenAssignments(DEMO_PATIENT_ID, identity),
+            getCompletedAssignments(DEMO_PATIENT_ID, identity),
+            getImportancePreferences(identity),
             Promise.all(
               entryData.map(async (entry) => [
                 entry.id,
@@ -92,6 +110,8 @@ export default function App() {
             ),
           ]);
           assignmentData = openAssignments;
+          completedAssignmentData = completed;
+          preferenceData = learnedPreferences;
           commentData = Object.fromEntries(entryComments);
           if (!cancelled) setVersionsByEntry(Object.fromEntries(entryVersions));
         }
@@ -99,8 +119,11 @@ export default function App() {
         setPatient(patientData);
         setEntries(entryData);
         setHighlights(highlightData);
+        setDecayByEntry(Object.fromEntries(decayData.map((item) => [item.entry_id, item])));
         setCommentsByEntry(commentData);
         setAssignments(assignmentData);
+        setCompletedAssignments(completedAssignmentData);
+        setPreferences(preferenceData);
       } catch (reason: unknown) {
         if (cancelled) return;
         setError(reason instanceof Error ? reason.message : "Unable to load patient");
@@ -156,8 +179,9 @@ export default function App() {
   };
 
   const finishAssignment = async (assignment: TaskAssignment) => {
-    await completeAssignment(assignment.id, DEMO_IDENTITIES[demoRole]);
+    const completed = await completeAssignment(assignment.id, DEMO_IDENTITIES[demoRole]);
     setAssignments((current) => current.filter((item) => item.id !== assignment.id));
+    setCompletedAssignments((current) => [completed, ...current]);
   };
 
   const decideHighlight = async (highlight: Highlight, decision: "accept" | "reject") => {
@@ -166,9 +190,21 @@ export default function App() {
         ? await acceptHighlight(highlight.id, DEMO_IDENTITIES[demoRole])
         : await rejectHighlight(highlight.id, DEMO_IDENTITIES[demoRole]);
       setHighlights((current) => current.map((item) => item.id === updated.id ? updated : item));
+      setPreferences(await getImportancePreferences(DEMO_IDENTITIES[demoRole]));
     } catch (reason: unknown) {
       setError(reason instanceof Error ? reason.message : "Unable to update highlight");
     }
+  };
+
+  const addDemoNote = async (content: string) => {
+    const type = demoRole === "staff" ? "staff_note" : "clinician_note";
+    await createNote(DEMO_PATIENT_ID, type, content, DEMO_IDENTITIES[demoRole]);
+    setReloadToken((value) => value + 1);
+  };
+
+  const editDemoNote = async (entry: TimelineEntry, content: string) => {
+    await updateNote(entry, content, DEMO_IDENTITIES[demoRole]);
+    setReloadToken((value) => value + 1);
   };
 
   const revertVersion = async (entry: TimelineEntry, versionNumber: number) => {
@@ -214,7 +250,7 @@ export default function App() {
                     {highlight.unresolved_action && <span className="state-open">Action unresolved</span>}
                     {highlight.clinician_confirmed && <span className="state-confirmed">Clinician confirmed</span>}
                     <span className={`highlight-status status-${highlight.status}`}>{formatLabel(highlight.status)}</span>
-                    <span className="provenance">View source ↓</span>
+                    <span className="provenance">Open exact source ↓</span>
                   </span>
                 </button>
                 {demoRole === "clinician" && highlight.status === "suggested" && (
@@ -244,6 +280,25 @@ export default function App() {
               )}
             </section>
           )}
+          {demoRole !== "patient" && preferences.length > 0 && (
+            <section className="learning-summary" aria-label="Adaptive importance learning">
+              <strong>Adaptive learning</strong>
+              <span>{preferences.filter((item) => item.weight !== 0).length} active preference signals</span>
+              <ul>
+                {preferences.filter((item) => item.weight !== 0).slice(0, 3).map((item) => (
+                  <li key={`${item.category_type}-${item.category_value}`}>
+                    {formatLabel(item.category_value)} future priority <b>{item.weight > 0 ? "+" : ""}{item.weight}</b>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+          {demoRole !== "patient" && completedAssignments.length > 0 && (
+            <section className="completed-actions" aria-label="Recently completed actions">
+              <strong>Recently completed</strong>
+              <span>✓ {completedAssignments[0].title}</span>
+            </section>
+          )}
         </div>
       </section>
 
@@ -252,6 +307,9 @@ export default function App() {
           <div><p className="eyebrow">Patient history</p><h2 id="timeline-heading">Timeline</h2></div>
           <span>{entries.length} entries</span>
         </div>
+        {(demoRole === "staff" || demoRole === "clinician") && (
+          <AddNote role={demoRole} onAdd={addDemoNote} />
+        )}
         <ol>
           {entries.map((entry) => (
             <li key={entry.id}>
@@ -263,6 +321,8 @@ export default function App() {
                   <div className="entry-badges">
                     <span className={`role role-${entry.author_role}`}>{formatLabel(entry.author_role)}</span>
                     {isAiGenerated(entry) && <span className="ai-badge">AI-generated</span>}
+                    {decayByEntry[entry.id]?.durable_exempt && <span className="decay-badge durable">Durable · full detail</span>}
+                    {decayByEntry[entry.id]?.storage_tier === "cold_summary" && <span className="decay-badge">Cold summary preview</span>}
                   </div>
                   <time dateTime={entry.timestamp}>
                     {new Date(entry.timestamp).toLocaleString(undefined, {
@@ -273,6 +333,13 @@ export default function App() {
                 </div>
                 <p className="entry-type">{formatLabel(entry.type)}</p>
                 <p>{entry.content}</p>
+                {decayByEntry[entry.id]?.storage_tier === "cold_summary" && (
+                  <div className="decay-preview">
+                    <strong>Decay preview</strong>
+                    <p>{decayByEntry[entry.id].display_content}</p>
+                    <span>Original retained · {decayByEntry[entry.id].reason}</span>
+                  </div>
+                )}
                 {entry.provenance_pointer && (
                   <div className="source"><span>Source</span><code>{entry.provenance_pointer}</code></div>
                 )}
@@ -283,6 +350,9 @@ export default function App() {
                     canRevert={canRevertEntry(demoRole, entry)}
                     onRevert={(versionNumber) => revertVersion(entry, versionNumber)}
                   />
+                )}
+                {canRevertEntry(demoRole, entry) && (
+                  <EditNote entry={entry} onSave={(content) => editDemoNote(entry, content)} />
                 )}
                 {demoRole !== "patient" && (
                   <EntryComments
@@ -297,6 +367,72 @@ export default function App() {
         </ol>
       </section>
     </main>
+  );
+}
+
+function AddNote({
+  role,
+  onAdd,
+}: {
+  role: "staff" | "clinician";
+  onAdd: (content: string) => Promise<void>;
+}) {
+  const [content, setContent] = useState("");
+  const [saving, setSaving] = useState(false);
+  const submit = async () => {
+    const value = content.trim();
+    if (!value) return;
+    setSaving(true);
+    try {
+      await onAdd(value);
+      setContent("");
+    } finally {
+      setSaving(false);
+    }
+  };
+  return (
+    <details className="note-compose">
+      <summary>+ Add {role === "staff" ? "staff" : "clinician"} note</summary>
+      <textarea
+        value={content}
+        onChange={(event) => setContent(event.target.value)}
+        placeholder="Add a concise synthetic care-note update"
+        aria-label={`Add ${role} note`}
+      />
+      <button type="button" disabled={saving || !content.trim()} onClick={() => void submit()}>
+        {saving ? "Saving…" : "Add to timeline"}
+      </button>
+    </details>
+  );
+}
+
+function EditNote({
+  entry,
+  onSave,
+}: {
+  entry: TimelineEntry;
+  onSave: (content: string) => Promise<void>;
+}) {
+  const [content, setContent] = useState(entry.content);
+  const [saving, setSaving] = useState(false);
+  const submit = async () => {
+    const value = content.trim();
+    if (!value || value === entry.content) return;
+    setSaving(true);
+    try {
+      await onSave(value);
+    } finally {
+      setSaving(false);
+    }
+  };
+  return (
+    <details className="edit-note">
+      <summary>Edit note <span>expected v{entry.version}</span></summary>
+      <textarea value={content} onChange={(event) => setContent(event.target.value)} />
+      <button type="button" disabled={saving || content.trim() === entry.content} onClick={() => void submit()}>
+        {saving ? "Saving…" : "Save new version"}
+      </button>
+    </details>
   );
 }
 

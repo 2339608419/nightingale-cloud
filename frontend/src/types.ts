@@ -77,3 +77,22 @@ export interface TaskAssignment {
   created_at: string;
   resolved_at: string | null;
 }
+
+export interface DataDecayPreview {
+  entry_id: string;
+  storage_tier: "full_detail" | "cold_summary";
+  display_content: string;
+  original_available: boolean;
+  durable_exempt: boolean;
+  reason: string;
+  provenance_pointer: string | null;
+}
+
+export interface ImportancePreference {
+  category_type: string;
+  category_value: string;
+  accepted_count: number;
+  rejected_count: number;
+  weight: number;
+  explanation: string;
+}

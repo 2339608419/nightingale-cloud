@@ -1,8 +1,10 @@
 import type {
   ApiIdentity,
   Comment,
+  DataDecayPreview,
   EntryVersion,
   Highlight,
+  ImportancePreference,
   Patient,
   TaskAssignment,
   TimelineEntry,
@@ -50,6 +52,31 @@ export const acceptHighlight = (highlightId: string, identity: ApiIdentity) =>
 export const rejectHighlight = (highlightId: string, identity: ApiIdentity) =>
   requestJson<Highlight>(`/highlights/${highlightId}/reject`, identity, { method: "POST" });
 
+export const getDataDecayPreview = (patientId: string, identity: ApiIdentity) =>
+  requestJson<DataDecayPreview[]>(`/patients/${patientId}/decay-preview`, identity);
+
+export const getImportancePreferences = (identity: ApiIdentity) =>
+  requestJson<ImportancePreference[]>("/importance-preferences", identity);
+
+export const createNote = (
+  patientId: string,
+  type: "staff_note" | "clinician_note",
+  content: string,
+  identity: ApiIdentity,
+) => requestJson<TimelineEntry>(`/patients/${patientId}/entries`, identity, {
+  method: "POST",
+  body: JSON.stringify({ type, content }),
+});
+
+export const updateNote = (
+  entry: TimelineEntry,
+  content: string,
+  identity: ApiIdentity,
+) => requestJson<TimelineEntry>(`/entries/${entry.id}`, identity, {
+  method: "PATCH",
+  body: JSON.stringify({ content, expected_version: entry.version }),
+});
+
 export const getEntryComments = (entryId: string, identity: ApiIdentity) =>
   requestJson<Comment[]>(`/entries/${entryId}/comments`, identity);
 
@@ -76,6 +103,9 @@ export const setCommentResolution = (
 
 export const getOpenAssignments = (patientId: string, identity: ApiIdentity) =>
   requestJson<TaskAssignment[]>(`/patients/${patientId}/assignments?status=open`, identity);
+
+export const getCompletedAssignments = (patientId: string, identity: ApiIdentity) =>
+  requestJson<TaskAssignment[]>(`/patients/${patientId}/assignments?status=completed`, identity);
 
 export const completeAssignment = (assignmentId: string, identity: ApiIdentity) =>
   requestJson<TaskAssignment>(`/assignments/${assignmentId}`, identity, {

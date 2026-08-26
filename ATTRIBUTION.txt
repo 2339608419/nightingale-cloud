@@ -1,0 +1,28 @@
+Nightingale Care Note Prototype — External Attributions
+=======================================================
+
+No external patient data, images, fonts, audio, or third-party source code snippets are bundled.
+
+Backend libraries
+-----------------
+FastAPI — MIT License — https://github.com/fastapi/fastapi
+Pydantic — MIT License — https://github.com/pydantic/pydantic
+SQLAlchemy — MIT License — https://github.com/sqlalchemy/sqlalchemy
+Uvicorn — BSD 3-Clause License — https://github.com/encode/uvicorn
+HTTPX — BSD 3-Clause License — https://github.com/encode/httpx
+pytest — MIT License — https://github.com/pytest-dev/pytest
+
+Frontend libraries and tools
+----------------------------
+React / React DOM — MIT License — https://github.com/facebook/react
+Vite — MIT License — https://github.com/vitejs/vite
+@vitejs/plugin-react — MIT License — https://github.com/vitejs/vite-plugin-react
+TypeScript — Apache License 2.0 — https://github.com/microsoft/TypeScript
+
+Models and external services
+----------------------------
+Default demo summarizer: project-authored deterministic mock; no external model.
+Optional provider: OpenAI Responses API with a user-supplied key and configured model.
+OpenAI models are not bundled and are governed by OpenAI service terms, not an open-source license.
+
+All clinical and identity data in the repository is synthetic and project-authored.

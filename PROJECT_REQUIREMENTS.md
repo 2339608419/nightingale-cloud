@@ -1,20 +1,23 @@
-# Project Requirements — Step 1
+# Project Requirements — Demo-ready prototype
 
-This repository is the first architecture slice of the Nightingale Cloud 72-hour prototype.
+This repository contains the demo-ready Nightingale Cloud 72-hour prototype. Only synthetic data is permitted.
 
 ## In scope
 
 - React, TypeScript, and Vite frontend
 - FastAPI REST backend with SQLAlchemy and SQLite
-- `Patient` and `TimelineEntry` persistence models
-- `GET /health`, `GET /patients/{patient_id}`, and `GET /patients/{patient_id}/entries`
+- Longitudinal timeline, Glance highlights, provenance, collaboration, tasks, and AI-scribed entries
+- Server-side role and clinic scoping using development identity headers
+- Full-snapshot revision history, metadata-only audit logs, revert, and optimistic concurrency
+- Deterministic importance scoring with clinic-scoped adaptive feedback
+- PHI redaction before provider invocation and reliable offline summarization
+- Read-only, reversible data-decay preview
 - Idempotent synthetic demo seed
-- Patient header, placeholder Glance View, and timeline page
-- Minimal backend API tests
+- Demo-focused React patient page and complete backend micro-tests
 
 ## Explicitly deferred
 
-Authentication, RBAC, comments, revision history, highlights, AI functions, PHI redaction, adaptive ranking, voice capture, and data decay are intentionally excluded from this step.
+Production authentication, production EHR integration, real PHI, voice capture, notification delivery, physical cold-tier storage, and production deployment infrastructure remain excluded.
 
 ## Architecture constraints
 
@@ -22,4 +25,3 @@ Authentication, RBAC, comments, revision history, highlights, AI functions, PHI 
 - ORM entities and response schemas remain separate.
 - Database sessions are injected so tests and later authorization layers can replace dependencies.
 - Only synthetic data may be committed to this repository.
-

@@ -1,25 +1,26 @@
-# Nightingale Required Micro-tests and Adaptive Importance Plan
+# Nightingale Demo Readiness and Documentation Plan
 
 ## Goal
-Complete the required candidate micro-test set and add a deterministic, inspectable adaptive heuristic for future highlight ranking.
+Make the existing application reliably demonstrate the three candidate scenarios, add a reversible data-decay preview, and complete handoff documentation.
 
 ## Phases
-- [x] Inspect all backend tests and existing highlight model/service/scoring/frontend paths
-- [x] Add clinic-scoped adaptive preference persistence and explainable scoring
-- [x] Add highlight suggestion generation plus clinician accept/reject endpoints
-- [x] Add frontend status presentation and accept/reject controls
-- [x] Add `test_self_learning_importance.py` and verify all five required micro-test files
-- [x] Document adaptive heuristic weights and remaining limitations
-- [x] Run complete backend suite, frontend production build, and final scope review
+- [x] Inspect clean repository, demo seed, timeline/Glance/collaboration UI, tests, dependencies, and README
+- [x] Strengthen primary-patient seed for Scenarios A–C without weakening RBAC
+- [x] Add read-only, reversible data-decay preview service/API/tests
+- [x] Add demo UI paths for staff note creation, clinician editing, completed actions, learning feedback, and decay states
+- [x] Polish clinical hierarchy, AI origin, provenance, Glance dominance, and action visibility
+- [x] Rewrite README with all 17 required sections and add ATTRIBUTION.txt
+- [x] Run complete backend tests, frontend production build, runtime smoke checks, and scope review
 
 ## Constraints
-- No complex ML model; use deterministic counters and capped additive bonuses.
-- Preserve base risk/recency/entity/task/confirmation scoring and provenance requirements.
-- Preference state is clinic-scoped and inspectable.
-- Clinician remains final authority for accept/reject.
-- Do not implement unrelated features.
+- Synthetic data only.
+- Preserve existing RBAC and raw AI-note visibility rules.
+- Data decay is a read-only representation; originals and provenance remain available.
+- Avoid architectural rewrites and unnecessary animation.
+- Keep demo flows reliable without external services.
 
 ## Errors Encountered
 | Error | Attempt | Resolution |
 |---|---:|---|
-| None yet | - | - |
+| Browser could not reach `127.0.0.1:5173` because the pnpm argument form left Vite bound to localhost | 1 | Navigate to the advertised `http://localhost:5173` origin instead. |
+| In-app browser remained isolated from the host localhost server even though shell HTTP checks returned 200 | 2 | Stop browser retries; verify demo data and routes through real application lifespan/API smoke tests. |
