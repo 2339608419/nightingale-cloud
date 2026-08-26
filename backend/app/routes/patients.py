@@ -4,7 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.schemas import PatientRead, TimelineEntryRead
+from app.schemas import HighlightRead, PatientRead, TimelineEntryRead
+from app.services.highlight_service import get_patient_highlights
 from app.services.patient_service import get_patient, get_patient_entries
 
 router = APIRouter(prefix="/patients", tags=["patients"])
@@ -26,3 +27,10 @@ def read_patient_entries(patient_id: str, db: DbSession) -> list[TimelineEntryRe
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
     return [TimelineEntryRead.model_validate(entry) for entry in entries]
 
+
+@router.get("/{patient_id}/highlights", response_model=list[HighlightRead])
+def read_patient_highlights(patient_id: str, db: DbSession) -> list[HighlightRead]:
+    highlights = get_patient_highlights(db, patient_id)
+    if highlights is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
+    return [HighlightRead.model_validate(highlight) for highlight in highlights]

@@ -1,4 +1,4 @@
-import type { Patient, TimelineEntry } from "./types";
+import type { Highlight, Patient, TimelineEntry } from "./types";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? "/api";
 
@@ -16,3 +16,5 @@ export const getPatient = (patientId: string) =>
 export const getPatientEntries = (patientId: string) =>
   getJson<TimelineEntry[]>(`/patients/${patientId}/entries`);
 
+export const getPatientHighlights = (patientId: string) =>
+  getJson<Highlight[]>(`/patients/${patientId}/highlights`);

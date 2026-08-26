@@ -63,3 +63,6 @@ class TimelineEntry(Base):
     provenance_pointer: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
     patient: Mapped["Patient"] = relationship(back_populates="entries")  # noqa: F821
+    highlights: Mapped[list["Highlight"]] = relationship(  # noqa: F821
+        back_populates="entry", cascade="all, delete-orphan"
+    )

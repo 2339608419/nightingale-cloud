@@ -21,3 +21,14 @@
 - Verification passed: 6 backend tests passed in 0.10s; one third-party Starlette deprecation warning remains.
 - Frontend TypeScript checks and Vite production build passed; 17 modules transformed in 102ms.
 - `git diff --check` found no whitespace errors; review confirmed only timeline implementation and planning files changed.
+- Began the Glance/Highlights phase by inspecting the clean Phase 2 repository and the complete backend/frontend data path.
+- Added the Highlight model, constrained risk/status/entity fields, source relationships, response schema, and indexed patient/status/score access path.
+- Centralized additive scoring in `importance_service.py`: risk 0–40, unresolved +20, entity +10–20, confirmed +15, recency +0–15.
+- Seeded four source-span-grounded highlights with fixed IDs and deterministic scores based on an explicit demo reference time.
+- Added the top-five non-rejected retrieval service and `GET /patients/{patient_id}/highlights`.
+- Replaced the Glance placeholder with concise ranked items, state indicators, source navigation, and temporary timeline source emphasis.
+- Added provenance resolution, ordering, scoring, and missing-patient tests.
+- Real-lifespan smoke testing exposed a legacy Phase 1 demo enum value in the existing ignored SQLite database; added a narrow pre-upsert normalization for that fixed demo row.
+- Existing runtime-database smoke check passed after the compatibility fix: HTTP 200 with four highlights and valid timeline anchor pointers.
+- Final verification passed: 10 backend tests in 0.21s and the frontend production build in 105ms; the known third-party Starlette warning remains.
+- `git diff --check` passed and scope review found only Glance View, highlights, provenance, deterministic scoring, tests, and planning changes.

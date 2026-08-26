@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { getPatient, getPatientEntries } from "./api";
-import type { Patient, TimelineEntry } from "./types";
+import { getPatient, getPatientEntries, getPatientHighlights } from "./api";
+import type { Highlight, Patient, TimelineEntry } from "./types";
 
 const DEMO_PATIENT_ID = "patient-demo-001";
 
@@ -12,13 +12,19 @@ const formatLabel = (value: string) =>
 export default function App() {
   const [patient, setPatient] = useState<Patient | null>(null);
   const [entries, setEntries] = useState<TimelineEntry[]>([]);
+  const [highlights, setHighlights] = useState<Highlight[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([getPatient(DEMO_PATIENT_ID), getPatientEntries(DEMO_PATIENT_ID)])
-      .then(([patientData, entryData]) => {
+    Promise.all([
+      getPatient(DEMO_PATIENT_ID),
+      getPatientEntries(DEMO_PATIENT_ID),
+      getPatientHighlights(DEMO_PATIENT_ID),
+    ])
+      .then(([patientData, entryData, highlightData]) => {
         setPatient(patientData);
         setEntries(entryData);
+        setHighlights(highlightData);
       })
       .catch((reason: unknown) => {
         setError(reason instanceof Error ? reason.message : "Unable to load patient");
@@ -32,6 +38,16 @@ export default function App() {
   if (!patient) {
     return <main className="page"><p>Loading patient…</p></main>;
   }
+
+  const navigateToSource = (highlight: Highlight) => {
+    const source = document.getElementById(highlight.provenance_pointer);
+    if (!source) return;
+    window.history.replaceState(null, "", `#${highlight.provenance_pointer}`);
+    source.scrollIntoView({ behavior: "smooth", block: "center" });
+    source.classList.remove("source-focus");
+    requestAnimationFrame(() => source.classList.add("source-focus"));
+    window.setTimeout(() => source.classList.remove("source-focus"), 2200);
+  };
 
   return (
     <main className="page">
@@ -47,11 +63,29 @@ export default function App() {
       </header>
 
       <section className="panel glance" aria-labelledby="glance-heading">
-        <div>
+        <div className="glance-heading">
           <p className="eyebrow">At a glance</p>
           <h2 id="glance-heading">Glance View</h2>
+          <p>Highest-priority current items</p>
         </div>
-        <p className="placeholder">Critical risks, current priorities, and unresolved actions will appear here in a later build step.</p>
+        <ol className="highlight-list">
+          {highlights.map((highlight) => (
+            <li key={highlight.id} className="highlight-item">
+              <button type="button" onClick={() => navigateToSource(highlight)}>
+                <span className="highlight-topline">
+                  <strong>{highlight.text}</strong>
+                  <span className={`risk risk-${highlight.risk_level}`}>{formatLabel(highlight.risk_level)}</span>
+                </span>
+                <span className="risk-reason">{highlight.risk_reason}</span>
+                <span className="highlight-state">
+                  {highlight.unresolved_action && <span className="state-open">Action unresolved</span>}
+                  {highlight.clinician_confirmed && <span className="state-confirmed">Clinician confirmed</span>}
+                  <span className="provenance">View source ↓</span>
+                </span>
+              </button>
+            </li>
+          ))}
+        </ol>
       </section>
 
       <section className="timeline" aria-labelledby="timeline-heading">

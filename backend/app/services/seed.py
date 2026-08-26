@@ -1,14 +1,42 @@
 from datetime import date, datetime, timezone
 
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from app.models import AuthorRole, Patient, TimelineEntry, TimelineEntryType
+from app.models import (
+    AuthorRole,
+    ClinicalEntityType,
+    Highlight,
+    HighlightStatus,
+    Patient,
+    RiskLevel,
+    TimelineEntry,
+    TimelineEntryType,
+)
+from app.services.importance_service import calculate_importance_score
 
 
 SYNTHETIC_PATIENT_ID = "patient-demo-001"
+DEMO_REFERENCE_TIME = datetime(2026, 8, 26, 8, 0, tzinfo=timezone.utc)
+
+
+def _normalize_legacy_demo_data(db: Session) -> None:
+    """Bring the one Phase 1 demo-only entry type into the constrained vocabulary."""
+    db.execute(
+        text(
+            "UPDATE timeline_entries SET type = :current_type "
+            "WHERE id = :entry_id AND type = :legacy_type"
+        ),
+        {
+            "current_type": TimelineEntryType.STAFF_NOTE.value,
+            "entry_id": "entry-demo-003",
+            "legacy_type": "patient_insight",
+        },
+    )
 
 
 def seed_demo_data(db: Session) -> None:
+    _normalize_legacy_demo_data(db)
     patient = Patient(
         id=SYNTHETIC_PATIENT_ID,
         clinic_id="clinic-demo-001",
@@ -68,7 +96,7 @@ def seed_demo_data(db: Session) -> None:
             type=TimelineEntryType.AI_NURSE_CONSULT_SUMMARY,
             content=(
                 "Nurse call summary: no dizziness or medication concerns reported. Recent synthetic "
-                "home readings were lower than the April baseline; follow-up remains planned."
+                "home readings were lower than the April baseline. Nurse follow-up remains unresolved."
             ),
             provenance_pointer="synthetic://transcript/nurse-2026-02-06#t=18-126",
         ),
@@ -93,8 +121,8 @@ def seed_demo_data(db: Session) -> None:
             timestamp=datetime(2026, 8, 24, 9, 0, tzinfo=timezone.utc),
             type=TimelineEntryType.INSTRUCTION,
             content=(
-                "Continue recording blood pressure twice daily for seven days before the next "
-                "appointment. Seek urgent care for severe symptoms."
+                "Penicillin allergy remains active. Lisinopril increased from 10 mg to 20 mg daily. "
+                "Continue recording blood pressure twice daily before the next appointment."
             ),
             provenance_pointer="synthetic://encounter/2026-08-24#instructions",
         ),
@@ -105,10 +133,83 @@ def seed_demo_data(db: Session) -> None:
             author_id="nightingale-system",
             timestamp=datetime(2026, 8, 25, 7, 30, tzinfo=timezone.utc),
             type=TimelineEntryType.SYSTEM_EVENT,
-            content="Synthetic home blood-pressure log received and attached to the longitudinal record.",
+            content=(
+                "Lab order for renal function and potassium remains pending. Synthetic home "
+                "blood-pressure log received and attached to the longitudinal record."
+            ),
             provenance_pointer="synthetic://upload/bp-log-2026-08-25",
         ),
     ]
     for entry in entries:
         db.merge(entry)
+
+    entry_timestamps = {entry.id: entry.timestamp for entry in entries}
+    highlight_specs = [
+        {
+            "id": "highlight-demo-allergy",
+            "entry_id": "entry-demo-006",
+            "source_span": "Penicillin allergy remains active.",
+            "text": "Penicillin allergy",
+            "risk_level": RiskLevel.HIGH,
+            "risk_reason": "Active antibiotic allergy; verify before prescribing.",
+            "status": HighlightStatus.ACCEPTED,
+            "clinician_confirmed": True,
+            "unresolved_action": False,
+            "clinical_entity_type": ClinicalEntityType.ALLERGY,
+        },
+        {
+            "id": "highlight-demo-medication",
+            "entry_id": "entry-demo-006",
+            "source_span": "Lisinopril increased from 10 mg to 20 mg daily.",
+            "text": "Lisinopril increased to 20 mg daily",
+            "risk_level": RiskLevel.MODERATE,
+            "risk_reason": "Recent dose change requires tolerance and blood-pressure review.",
+            "status": HighlightStatus.ACCEPTED,
+            "clinician_confirmed": True,
+            "unresolved_action": False,
+            "clinical_entity_type": ClinicalEntityType.MEDICATION,
+        },
+        {
+            "id": "highlight-demo-lab",
+            "entry_id": "entry-demo-007",
+            "source_span": "Lab order for renal function and potassium remains pending.",
+            "text": "Renal function and potassium labs pending",
+            "risk_level": RiskLevel.MODERATE,
+            "risk_reason": "Pending safety monitoring after an antihypertensive dose change.",
+            "status": HighlightStatus.SUGGESTED,
+            "clinician_confirmed": False,
+            "unresolved_action": True,
+            "clinical_entity_type": ClinicalEntityType.LAB,
+        },
+        {
+            "id": "highlight-demo-follow-up",
+            "entry_id": "entry-demo-004",
+            "source_span": "Nurse follow-up remains unresolved.",
+            "text": "Nurse follow-up unresolved",
+            "risk_level": RiskLevel.LOW,
+            "risk_reason": "Open follow-up action may delay review of home readings.",
+            "status": HighlightStatus.SUGGESTED,
+            "clinician_confirmed": False,
+            "unresolved_action": True,
+            "clinical_entity_type": ClinicalEntityType.FOLLOW_UP,
+        },
+    ]
+    for spec in highlight_specs:
+        entry_id = spec["entry_id"]
+        db.merge(
+            Highlight(
+                **spec,
+                patient_id=SYNTHETIC_PATIENT_ID,
+                provenance_pointer=f"timeline-entry-{entry_id}",
+                importance_score=calculate_importance_score(
+                    source_timestamp=entry_timestamps[entry_id],
+                    risk_level=spec["risk_level"],
+                    unresolved_action=spec["unresolved_action"],
+                    clinical_entity_type=spec["clinical_entity_type"],
+                    clinician_confirmed=spec["clinician_confirmed"],
+                    as_of=DEMO_REFERENCE_TIME,
+                ),
+                created_at=DEMO_REFERENCE_TIME,
+            )
+        )
     db.commit()

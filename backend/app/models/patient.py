@@ -22,4 +22,6 @@ class Patient(Base):
     entries: Mapped[list["TimelineEntry"]] = relationship(  # noqa: F821
         back_populates="patient", cascade="all, delete-orphan"
     )
-
+    highlights: Mapped[list["Highlight"]] = relationship(  # noqa: F821
+        back_populates="patient", cascade="all, delete-orphan"
+    )
