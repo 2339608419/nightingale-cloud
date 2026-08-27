@@ -101,6 +101,13 @@ entry-type categories. Acceptance adds future bonuses (+5 entity, +2 entry type)
 while rejection subtracts smaller values. The combined bonus is capped from -10 to
 +25 and exposed with counts and explanations. This is not an ML model.
 
+Clinical safety floors are applied after this learned adjustment. Allergy cannot fall
+below HIGH/50; unresolved medication dosage conflicts cannot fall below HIGH/65;
+recent or unresolved medication changes cannot fall below MODERATE/35; and unresolved
+clinical follow-up cannot fall below MODERATE/50. The suggestion response exposes the
+base score, learned adjustment, adjusted score, selected rule/floor, final score, and
+whether enforcement changed the result.
+
 Data decay is read-only: recent entries remain full, old low-priority entries receive
 a compact preview, and durable allergy/risk/keyword facts remain full. Original
 entries and provenance are never deleted.

@@ -37,6 +37,13 @@ class HighlightSuggestionRead(BaseModel):
     highlight: HighlightRead
     base_score: float
     learned_bonus: float
+    learned_adjustment: float
+    adjusted_score: float
+    safety_floor: float | None
+    safety_floor_risk: RiskLevel | None
+    safety_floor_rule: str | None
+    final_score: float
+    floor_applied: bool
     explanation: list[str]
 
 

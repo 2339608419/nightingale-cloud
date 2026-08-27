@@ -30,6 +30,10 @@
 - Began targeted metadata-only audit expansion after confirming a clean conflict-detection checkpoint.
 - Added a status-only audit writer and integrated seven actions across highlight, comment, assignment, and conflict services with idempotent no-op behavior.
 - Focused audit tests passed: 7 tests in 0.53s. Full backend suite passed: 58 tests in 2.52s. The configured frontend TypeScript checks and Vite production build passed in 104ms.
+- Began Trust Hardening Step 1 after confirming the audit checkpoint; preserving unrelated untracked `Operation Manual(Simplified Version).txt`.
+- First focused-test invocation could not start because the previously cached bundled Python no longer contains pytest; resolving the current runtime before retry.
+- Created an ignored repository-local backend `.venv` and installed declared requirements after approved network access.
+- Added centralized post-learning safety floors and additive suggestion explanation fields; focused tests passed 6 in 0.44s, full backend passed 64 in 2.89s, and frontend checks/build passed in 145ms.
 - Final re-run after persistence assertions passed: 11 dedicated tests in 0.38s and all 39 backend tests in 1.35s.
 - Began adaptive importance work by reading the planning skill, confirming a clean Phase 7 tree, inspecting every backend test, and tracing highlight scoring through API and frontend.
 - Added clinic-scoped entity and entry-type preference counters with deterministic `+5/+2` acceptance and `-2/-1` rejection weights, capped to `[-10, +25]`.

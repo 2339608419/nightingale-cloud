@@ -52,3 +52,9 @@
 - Audit expansion inspection confirmed assignment reopening is already supported by the existing open/completed PATCH schema.
 - Highlight, comment, assignment, and conflict authorization occurs before their mutation services, so audit insertion inside those services cannot record denied requests.
 - New trust-action audit metadata can be restricted to `from_status` and `to_status`; no content or clinical value is needed for any requested event.
+- Safety-floor inspection found learned feedback is capped to [-10,+25] and applied only when creating future highlight suggestions; seed highlights currently bypass adaptive evaluation.
+- HighlightSuggestionRead can gain additive evaluation fields while preserving existing `base_score`, `learned_bonus`, `explanation`, and nested Highlight response shape.
+- Central policy will classify allergy by entity, unresolved medication dosage conflict by medication plus conflict keywords, medication change by change/dose keywords plus recency/unresolved, and unresolved follow-up by entity/action state.
+- Safety evaluation now preserves the original base score and learned adjustment, then promotes score/risk only when the centralized floor requires it; non-critical categories have no floor.
+- Seed highlights use the same policy, so the existing unresolved nurse follow-up is now consistently represented at MODERATE risk without changing clinical text or provenance.
+- Final verification passed: 6 focused tests, 64 full backend tests, configured frontend TypeScript checks, and production build.

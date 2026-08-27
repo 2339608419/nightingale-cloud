@@ -1,22 +1,24 @@
-# Metadata-only Trust Action Audit Plan
+# Trust Hardening Step 1 — Clinical Safety Floors
 
 ## Goal
-Extend the existing AuditLog to supported highlight, comment, assignment, and conflict state transitions without changing authorization or application semantics.
+Add centralized deterministic safety floors after learned importance adjustment, with additive explanations and no unrelated behavior changes.
 
 ## Phases
-- [x] Confirm clean conflict-fix checkpoint and recover prior context
-- [x] Inspect AuditLog and every supported mutation path
-- [x] Add a reusable metadata-only audit writer and integrate real state transitions
-- [x] Add focused tests for events, idempotency, content exclusion, and unauthorized attempts
-- [x] Run focused tests, full backend suite, frontend checks/build, and diff review
+- [x] Recover context, inspect repository status, and preserve unrelated user file
+- [x] Inspect importance service, Highlight model/schema, adaptive learning, and tests
+- [x] Define centralized floor rules compatible with current numeric/risk representation
+- [x] Integrate floor enforcement and additive structured explanation
+- [x] Add focused tests for negative/positive learning and provenance stability
+- [x] Run focused/full backend tests, frontend checks/build, and diff review
 
 ## Constraints
-- Never place note, comment, transcript, highlight text, or PHI in AuditLog.
-- Preserve entry edit/revert auditing, RBAC, clinic scope, and existing endpoint semantics.
-- No success audit event for failed, unauthorized, or no-op state requests.
-- No frontend feature work or unrelated post-audit fixes.
+- No importance redesign, RBAC changes, confidence/patient approval/redaction/conflict expansion, or unrelated modules.
+- Apply base score, then learned adjustment, then safety floor.
+- Preserve existing response fields; add explanation fields only.
+- Do not touch `Operation Manual(Simplified Version).txt`.
 
 ## Errors Encountered
 | Error | Attempt | Resolution |
 |---|---:|---|
-| Standalone `pnpm exec tsc` invocation did not resolve `tsc` under the bundled fallback wrapper | 1 | The project `pnpm run build` executed both configured `tsc --noEmit` checks successfully before Vite build. |
+| Previous bundled Python path currently has no pytest module | 1 | Re-resolve the current workspace dependency runtime before retrying tests. |
+| Repository-local dependency install was blocked by sandbox network policy | 1 | Retried the scoped requirements install with approved network access; `.venv` remains ignored. |

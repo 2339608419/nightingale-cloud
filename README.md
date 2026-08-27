@@ -180,6 +180,13 @@ This is an adaptive heuristic, not an ML model. The base combines risk, recency,
 
 Only clinicians accept/reject. Identical decisions are idempotent; changing a decision reverses previous counters. `GET /importance-preferences` exposes counts, weights, and explanations.
 
+After the learned adjustment, a centralized deterministic safety policy enforces
+minimum score/risk floors: allergy HIGH/50; unresolved medication dosage conflict
+HIGH/65; recent or unresolved medication change MODERATE/35; and unresolved clinical
+follow-up MODERATE/50. Suggestion responses add base, learned, adjusted, floor, final,
+and `floor_applied` fields. Non-critical categories remain fully responsive to
+positive and negative feedback.
+
 ## 15. Data decay policy
 
 The prototype implements a safe, read-only preview at `GET /patients/{patient_id}/decay-preview`:

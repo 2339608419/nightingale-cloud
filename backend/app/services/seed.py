@@ -18,7 +18,7 @@ from app.models import (
     TaskStatus,
     EntryVersion,
 )
-from app.services.importance_service import calculate_importance_score
+from app.services.importance_service import evaluate_importance
 
 
 SYNTHETIC_PATIENT_ID = "patient-demo-001"
@@ -341,19 +341,22 @@ def seed_demo_data(db: Session) -> None:
     ]
     for spec in highlight_specs:
         entry_id = spec["entry_id"]
+        evaluation = evaluate_importance(
+            source_timestamp=entry_timestamps[entry_id],
+            risk_level=spec["risk_level"],
+            unresolved_action=spec["unresolved_action"],
+            clinical_entity_type=spec["clinical_entity_type"],
+            clinician_confirmed=spec["clinician_confirmed"],
+            learned_adjustment=0.0,
+            context=" ".join((spec["text"], spec["risk_reason"], spec["source_span"])),
+            as_of=DEMO_REFERENCE_TIME,
+        )
         db.merge(
             Highlight(
-                **spec,
+                **{**spec, "risk_level": evaluation.final_risk},
                 patient_id=SYNTHETIC_PATIENT_ID,
                 provenance_pointer=f"timeline-entry-{entry_id}",
-                importance_score=calculate_importance_score(
-                    source_timestamp=entry_timestamps[entry_id],
-                    risk_level=spec["risk_level"],
-                    unresolved_action=spec["unresolved_action"],
-                    clinical_entity_type=spec["clinical_entity_type"],
-                    clinician_confirmed=spec["clinician_confirmed"],
-                    as_of=DEMO_REFERENCE_TIME,
-                ),
+                importance_score=evaluation.final_score,
                 created_at=DEMO_REFERENCE_TIME,
             )
         )

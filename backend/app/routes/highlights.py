@@ -51,7 +51,7 @@ def suggest_highlight(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="Source span must occur in the timeline entry",
         )
-    highlight, base_score, bonus, explanation = create_highlight_suggestion(
+    highlight, evaluation, explanation = create_highlight_suggestion(
         db,
         patient=patient,
         entry=entry,
@@ -59,8 +59,15 @@ def suggest_highlight(
     )
     return HighlightSuggestionRead(
         highlight=HighlightRead.model_validate(highlight),
-        base_score=base_score,
-        learned_bonus=bonus,
+        base_score=evaluation.base_score,
+        learned_bonus=evaluation.learned_adjustment,
+        learned_adjustment=evaluation.learned_adjustment,
+        adjusted_score=evaluation.adjusted_score,
+        safety_floor=evaluation.safety_floor,
+        safety_floor_risk=evaluation.safety_floor_risk,
+        safety_floor_rule=evaluation.safety_floor_rule,
+        final_score=evaluation.final_score,
+        floor_applied=evaluation.floor_applied,
         explanation=explanation,
     )
 

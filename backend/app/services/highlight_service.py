@@ -8,7 +8,7 @@ from app.auth import CurrentUser
 from app.models import Highlight, HighlightStatus, Patient, TimelineEntry
 from app.schemas.highlight import HighlightSuggestionCreate
 from app.services.adaptive_importance_service import learned_bonus, record_feedback
-from app.services.importance_service import calculate_importance_score
+from app.services.importance_service import ImportanceEvaluation, evaluate_importance
 from app.services.audit_service import add_trust_action_audit
 
 
@@ -40,28 +40,36 @@ def create_highlight_suggestion(
     patient: Patient,
     entry: TimelineEntry,
     payload: HighlightSuggestionCreate,
-) -> tuple[Highlight, float, float, list[str]]:
-    base_score = calculate_importance_score(
-        source_timestamp=entry.timestamp,
-        risk_level=payload.risk_level,
-        unresolved_action=payload.unresolved_action,
-        clinical_entity_type=payload.clinical_entity_type,
-        clinician_confirmed=False,
-    )
+) -> tuple[Highlight, ImportanceEvaluation, list[str]]:
     bonus, explanation = learned_bonus(
         db,
         clinic_id=patient.clinic_id,
         entity_type=payload.clinical_entity_type,
         entry_type=entry.type,
     )
+    evaluation = evaluate_importance(
+        source_timestamp=entry.timestamp,
+        risk_level=payload.risk_level,
+        unresolved_action=payload.unresolved_action,
+        clinical_entity_type=payload.clinical_entity_type,
+        clinician_confirmed=False,
+        learned_adjustment=bonus,
+        context=" ".join((payload.text, payload.risk_reason, payload.source_span)),
+    )
+    if evaluation.safety_floor_rule:
+        explanation.append(
+            f"Safety floor {evaluation.safety_floor_rule}: "
+            f"{evaluation.safety_floor:.1f} / {evaluation.safety_floor_risk.value}; "
+            f"applied={evaluation.floor_applied}"
+        )
     highlight = Highlight(
         id=str(uuid4()),
         patient_id=patient.id,
         entry_id=entry.id,
         source_span=payload.source_span,
         text=payload.text,
-        importance_score=base_score + bonus,
-        risk_level=payload.risk_level,
+        importance_score=evaluation.final_score,
+        risk_level=evaluation.final_risk,
         risk_reason=payload.risk_reason,
         status=HighlightStatus.SUGGESTED,
         provenance_pointer=f"timeline-entry-{entry.id}",
@@ -73,7 +81,7 @@ def create_highlight_suggestion(
     db.add(highlight)
     db.commit()
     db.refresh(highlight)
-    return highlight, base_score, bonus, explanation
+    return highlight, evaluation, explanation
 
 
 def set_highlight_status(

@@ -80,7 +80,7 @@ Glance data now renders before per-entry collaboration/history fan-out completes
 
 ## Final verification
 
-- Backend: `58 passed, 1 warning in 2.52s`.
+- Backend: `64 passed, 1 warning in 2.89s`.
 - Frontend: TypeScript checks and Vite build passed; 17 modules; JS 206.73 kB
   (64.23 kB gzip), CSS 12.01 kB (3.19 kB gzip).
 - Config: Vite `/api` proxy targets local FastAPI; CORS allows local Vite origins;
