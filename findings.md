@@ -71,3 +71,7 @@
 - Existing `EntryVersion` snapshots already preserve prior content and provenance; approval invalidation can be transactional with the existing version/audit write without changing the immutable snapshot schema.
 - Existing audit reads are internal because `/entries/{id}/audit` requires collaboration access; the trust-action helper already restricts metadata to `from_status` and `to_status`.
 - A fixed synthetic AI-derived instruction draft can link to the seeded AI nurse summary, making clinician approval demo-ready while remaining invisible under the patient filter.
+- Trust Step 5 inspection found `ingest_synthetic_transcript` is the sole provider call site, so validation can be inserted there without changing provider implementations or the redactor contract.
+- Existing redaction counts can become `detected_redactions`; validation must report PHI categories only, never matched values. Known fixture names should be checked explicitly rather than treating every capitalized clinical phrase as a name.
+- Protected-term validation can deterministically compare only terms/dosages present in the raw synthetic input against redacted output; inputs without those clinical terms remain valid if meaningful non-placeholder text survives.
+- A withheld response should keep the existing endpoint contract additive: `status`, `message`, and validation metadata, with nullable summary/entry/provenance. Successful calls remain HTTP 201; withheld calls can return HTTP 200 without persisting an entry.

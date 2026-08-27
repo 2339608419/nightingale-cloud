@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
 from app.auth import CurrentUser, get_current_user
@@ -24,13 +24,14 @@ def create_ai_scribed_note(
     db: DbSession,
     user: Identity,
     provider: Provider,
+    response: Response,
 ) -> AiScribeResponse:
     patient = get_patient(db, payload.patient_id)
     if patient is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
     require_patient_access(user, patient)
     require_ai_scribe_access(user)
-    entry, redaction = ingest_synthetic_transcript(
+    entry, redaction, validation = ingest_synthetic_transcript(
         db,
         patient=patient,
         interaction_type=payload.interaction_type,
@@ -38,9 +39,24 @@ def create_ai_scribed_note(
         transcript=payload.transcript,
         provider=provider,
     )
+    if entry is None:
+        response.status_code = status.HTTP_200_OK
+        return AiScribeResponse(
+            status="withheld",
+            message="AI scribe withheld pending redaction review",
+            provider=provider.name,
+            redaction=redaction,
+            validation=validation,
+            generated_summary=None,
+            timeline_entry=None,
+            provenance_pointer=None,
+        )
     return AiScribeResponse(
+        status="created",
+        message="AI-scribed timeline entry created",
         provider=provider.name,
         redaction=redaction,
+        validation=validation,
         generated_summary=entry.content,
         timeline_entry=TimelineEntryRead.model_validate(entry),
         provenance_pointer=entry.provenance_pointer or "",

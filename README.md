@@ -138,11 +138,19 @@ POST /ai-scribe
 → validate synthetic-only input
 → clinic/RBAC authorization
 → redact_phi (names, Singapore IC/ID, phone)
-→ summary provider receives redacted text only
-→ persist summary + stable provenance
+→ validate_redaction (remaining PHI, protected clinical terms, output integrity)
+→ pass: summary provider receives validated redacted text only
+→ fail: abstain with "AI scribe withheld pending redaction review"
+→ persist summary + stable provenance only after validation passes
 ```
 
 Redaction occurs in `backend/app/services/ai_scribe_service.py` before provider invocation. Raw transcripts are not logged, stored in timeline entries, or stored in version snapshots. Tests use a capturing fake provider to prove it receives only redacted text.
+
+Validation is deterministic and reports only safe categories and counts. It checks
+for remaining Singapore IDs, phone numbers, and known synthetic fixture names;
+verifies that Penicillin, Lisinopril, allergy terminology, and medication dosages
+present in the input survive redaction; and requires meaningful output beyond
+placeholders. A failed check invokes no provider and creates no AI timeline entry.
 
 ## 11. AI provider and mock behavior
 
@@ -154,7 +162,9 @@ $env:OPENAI_API_KEY = "..."
 $env:OPENAI_MODEL = "gpt-5-mini" # optional
 ```
 
-If explicit selection or the key is absent, mock mode is used. No model or API output is bundled.
+If explicit selection or the key is absent, mock mode is used. Both providers sit
+behind the same validation gate, so even an explicitly configured external provider
+cannot receive text that failed redaction validation. No model or API output is bundled.
 
 ## 12. Provenance design
 

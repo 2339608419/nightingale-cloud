@@ -35,6 +35,8 @@ def test_provider_receives_only_redacted_text(client: TestClient) -> None:
     response = client.post("/ai-scribe", json=payload())
 
     assert response.status_code == 201
+    assert response.json()["status"] == "created"
+    assert response.json()["validation"]["passed"] is True
     assert provider.received == [
         ("[NAME] reported ID [ID] and phone [PHONE].", "doctor_consult")
     ]

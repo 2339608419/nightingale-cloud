@@ -32,6 +32,11 @@
 - Added AI-derived instruction draft creation, clinician-only approve/reject, hard patient visibility filtering, edit/revert invalidation, approval metadata, audit actions, and minimal UI states.
 - Focused approval/RBAC/revision/AI tests passed: 30; initial full backend suite passed: 84.
 - Final verification passed: 11 focused approval tests, 24 relevant RBAC/privacy/conflict tests, 84 full backend tests, frontend TypeScript checks and production build (17 modules).
+- Began Trust Step 5 from commit `e431b07`; tracked tree/index were clean and the unrelated Operation Manual remained untracked and untouched.
+- Inspected the redactor/provider boundary and selected an additive, category-only validation result with provider abstention and no timeline persistence on failure.
+- Added deterministic redaction validation, safe withheld responses, provider/no-persistence gating, protected clinical-term checks, and five focused tests.
+- Focused redaction/AI-scribe verification passed: 16 tests with one known Starlette warning.
+- Final Trust Step 5 verification passed: 89 backend tests, frontend TypeScript checks and production build (17 modules), and `git diff --check`.
 - Trust Step 2 added response-time Evidence Confidence derived from exact provenance, source-span verification, deterministic fact extraction, open-conflict state, and clinician confirmation.
 - Focused Evidence Confidence verification passed: 5 tests; complete backend verification passed: 69 tests with one known Starlette warning.
 - Frontend TypeScript checks and Vite production build passed (17 modules); `git diff --check` passed with only line-ending notices.

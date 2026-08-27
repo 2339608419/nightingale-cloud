@@ -8,7 +8,12 @@ from app.schemas.collaboration import (
 )
 from app.schemas.data_decay import DataDecayPreviewRead
 from app.schemas.conflict import ConflictRecordRead
-from app.schemas.ai_scribe import AiScribeRequest, AiScribeResponse, InteractionType
+from app.schemas.ai_scribe import (
+    AiScribeRequest,
+    AiScribeResponse,
+    InteractionType,
+    RedactionValidationMetadata,
+)
 from app.schemas.highlight import (
     HighlightRead,
     HighlightSuggestionCreate,
@@ -31,6 +36,7 @@ __all__ = [
     "EntryVersionRead",
     "InternalCommentRead",
     "InteractionType",
+    "RedactionValidationMetadata",
     "PatientRead",
     "CommentCreate",
     "CommentRead",

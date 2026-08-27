@@ -75,14 +75,18 @@ resolved only by a clinician.
 explicitly synthetic request
   -> patient + clinic authorization
   -> redact_phi(name, Singapore ID, phone)
-  -> provider receives redacted text only
-  -> redacted summary persisted as system-authored timeline entry
+  -> validate_redaction(PHI remnants, clinical terms, output integrity)
+  -> pass: provider receives validated redacted text only
+  -> fail: abstain; no provider call and no timeline entry
+  -> validated summary persisted as system-authored timeline entry
 ```
 
 The default summarizer is deterministic and offline; external OpenAI use is opt-in.
 Logs contain source ID, interaction type, and redaction count, never transcript text.
-A capture-provider test proves only redacted text crosses the provider boundary. TLS
-and encryption at rest are deployment assumptions, not local infrastructure.
+A capture-provider test proves only validated redacted text crosses the provider
+boundary. Validation returns categories/counts rather than matched PHI and preserves
+the demo medication, dosage, and allergy vocabulary. TLS and encryption at rest are
+deployment assumptions, not local infrastructure.
 
 Patients are limited to their own instructions and cannot access raw AI notes,
 comments, tasks, versions, or preferences. Staff edit only staff notes and cannot

@@ -29,9 +29,22 @@ class RedactionMetadata(BaseModel):
     total_redactions: int
 
 
+class RedactionValidationMetadata(BaseModel):
+    passed: bool
+    detected_redactions: int
+    remaining_phi_patterns: list[str]
+    protected_terms_preserved: bool
+    missing_protected_terms: list[str]
+    output_integrity_valid: bool
+    reason: str
+
+
 class AiScribeResponse(BaseModel):
+    status: Literal["created", "withheld"]
+    message: str
     provider: str
     redaction: RedactionMetadata
-    generated_summary: str
-    timeline_entry: TimelineEntryRead
-    provenance_pointer: str
+    validation: RedactionValidationMetadata
+    generated_summary: str | None
+    timeline_entry: TimelineEntryRead | None
+    provenance_pointer: str | None
