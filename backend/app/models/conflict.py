@@ -18,6 +18,12 @@ class ConflictStatus(str, Enum):
     RESOLVED = "resolved"
 
 
+class ConflictAuthorityPolicy(str, Enum):
+    CLINICIAN_AUTHORITATIVE = "clinician_authoritative"
+    STAFF_AUTHORITATIVE = "staff_authoritative"
+    CLINICIAN_REVIEW_REQUIRED = "clinician_review_required"
+
+
 class ConflictRecord(Base):
     __tablename__ = "conflict_records"
     __table_args__ = (

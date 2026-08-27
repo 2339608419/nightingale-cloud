@@ -131,7 +131,10 @@ entries and provenance are never deleted.
   highlight decisions, comment resolution, assignment status, and conflict resolution.
   Trust events contain status metadata only and skip denied or no-op requests.
 - AI/patient-versus-clinician conflicts are detected for a deliberately small,
-  deterministic demo vocabulary; broader clinical language remains out of scope.
+  deterministic demo vocabulary; the same service compares clinician/staff human
+  notes. Clinician outranks staff, staff outranks AI/patient, and equal-authority
+  contradictions remain open for clinician review with neither source declared true.
+  Broader clinical language remains out of scope.
 
 ## Warm-path performance approximation
 

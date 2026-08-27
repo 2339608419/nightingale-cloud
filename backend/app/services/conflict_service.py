@@ -1,6 +1,6 @@
 import re
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
 from sqlalchemy import select
@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.auth import CurrentUser
 from app.models import (
     AuthorRole,
+    ConflictAuthorityPolicy,
     ConflictEntityType,
     ConflictRecord,
     ConflictStatus,
@@ -22,6 +23,11 @@ AI_ENTRY_TYPES = {
     TimelineEntryType.AI_DOCTOR_CONSULT_SUMMARY,
     TimelineEntryType.AI_NURSE_CONSULT_SUMMARY,
     TimelineEntryType.AI_PATIENT_SESSION_SUMMARY,
+}
+HUMAN_ENTRY_TYPES = {
+    TimelineEntryType.CLINICIAN_NOTE,
+    TimelineEntryType.STAFF_NOTE,
+    TimelineEntryType.INSTRUCTION,
 }
 MEDICATION_NAMES = ("lisinopril", "amlodipine", "metformin")
 ALLERGEN_NAMES = ("penicillin", "sulfa")
@@ -94,61 +100,93 @@ def get_patient_conflicts(
     return list(db.scalars(statement.order_by(ConflictRecord.created_at.desc(), ConflictRecord.id)))
 
 
-def detect_conflicts_for_clinician_entry(
-    db: Session, authoritative_entry: TimelineEntry
+def _authority_rank(entry: TimelineEntry) -> int:
+    if entry.author_role == AuthorRole.CLINICIAN:
+        return 3
+    if entry.author_role == AuthorRole.STAFF:
+        return 2
+    return 1
+
+
+def conflict_authority_policy(
+    authoritative_entry: TimelineEntry, conflicting_entry: TimelineEntry
+) -> ConflictAuthorityPolicy:
+    if _authority_rank(authoritative_entry) == _authority_rank(conflicting_entry):
+        return ConflictAuthorityPolicy.CLINICIAN_REVIEW_REQUIRED
+    if authoritative_entry.author_role == AuthorRole.CLINICIAN:
+        return ConflictAuthorityPolicy.CLINICIAN_AUTHORITATIVE
+    if authoritative_entry.author_role == AuthorRole.STAFF:
+        return ConflictAuthorityPolicy.STAFF_AUTHORITATIVE
+    return ConflictAuthorityPolicy.CLINICIAN_REVIEW_REQUIRED
+
+
+def detect_conflicts_for_entry(
+    db: Session, changed_entry: TimelineEntry
 ) -> list[ConflictRecord]:
-    if authoritative_entry.author_role != AuthorRole.CLINICIAN:
+    """Compare a human-authored demo fact with existing deterministic fact sources."""
+    if changed_entry.author_role not in {AuthorRole.CLINICIAN, AuthorRole.STAFF}:
         return []
-    authoritative_facts = extract_clinical_facts(authoritative_entry.content)
-    if not authoritative_facts:
+    changed_facts = extract_clinical_facts(changed_entry.content)
+    if not changed_facts:
         return []
 
     source_entries = list(
         db.scalars(
             select(TimelineEntry)
             .where(
-                TimelineEntry.patient_id == authoritative_entry.patient_id,
-                TimelineEntry.id != authoritative_entry.id,
+                TimelineEntry.patient_id == changed_entry.patient_id,
+                TimelineEntry.id != changed_entry.id,
                 (
                     TimelineEntry.type.in_(AI_ENTRY_TYPES)
-                    | (TimelineEntry.author_role == AuthorRole.PATIENT)
+                    | TimelineEntry.type.in_(HUMAN_ENTRY_TYPES)
+                    | TimelineEntry.author_role.in_(
+                        {AuthorRole.PATIENT, AuthorRole.STAFF, AuthorRole.CLINICIAN}
+                    )
                 ),
             )
             .order_by(TimelineEntry.timestamp.desc(), TimelineEntry.id)
         )
     )
     created: list[ConflictRecord] = []
-    for source in source_entries:
+    batch_started_at = datetime.now(timezone.utc)
+    # Create oldest-source records first so the existing newest-first conflict feed
+    # presents the most recent contradictory evidence first.
+    for source in reversed(source_entries):
         prior_by_key = {
             (fact.entity_type, fact.entity_name): fact for fact in extract_clinical_facts(source.content)
         }
-        for authoritative in authoritative_facts:
-            prior = prior_by_key.get((authoritative.entity_type, authoritative.entity_name))
-            if prior is None or prior.value == authoritative.value:
+        for changed_fact in changed_facts:
+            prior = prior_by_key.get((changed_fact.entity_type, changed_fact.entity_name))
+            if prior is None or prior.value == changed_fact.value:
                 continue
+            changed_is_authoritative = _authority_rank(changed_entry) >= _authority_rank(source)
+            authoritative_entry = changed_entry if changed_is_authoritative else source
+            conflicting_entry = source if changed_is_authoritative else changed_entry
+            authoritative_value = changed_fact.value if changed_is_authoritative else prior.value
+            conflicting_value = prior.value if changed_is_authoritative else changed_fact.value
             exists = db.scalar(
                 select(ConflictRecord).where(
                     ConflictRecord.authoritative_entry_id == authoritative_entry.id,
-                    ConflictRecord.conflicting_entry_id == source.id,
-                    ConflictRecord.entity_type == authoritative.entity_type,
-                    ConflictRecord.entity_name == authoritative.entity_name,
-                    ConflictRecord.prior_value == prior.value,
-                    ConflictRecord.authoritative_value == authoritative.value,
+                    ConflictRecord.conflicting_entry_id == conflicting_entry.id,
+                    ConflictRecord.entity_type == changed_fact.entity_type,
+                    ConflictRecord.entity_name == changed_fact.entity_name,
+                    ConflictRecord.prior_value == conflicting_value,
+                    ConflictRecord.authoritative_value == authoritative_value,
                 )
             )
             if exists is not None:
                 continue
             conflict = ConflictRecord(
                 id=str(uuid4()),
-                patient_id=authoritative_entry.patient_id,
+                patient_id=changed_entry.patient_id,
                 authoritative_entry_id=authoritative_entry.id,
-                conflicting_entry_id=source.id,
-                entity_type=authoritative.entity_type,
-                entity_name=authoritative.entity_name,
-                prior_value=prior.value,
-                authoritative_value=authoritative.value,
+                conflicting_entry_id=conflicting_entry.id,
+                entity_type=changed_fact.entity_type,
+                entity_name=changed_fact.entity_name,
+                prior_value=conflicting_value,
+                authoritative_value=authoritative_value,
                 status=ConflictStatus.OPEN,
-                created_at=datetime.now(timezone.utc),
+                created_at=batch_started_at + timedelta(microseconds=len(created) + 1),
                 resolved_at=None,
             )
             db.add(conflict)
@@ -157,6 +195,15 @@ def detect_conflicts_for_clinician_entry(
     for conflict in created:
         db.refresh(conflict)
     return created
+
+
+def detect_conflicts_for_clinician_entry(
+    db: Session, authoritative_entry: TimelineEntry
+) -> list[ConflictRecord]:
+    """Backward-compatible entry point retained for existing integrations."""
+    if authoritative_entry.author_role != AuthorRole.CLINICIAN:
+        return []
+    return detect_conflicts_for_entry(db, authoritative_entry)
 
 
 def resolve_conflict(

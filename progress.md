@@ -20,6 +20,12 @@
 - Expanded backend tests for descending order, required fields, supported vocabularies, content mix, and required longitudinal dates.
 - Verification passed: 6 backend tests passed in 0.10s; one third-party Starlette deprecation warning remains.
 - Frontend TypeScript checks and Vite production build passed; 17 modules transformed in 102ms.
+- Began Trust Step 3 with a clean tracked tree at commit `7b7415e`; the unrelated Operation Manual remains untracked and untouched.
+- Inspected ConflictRecord/service/routes/write hooks/UI/tests and selected an additive authority-policy representation that preserves existing storage and provenance contracts.
+- Extended the existing conflict service to clinician/staff human writes, added explicit authority-policy response metadata, and reused the conflict panel with peer-review labels.
+- Focused human/legacy trust verification passed: 24 tests with one known Starlette warning.
+- Stabilized same-batch conflict ordering for Windows clock resolution; final focused conflict tests passed: 12.
+- Final Trust Step 3 verification passed: 73 backend tests, frontend TypeScript checks and production build (17 modules), and `git diff --check`.
 - Trust Step 2 added response-time Evidence Confidence derived from exact provenance, source-span verification, deterministic fact extraction, open-conflict state, and clinician confirmation.
 - Focused Evidence Confidence verification passed: 5 tests; complete backend verification passed: 69 tests with one known Starlette warning.
 - Frontend TypeScript checks and Vite production build passed (17 modules); `git diff --check` passed with only line-ending notices.

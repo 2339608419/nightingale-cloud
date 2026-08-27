@@ -19,7 +19,7 @@ from app.services.authorization_service import (
     require_patient_access,
 )
 from app.services.patient_service import get_entry, get_patient
-from app.services.conflict_service import detect_conflicts_for_clinician_entry
+from app.services.conflict_service import detect_conflicts_for_entry
 from app.services.revision_service import (
     VersionConflictError,
     get_audit_logs,
@@ -67,7 +67,7 @@ def edit_note(
             status_code=status.HTTP_409_CONFLICT,
             detail={"message": "Entry version conflict", "current_version": conflict.current_version},
         ) from conflict
-    detect_conflicts_for_clinician_entry(db, updated)
+    detect_conflicts_for_entry(db, updated)
     return TimelineEntryRead.model_validate(updated)
 
 

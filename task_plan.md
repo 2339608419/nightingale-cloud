@@ -1,23 +1,28 @@
-# Trust Hardening Step 2 — Evidence Confidence
+# Trust Hardening Step 3 — Human-Human Conflict Detection
 
 ## Goal
-Add deterministic, evidence-derived confidence to all Highlight responses and a minimal Top Card label without changing scoring or unrelated behavior.
+Extend the existing deterministic ConflictRecord pipeline to human-authored contradictions while preserving current clinician-versus-AI/patient behavior, RBAC, provenance, and UI architecture.
 
 ## Phases
-- [x] Recover context and inspect Highlight/provenance/conflict serialization paths
-- [x] Define deterministic confidence levels and review behavior
-- [x] Implement centralized confidence evaluation and additive response fields
-- [x] Add minimal Top Card confidence/review presentation
-- [x] Add focused tests including conflict, broken provenance, determinism, and no-LLM proof
-- [x] Run focused/full backend tests, frontend checks/build, and diff review
+- [x] Inspect existing model, service, write entry points, authority presentation, and tests
+- [x] Define explicit deterministic source authority and review semantics
+- [x] Extend existing conflict reconciliation without general NLP or unrelated changes
+- [x] Reuse/update conflict API and UI only where authority visibility requires it
+- [x] Add focused human-human conflict and regression tests
+- [x] Run focused/full backend tests, frontend build, and `git diff --check`
 
 ## Constraints
-- No scoring replacement, LLM self-confidence, patient approval, redaction changes, broad UI redesign, or Trust Step 3.
-- Compute confidence only from database-verifiable evidence and deterministic extraction.
-- Preserve existing response fields and RBAC semantics.
-- Do not touch `Operation Manual(Simplified Version).txt`.
+- Preserve existing categories and clinician-versus-AI/patient behavior.
+- Keep all evidence and both resolvable timeline-entry provenance links.
+- Staff-versus-staff remains open and requires clinician review; do not invent authoritative truth.
+- Preserve patient exclusion and clinic scope.
+- Do not touch `Operation Manual(Simplified Version).txt`, commit changes, or begin Trust Step 4.
 
 ## Errors Encountered
 | Error | Attempt | Resolution |
 |---|---:|---|
-| README patch context did not match | 1 | Reapplied at the stable next-section heading; content was added without changing application behavior. |
+| Combined delete/add patch targeted the same plan path twice | 1 | Recreated the plan in a separate patch operation. |
+| Initial multi-file implementation patch missed an export-list context | 1 | Split the change into smaller model, service, route, and frontend patches. |
+| Existing AI conflict tests selected an older newly eligible human source first | 1 | Process sources oldest-first so the newest contradictory evidence remains first in the existing feed. |
+| README documentation patch used an unstable wrapped-text context | 1 | Reapplied using the exact surrounding lines. |
+| Full suite exposed tied conflict timestamps on Windows | 1 | Added deterministic microsecond sequence within each detection batch so newest-source ordering is stable. |

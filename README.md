@@ -166,6 +166,14 @@ clinician value differs from an existing AI/patient-derived value, the clinician
 entry remains authoritative and an internal conflict record links to both unchanged
 timeline entries. Clinicians can resolve the warning; patients cannot access it.
 
+The same deterministic extractor also compares human-authored demo facts. Authority
+is explicit: clinician-authored facts outrank staff/nurse human notes, which outrank
+AI-scribed or patient-derived facts. Lower-authority evidence is retained unchanged
+with provenance to both timeline entries. Equal-authority contradictions (including
+staff versus staff) remain open with `clinician_review_required`; the UI labels both
+as sources and does not invent an authoritative truth. This remains deliberately
+limited to the synthetic medication/dosage, allergy-status, and follow-up vocabulary.
+
 Evidence confidence is computed when highlights are read; it is not stored as a
 model-generated opinion. An exact entry pointer and exact source-span match are
 required. A recognized deterministic clinical fact with no open conflict is `HIGH`;

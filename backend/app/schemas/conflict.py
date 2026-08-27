@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
-from app.models import ConflictEntityType, ConflictStatus
+from app.models import AuthorRole, ConflictAuthorityPolicy, ConflictEntityType, ConflictStatus
 
 
 class ConflictRecordRead(BaseModel):
@@ -21,3 +21,7 @@ class ConflictRecordRead(BaseModel):
     resolved_at: datetime | None
     authoritative_provenance_pointer: str
     conflicting_provenance_pointer: str
+    authoritative_role: AuthorRole
+    conflicting_role: AuthorRole
+    authority_policy: ConflictAuthorityPolicy
+    requires_clinician_review: bool

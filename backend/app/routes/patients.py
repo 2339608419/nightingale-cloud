@@ -22,7 +22,7 @@ from app.services.authorization_service import (
 )
 from app.services.highlight_service import get_patient_highlights
 from app.services.evidence_confidence_service import highlight_read
-from app.services.conflict_service import detect_conflicts_for_clinician_entry
+from app.services.conflict_service import detect_conflicts_for_entry
 from app.services.data_decay_service import build_decay_preview
 from app.services.patient_service import create_patient_entry, get_patient, get_patient_entries
 
@@ -105,7 +105,7 @@ def create_note(
         content=payload.content,
         provenance_pointer=payload.provenance_pointer,
     )
-    detect_conflicts_for_clinician_entry(db, entry)
+    detect_conflicts_for_entry(db, entry)
     return TimelineEntryRead.model_validate(entry)
 
 

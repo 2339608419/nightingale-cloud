@@ -119,4 +119,8 @@ export interface ConflictRecord {
   resolved_at: string | null;
   authoritative_provenance_pointer: string;
   conflicting_provenance_pointer: string;
+  authoritative_role: "patient" | "staff" | "clinician" | "system";
+  conflicting_role: "patient" | "staff" | "clinician" | "system";
+  authority_policy: "clinician_authoritative" | "staff_authoritative" | "clinician_review_required";
+  requires_clinician_review: boolean;
 }

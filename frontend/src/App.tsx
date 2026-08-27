@@ -332,17 +332,17 @@ export default function App() {
             <div><p className="eyebrow">Internal review</p><h2 id="conflict-heading">Clinical conflicts</h2></div>
             <span>{conflicts.length} open</span>
           </div>
-          <p>Clinician-authored information takes precedence. Prior AI/patient sources remain available for review.</p>
+          <p>Both sources remain available. Authority follows clinician → staff → AI/patient; equal-authority contradictions require clinician review.</p>
           <ul>
             {conflicts.map((conflict) => (
               <li key={conflict.id}>
                 <div className="conflict-values">
-                  <span><b>Prior {formatLabel(conflict.entity_type)}</b>{formatLabel(conflict.entity_name)}: {conflict.prior_value}</span>
-                  <span className="authoritative-value"><b>Authoritative clinician value</b>{formatLabel(conflict.entity_name)}: {conflict.authoritative_value}</span>
+                  <span><b>{conflict.requires_clinician_review ? "Source B" : `Conflicting ${formatLabel(conflict.conflicting_role)} value`}</b>{formatLabel(conflict.entity_name)}: {conflict.prior_value}</span>
+                  <span className={conflict.requires_clinician_review ? "review-required-value" : "authoritative-value"}><b>{conflict.requires_clinician_review ? "Source A · No authoritative truth" : `Authoritative ${formatLabel(conflict.authoritative_role)} value`}</b>{formatLabel(conflict.entity_name)}: {conflict.authoritative_value}</span>
                 </div>
                 <div className="conflict-actions">
-                  <button type="button" onClick={() => navigateToSource(conflict.conflicting_provenance_pointer)}>Prior source</button>
-                  <button type="button" onClick={() => navigateToSource(conflict.authoritative_provenance_pointer)}>Clinician source</button>
+                  <button type="button" onClick={() => navigateToSource(conflict.conflicting_provenance_pointer)}>{conflict.requires_clinician_review ? "Source B" : "Conflicting source"}</button>
+                  <button type="button" onClick={() => navigateToSource(conflict.authoritative_provenance_pointer)}>{conflict.requires_clinician_review ? "Source A" : "Authoritative source"}</button>
                   {demoRole === "clinician" && <button type="button" onClick={() => void closeConflict(conflict)}>Mark resolved</button>}
                 </div>
               </li>
@@ -370,7 +370,8 @@ export default function App() {
                   <div className="entry-badges">
                     <span className={`role role-${entry.author_role}`}>{formatLabel(entry.author_role)}</span>
                     {isAiGenerated(entry) && <span className="ai-badge">AI-generated</span>}
-                    {conflicts.some((item) => item.authoritative_entry_id === entry.id) && <span className="authoritative-badge">Clinician authoritative</span>}
+                    {conflicts.some((item) => item.authoritative_entry_id === entry.id && !item.requires_clinician_review) && <span className="authoritative-badge">Authoritative source</span>}
+                    {conflicts.some((item) => item.requires_clinician_review && (item.authoritative_entry_id === entry.id || item.conflicting_entry_id === entry.id)) && <span className="review-badge">Conflict · review required</span>}
                     {decayByEntry[entry.id]?.durable_exempt && <span className="decay-badge durable">Durable · full detail</span>}
                     {decayByEntry[entry.id]?.storage_tier === "cold_summary" && <span className="decay-badge">Cold summary preview</span>}
                   </div>

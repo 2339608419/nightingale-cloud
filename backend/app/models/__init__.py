@@ -1,5 +1,10 @@
 from app.models.collaboration import CollaborationRole, Comment, TaskAssignment, TaskStatus
-from app.models.conflict import ConflictEntityType, ConflictRecord, ConflictStatus
+from app.models.conflict import (
+    ConflictAuthorityPolicy,
+    ConflictEntityType,
+    ConflictRecord,
+    ConflictStatus,
+)
 from app.models.highlight import (
     ClinicalEntityType,
     EvidenceConfidenceLevel,
@@ -16,6 +21,7 @@ __all__ = [
     "AuthorRole",
     "AuditLog",
     "CollaborationRole",
+    "ConflictAuthorityPolicy",
     "ConflictEntityType",
     "ConflictRecord",
     "ConflictStatus",
