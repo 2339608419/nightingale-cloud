@@ -174,6 +174,16 @@ staff versus staff) remain open with `clinician_review_required`; the UI labels 
 as sources and does not invent an authoritative truth. This remains deliberately
 limited to the synthetic medication/dosage, allergy-status, and follow-up vocabulary.
 
+AI-derived patient-facing instructions reuse `TimelineEntry(type=instruction)` plus
+a one-to-one approval metadata record. They are created as `draft`, must point to a
+same-patient AI timeline source with resolvable provenance, and become patient-visible
+only after a clinic-scoped clinician approves them. Staff, patient, and admin cannot
+approve or reject. Rejected items stay internal. Editing or reverting approved
+AI-derived content returns it to `draft`, clears approval metadata, preserves immutable
+versions, and requires re-approval. Existing manually clinician-authored instructions
+remain inherently clinician-approved for backward compatibility. Approval, rejection,
+and invalidation audits store status transitions only—never instruction or AI text.
+
 Evidence confidence is computed when highlights are read; it is not stored as a
 model-generated opinion. An exact entry pointer and exact source-span match are
 required. A recognized deterministic clinical fact with no open conflict is `HIGH`;

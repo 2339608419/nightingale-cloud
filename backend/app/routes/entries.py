@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.auth import CurrentUser, get_current_user
 from app.database import get_db
-from app.models import TimelineEntry
+from app.models import PatientFacingStatus, TimelineEntry
 from app.schemas import (
     AuditLogRead,
     EntryVersionRead,
@@ -17,8 +17,10 @@ from app.services.authorization_service import (
     require_entry_collaboration_access,
     require_entry_edit_access,
     require_patient_access,
+    require_patient_instruction_approval_access,
 )
 from app.services.patient_service import get_entry, get_patient
+from app.services.patient_instruction_service import set_patient_instruction_status
 from app.services.conflict_service import detect_conflicts_for_entry
 from app.services.revision_service import (
     VersionConflictError,
@@ -69,6 +71,44 @@ def edit_note(
         ) from conflict
     detect_conflicts_for_entry(db, updated)
     return TimelineEntryRead.model_validate(updated)
+
+
+def _decide_patient_instruction(
+    entry_id: str,
+    decision: PatientFacingStatus,
+    db: Session,
+    user: CurrentUser,
+) -> TimelineEntryRead:
+    entry = get_entry(db, entry_id)
+    if entry is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Entry not found")
+    patient = get_patient(db, entry.patient_id)
+    if patient is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
+    require_patient_access(user, patient)
+    require_patient_instruction_approval_access(user)
+    updated = set_patient_instruction_status(
+        db, entry=entry, new_status=decision, actor=user
+    )
+    return TimelineEntryRead.model_validate(updated)
+
+
+@router.post("/{entry_id}/patient-facing/approve", response_model=TimelineEntryRead)
+def approve_patient_instruction(
+    entry_id: str, db: DbSession, user: Identity
+) -> TimelineEntryRead:
+    return _decide_patient_instruction(
+        entry_id, PatientFacingStatus.APPROVED, db, user
+    )
+
+
+@router.post("/{entry_id}/patient-facing/reject", response_model=TimelineEntryRead)
+def reject_patient_instruction(
+    entry_id: str, db: DbSession, user: Identity
+) -> TimelineEntryRead:
+    return _decide_patient_instruction(
+        entry_id, PatientFacingStatus.REJECTED, db, user
+    )
 
 
 def _authorized_entry(entry_id: str, db: Session, user: CurrentUser) -> TimelineEntry:

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   acceptHighlight,
+  approvePatientInstruction,
   completeAssignment,
   createComment,
   createNote,
@@ -17,6 +18,7 @@ import {
   setCommentResolution,
   revertEntry,
   rejectHighlight,
+  rejectPatientInstruction,
   resolveConflict,
   updateNote,
 } from "./api";
@@ -47,7 +49,7 @@ const DEMO_IDENTITIES: Record<DemoRole, ApiIdentity> = {
 };
 
 const isAiGenerated = (entry: TimelineEntry) =>
-  entry.type.startsWith("ai_") || entry.author_id.startsWith("ai-scribe:");
+  entry.ai_derived || entry.type.startsWith("ai_") || entry.author_id.startsWith("ai-scribe:");
 
 const canRevertEntry = (role: DemoRole, entry: TimelineEntry) =>
   (role === "staff" && entry.author_role === "staff" && entry.type === "staff_note") ||
@@ -227,6 +229,19 @@ export default function App() {
     setReloadToken((value) => value + 1);
   };
 
+  const decidePatientInstruction = async (
+    entry: TimelineEntry,
+    decision: "approve" | "reject",
+  ) => {
+    const identity = DEMO_IDENTITIES[demoRole];
+    if (decision === "approve") {
+      await approvePatientInstruction(entry.id, identity);
+    } else {
+      await rejectPatientInstruction(entry.id, identity);
+    }
+    setReloadToken((value) => value + 1);
+  };
+
   const revertVersion = async (entry: TimelineEntry, versionNumber: number) => {
     try {
       await revertEntry(entry.id, versionNumber, entry.version, DEMO_IDENTITIES[demoRole]);
@@ -370,6 +385,9 @@ export default function App() {
                   <div className="entry-badges">
                     <span className={`role role-${entry.author_role}`}>{formatLabel(entry.author_role)}</span>
                     {isAiGenerated(entry) && <span className="ai-badge">AI-generated</span>}
+                    {entry.type === "instruction" && entry.ai_derived && entry.patient_facing_status === "draft" && <span className="approval-badge approval-draft">Patient-facing draft · Needs clinician approval</span>}
+                    {entry.type === "instruction" && entry.patient_facing_status === "approved" && <span className="approval-badge approval-approved">Clinician approved</span>}
+                    {entry.type === "instruction" && entry.ai_derived && entry.patient_facing_status === "rejected" && <span className="approval-badge approval-rejected">Rejected · Not visible to patient</span>}
                     {conflicts.some((item) => item.authoritative_entry_id === entry.id && !item.requires_clinician_review) && <span className="authoritative-badge">Authoritative source</span>}
                     {conflicts.some((item) => item.requires_clinician_review && (item.authoritative_entry_id === entry.id || item.conflicting_entry_id === entry.id)) && <span className="review-badge">Conflict · review required</span>}
                     {decayByEntry[entry.id]?.durable_exempt && <span className="decay-badge durable">Durable · full detail</span>}
@@ -384,6 +402,16 @@ export default function App() {
                 </div>
                 <p className="entry-type">{formatLabel(entry.type)}</p>
                 <p>{entry.content}</p>
+                {entry.type === "instruction" && entry.patient_facing_status === "approved" && demoRole !== "patient" && (
+                  <p className="approval-detail">Approved by: {entry.approved_by} · {entry.approved_at ? new Date(entry.approved_at).toLocaleString() : "Clinician-authored"}</p>
+                )}
+                {entry.type === "instruction" && entry.ai_derived && demoRole === "clinician" && entry.patient_facing_status !== "approved" && (
+                  <div className="approval-actions" aria-label="Review patient-facing instruction">
+                    {entry.provenance_pointer && <button type="button" onClick={() => navigateToSource(entry.provenance_pointer!)}>Inspect AI source</button>}
+                    <button type="button" onClick={() => void decidePatientInstruction(entry, "approve")}>Approve</button>
+                    <button type="button" onClick={() => void decidePatientInstruction(entry, "reject")}>Reject</button>
+                  </div>
+                )}
                 {decayByEntry[entry.id]?.storage_tier === "cold_summary" && (
                   <div className="decay-preview">
                     <strong>Decay preview</strong>

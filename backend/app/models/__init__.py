@@ -14,6 +14,10 @@ from app.models.highlight import (
 )
 from app.models.importance_preference import ImportancePreference
 from app.models.patient import Patient
+from app.models.patient_instruction import (
+    PatientFacingStatus,
+    PatientInstructionApproval,
+)
 from app.models.revision import AuditLog, EntryVersion
 from app.models.timeline_entry import AuthorRole, TimelineEntry, TimelineEntryType
 
@@ -33,6 +37,8 @@ __all__ = [
     "EntryVersion",
     "EvidenceConfidenceLevel",
     "Patient",
+    "PatientFacingStatus",
+    "PatientInstructionApproval",
     "RiskLevel",
     "TimelineEntry",
     "TimelineEntryType",

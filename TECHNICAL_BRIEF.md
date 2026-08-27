@@ -126,6 +126,11 @@ entries and provenance are never deleted.
 - Entries act as independently editable sections; there is no rich-text CRDT.
 - OCC rejects stale writes with HTTP 409; clients reload and reconcile.
 - AI provenance is stable, but raw transcript spans are not retained for viewing.
+- Patient instructions use a hard server-side approval gate. Manual clinician
+  instructions are inherently approved; AI-derived instructions store separate
+  draft/approved/rejected metadata, require a resolvable AI source and explicit
+  clinician approval, and return to draft after content changes. No raw AI note is
+  exposed to the patient.
 - Seed data covers 15 April 2025, 6 February 2026, and recent August events.
 - Central AuditLog covers note edits/reverts and supported trust-state transitions:
   highlight decisions, comment resolution, assignment status, and conflict resolution.

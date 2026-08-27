@@ -77,7 +77,49 @@ class TimelineEntry(Base):
         cascade="all, delete-orphan",
         order_by="EntryVersion.version_number",
     )
+    patient_instruction_approval: Mapped["PatientInstructionApproval | None"] = relationship(  # noqa: F821
+        foreign_keys="PatientInstructionApproval.entry_id",
+        cascade="all, delete-orphan",
+        uselist=False,
+    )
 
     @property
     def version(self) -> int:
         return max((snapshot.version_number for snapshot in self.versions), default=1)
+
+    @property
+    def patient_facing_status(self) -> str | None:
+        if self.type != TimelineEntryType.INSTRUCTION:
+            return None
+        if self.patient_instruction_approval is not None:
+            return self.patient_instruction_approval.patient_facing_status.value
+        return "approved" if self.author_role == AuthorRole.CLINICIAN else None
+
+    @property
+    def approved_by(self) -> str | None:
+        if self.patient_instruction_approval is not None:
+            return self.patient_instruction_approval.approved_by
+        if self.type == TimelineEntryType.INSTRUCTION and self.author_role == AuthorRole.CLINICIAN:
+            return self.author_id
+        return None
+
+    @property
+    def approved_at(self) -> datetime | None:
+        if self.patient_instruction_approval is not None:
+            return self.patient_instruction_approval.approved_at
+        if self.type == TimelineEntryType.INSTRUCTION and self.author_role == AuthorRole.CLINICIAN:
+            return self.timestamp
+        return None
+
+    @property
+    def ai_derived(self) -> bool:
+        return bool(
+            self.patient_instruction_approval
+            and self.patient_instruction_approval.ai_derived
+        )
+
+    @property
+    def source_entry_id(self) -> str | None:
+        if self.patient_instruction_approval is None:
+            return None
+        return self.patient_instruction_approval.source_entry_id

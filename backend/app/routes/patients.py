@@ -14,6 +14,7 @@ from app.schemas import (
     TimelineEntryRead,
 )
 from app.services.authorization_service import (
+    AI_ENTRY_TYPES,
     author_role_for_new_entry,
     filter_visible_entries,
     filter_visible_highlights,
@@ -24,7 +25,12 @@ from app.services.highlight_service import get_patient_highlights
 from app.services.evidence_confidence_service import highlight_read
 from app.services.conflict_service import detect_conflicts_for_entry
 from app.services.data_decay_service import build_decay_preview
-from app.services.patient_service import create_patient_entry, get_patient, get_patient_entries
+from app.services.patient_service import (
+    create_patient_entry,
+    get_entry,
+    get_patient,
+    get_patient_entries,
+)
 
 router = APIRouter(prefix="/patients", tags=["patients"])
 DbSession = Annotated[Session, Depends(get_db)]
@@ -96,6 +102,24 @@ def create_note(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
     require_patient_access(user, patient)
     author_role = author_role_for_new_entry(user, payload.type)
+    source_entry = None
+    if payload.ai_derived:
+        source_entry = get_entry(db, payload.source_entry_id or "")
+        if (
+            source_entry is None
+            or source_entry.patient_id != patient_id
+            or source_entry.type not in AI_ENTRY_TYPES
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="AI-derived instruction source must resolve to an AI entry for this patient",
+            )
+        expected_pointer = f"timeline-entry-{source_entry.id}"
+        if payload.provenance_pointer not in {None, expected_pointer}:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="AI-derived instruction provenance must identify its source entry",
+            )
     entry = create_patient_entry(
         db,
         patient_id=patient_id,
@@ -103,7 +127,11 @@ def create_note(
         author_id=user.user_id,
         entry_type=payload.type,
         content=payload.content,
-        provenance_pointer=payload.provenance_pointer,
+        provenance_pointer=(
+            f"timeline-entry-{source_entry.id}" if source_entry else payload.provenance_pointer
+        ),
+        ai_derived=payload.ai_derived,
+        source_entry_id=source_entry.id if source_entry else None,
     )
     detect_conflicts_for_entry(db, entry)
     return TimelineEntryRead.model_validate(entry)

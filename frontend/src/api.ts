@@ -84,6 +84,16 @@ export const updateNote = (
   body: JSON.stringify({ content, expected_version: entry.version }),
 });
 
+export const approvePatientInstruction = (entryId: string, identity: ApiIdentity) =>
+  requestJson<TimelineEntry>(`/entries/${entryId}/patient-facing/approve`, identity, {
+    method: "POST",
+  });
+
+export const rejectPatientInstruction = (entryId: string, identity: ApiIdentity) =>
+  requestJson<TimelineEntry>(`/entries/${entryId}/patient-facing/reject`, identity, {
+    method: "POST",
+  });
+
 export const getEntryComments = (entryId: string, identity: ApiIdentity) =>
   requestJson<Comment[]>(`/entries/${entryId}/comments`, identity);
 

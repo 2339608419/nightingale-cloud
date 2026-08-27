@@ -1,7 +1,14 @@
 from fastapi import HTTPException, status
 
 from app.auth import CurrentUser, UserRole
-from app.models import AuthorRole, Highlight, Patient, TimelineEntry, TimelineEntryType
+from app.models import (
+    AuthorRole,
+    Highlight,
+    Patient,
+    PatientFacingStatus,
+    TimelineEntry,
+    TimelineEntryType,
+)
 
 
 AI_ENTRY_TYPES = {
@@ -34,7 +41,10 @@ def require_patient_access(user: CurrentUser, patient: Patient) -> None:
 
 def can_view_entry(user: CurrentUser, entry: TimelineEntry) -> bool:
     if user.role == UserRole.PATIENT:
-        return entry.type in PATIENT_VISIBLE_TYPES
+        return (
+            entry.type in PATIENT_VISIBLE_TYPES
+            and entry.patient_facing_status == PatientFacingStatus.APPROVED.value
+        )
     if user.role == UserRole.STAFF:
         return entry.type in STAFF_VISIBLE_TYPES
     return user.role in {UserRole.CLINICIAN, UserRole.ADMIN}
@@ -73,6 +83,14 @@ def require_highlight_decision_access(user: CurrentUser) -> None:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only clinicians can accept or reject highlights",
+        )
+
+
+def require_patient_instruction_approval_access(user: CurrentUser) -> None:
+    if user.role != UserRole.CLINICIAN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only clinicians can approve or reject patient-facing instructions",
         )
 
 

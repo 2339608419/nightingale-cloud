@@ -4,7 +4,14 @@ from uuid import uuid4
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models import AuthorRole, Patient, TimelineEntry, TimelineEntryType
+from app.models import (
+    AuthorRole,
+    Patient,
+    PatientFacingStatus,
+    PatientInstructionApproval,
+    TimelineEntry,
+    TimelineEntryType,
+)
 from app.services.revision_service import ensure_initial_version
 
 
@@ -36,6 +43,8 @@ def create_patient_entry(
     entry_type: TimelineEntryType,
     content: str,
     provenance_pointer: str | None,
+    ai_derived: bool = False,
+    source_entry_id: str | None = None,
 ) -> TimelineEntry:
     entry = TimelineEntry(
         id=str(uuid4()),
@@ -49,6 +58,20 @@ def create_patient_entry(
     )
     db.add(entry)
     db.flush()
+    if ai_derived:
+        if entry_type != TimelineEntryType.INSTRUCTION or source_entry_id is None:
+            raise ValueError("AI-derived content requires an instruction and source entry")
+        db.add(
+            PatientInstructionApproval(
+                entry_id=entry.id,
+                patient_facing_status=PatientFacingStatus.DRAFT,
+                ai_derived=True,
+                source_entry_id=source_entry_id,
+                approved_by=None,
+                approved_at=None,
+            )
+        )
+        db.flush()
     ensure_initial_version(db, entry)
     db.commit()
     db.refresh(entry)

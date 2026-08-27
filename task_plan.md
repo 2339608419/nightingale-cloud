@@ -1,28 +1,27 @@
-# Trust Hardening Step 3 — Human-Human Conflict Detection
+# Trust Hardening Step 4 — Patient-Facing Human Approval Gate
 
 ## Goal
-Extend the existing deterministic ConflictRecord pipeline to human-authored contradictions while preserving current clinician-versus-AI/patient behavior, RBAC, provenance, and UI architecture.
+Add an explicit clinician approval gate for AI-generated/derived patient-facing instructions using the existing TimelineEntry, revision, RBAC, provenance, audit, and frontend architecture.
 
 ## Phases
-- [x] Inspect existing model, service, write entry points, authority presentation, and tests
-- [x] Define explicit deterministic source authority and review semantics
-- [x] Extend existing conflict reconciliation without general NLP or unrelated changes
-- [x] Reuse/update conflict API and UI only where authority visibility requires it
-- [x] Add focused human-human conflict and regression tests
-- [x] Run focused/full backend tests, frontend build, and `git diff --check`
+- [x] Inspect timeline/instruction model, patient visibility, AI pipeline, audit/revision, seed data, UI, and tests
+- [x] Define the smallest safe approval-state and compatibility policy
+- [x] Implement additive model/schema/service/authorization and server-side filtering
+- [x] Invalidate approval on content edits while preserving revision history and metadata-only audit
+- [x] Add minimal clinician approval controls and patient trust indicator
+- [x] Add focused approval, privacy, audit, provenance, scope, and regression tests
+- [x] Run focused/relevant/full backend tests, frontend checks/build, and `git diff --check`
 
 ## Constraints
-- Preserve existing categories and clinician-versus-AI/patient behavior.
-- Keep all evidence and both resolvable timeline-entry provenance links.
-- Staff-versus-staff remains open and requires clinician review; do not invent authoritative truth.
-- Preserve patient exclusion and clinic scope.
-- Do not touch `Operation Manual(Simplified Version).txt`, commit changes, or begin Trust Step 4.
+- No direct AI-to-patient path; draft and rejected AI-derived instructions are never patient-visible.
+- Only clinicians may approve or reject; staff, patient, and admin remain denied.
+- Preserve existing RBAC, clinic scope, internal-data restrictions, provenance, and revisions.
+- Do not store clinical content or PHI in AuditLog.
+- Do not touch `Operation Manual(Simplified Version).txt`, commit, or begin Trust Step 5.
 
 ## Errors Encountered
 | Error | Attempt | Resolution |
 |---|---:|---|
-| Combined delete/add patch targeted the same plan path twice | 1 | Recreated the plan in a separate patch operation. |
-| Initial multi-file implementation patch missed an export-list context | 1 | Split the change into smaller model, service, route, and frontend patches. |
-| Existing AI conflict tests selected an older newly eligible human source first | 1 | Process sources oldest-first so the newest contradictory evidence remains first in the existing feed. |
-| README documentation patch used an unstable wrapped-text context | 1 | Reapplied using the exact surrounding lines. |
-| Full suite exposed tied conflict timestamps on Windows | 1 | Added deterministic microsecond sequence within each detection batch so newest-source ordering is stable. |
+| None | - | - |
+| Additive TimelineEntry response fields broke an exact legacy field-set assertion | 1 | Updated the contract test to include the new approval metadata fields; all other initial regression tests passed. |
+| Combined service/docs patch used a repeated 422 context that did not match | 1 | Split the status/provenance correction from documentation and applied exact contexts. |

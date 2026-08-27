@@ -77,6 +77,13 @@ dd { margin: 4px 0 0; font-weight: 650; }
 .conflict-actions button:last-child { color: #fff; background: #397f70; border-color: #397f70; }
 .authoritative-badge { padding: 4px 9px; border-radius: 999px; color: #fff; background: #277565; font-weight: 750; }
 .review-badge { padding: 4px 9px; border-radius: 999px; color: #7a4318; background: #f5dfc5; font-weight: 750; }
+.approval-badge { padding: 4px 9px; border-radius: 999px; font-weight: 750; }
+.approval-draft { color: #7a4318; background: #f5dfc5; }
+.approval-approved { color: #245f53; background: #dceee8; }
+.approval-rejected { color: #862e2e; background: #f6dddd; }
+.approval-detail { margin: 8px 0; color: #526d66; font-size: .75rem; }
+.approval-actions { display: flex; gap: 8px; margin: 10px 0; }
+.approval-actions button { padding: 6px 10px; border: 1px solid #8aa79f; border-radius: 6px; color: #245f53; background: #fff; cursor: pointer; }
 .open-actions { padding-top: 15px; border-top: 1px solid #dce6e3; }
 .open-actions-heading { display: flex; justify-content: space-between; align-items: center; margin-bottom: 9px; }
 .open-actions h3 { margin: 0; font-size: .84rem; letter-spacing: .06em; text-transform: uppercase; }

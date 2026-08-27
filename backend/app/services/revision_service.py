@@ -6,7 +6,14 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.auth import CurrentUser
-from app.models import AuditLog, EntryVersion, TimelineEntry
+from app.models import (
+    AuditLog,
+    EntryVersion,
+    PatientFacingStatus,
+    PatientInstructionApproval,
+    TimelineEntry,
+)
+from app.services.audit_service import add_trust_action_audit
 
 
 class VersionConflictError(Exception):
@@ -92,6 +99,32 @@ def _record_change(
     )
 
 
+def _invalidate_patient_instruction_approval(
+    db: Session,
+    entry: TimelineEntry,
+    user: CurrentUser,
+    *,
+    new_content: str,
+) -> None:
+    if new_content == entry.content:
+        return
+    approval = db.get(PatientInstructionApproval, entry.id)
+    if approval is None or approval.patient_facing_status != PatientFacingStatus.APPROVED:
+        return
+    approval.patient_facing_status = PatientFacingStatus.DRAFT
+    approval.approved_by = None
+    approval.approved_at = None
+    add_trust_action_audit(
+        db,
+        actor=user,
+        action="patient_instruction.approval_invalidated",
+        entity_type="timeline_entry",
+        entity_id=entry.id,
+        from_status=PatientFacingStatus.APPROVED.value,
+        to_status=PatientFacingStatus.DRAFT.value,
+    )
+
+
 def update_entry_with_version(
     db: Session,
     entry: TimelineEntry,
@@ -105,6 +138,9 @@ def update_entry_with_version(
     if expected_version != current:
         db.rollback()
         raise VersionConflictError(current)
+    _invalidate_patient_instruction_approval(
+        db, entry, user, new_content=content
+    )
     entry.content = content
     entry.provenance_pointer = provenance_pointer
     next_version = current + 1
@@ -146,6 +182,9 @@ def revert_entry_to_version(
     )
     if target is None:
         return None
+    _invalidate_patient_instruction_approval(
+        db, entry, user, new_content=target.content
+    )
     entry.content = target.content
     entry.provenance_pointer = target.provenance_pointer
     next_version = current + 1

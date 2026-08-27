@@ -26,6 +26,12 @@
 - Focused human/legacy trust verification passed: 24 tests with one known Starlette warning.
 - Stabilized same-batch conflict ordering for Windows clock resolution; final focused conflict tests passed: 12.
 - Final Trust Step 3 verification passed: 73 backend tests, frontend TypeScript checks and production build (17 modules), and `git diff --check`.
+- Began Trust Step 4 from commit `a3c32b2`; tracked tree/index were clean and the unrelated Operation Manual remained untracked and untouched.
+- Selected a one-to-one approval metadata companion for TimelineEntry instructions: manual clinician instructions remain inherently approved; AI-derived instructions require explicit clinician approval.
+- Confirmed existing version snapshots and metadata-only trust audit helper can support approval invalidation without content duplication or audit PHI.
+- Added AI-derived instruction draft creation, clinician-only approve/reject, hard patient visibility filtering, edit/revert invalidation, approval metadata, audit actions, and minimal UI states.
+- Focused approval/RBAC/revision/AI tests passed: 30; initial full backend suite passed: 84.
+- Final verification passed: 11 focused approval tests, 24 relevant RBAC/privacy/conflict tests, 84 full backend tests, frontend TypeScript checks and production build (17 modules).
 - Trust Step 2 added response-time Evidence Confidence derived from exact provenance, source-span verification, deterministic fact extraction, open-conflict state, and clinician confirmation.
 - Focused Evidence Confidence verification passed: 5 tests; complete backend verification passed: 69 tests with one known Starlette warning.
 - Frontend TypeScript checks and Vite production build passed (17 modules); `git diff --check` passed with only line-ending notices.

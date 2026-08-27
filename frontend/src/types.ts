@@ -16,6 +16,11 @@ export interface TimelineEntry {
   content: string;
   provenance_pointer: string | null;
   version: number;
+  patient_facing_status: "draft" | "approved" | "rejected" | null;
+  approved_by: string | null;
+  approved_at: string | null;
+  ai_derived: boolean;
+  source_entry_id: string | null;
 }
 
 export interface EntryVersion {
