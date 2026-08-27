@@ -2,7 +2,12 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.models.highlight import ClinicalEntityType, HighlightStatus, RiskLevel
+from app.models.highlight import (
+    ClinicalEntityType,
+    EvidenceConfidenceLevel,
+    HighlightStatus,
+    RiskLevel,
+)
 
 
 class HighlightRead(BaseModel):
@@ -22,6 +27,14 @@ class HighlightRead(BaseModel):
     clinician_confirmed: bool
     unresolved_action: bool
     clinical_entity_type: ClinicalEntityType
+    evidence_confidence_level: EvidenceConfidenceLevel
+    confidence_reason: str
+    requires_review: bool
+    abstained: bool
+    provenance_resolved: bool
+    source_span_verified: bool
+    structured_fact_match: bool
+    open_conflict: bool
 
 
 class HighlightSuggestionCreate(BaseModel):

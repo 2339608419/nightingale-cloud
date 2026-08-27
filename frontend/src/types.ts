@@ -44,6 +44,14 @@ export interface Highlight {
   clinician_confirmed: boolean;
   unresolved_action: boolean;
   clinical_entity_type: string;
+  evidence_confidence_level: "high" | "medium" | "low" | "abstain";
+  confidence_reason: string;
+  requires_review: boolean;
+  abstained: boolean;
+  provenance_resolved: boolean;
+  source_span_verified: boolean;
+  structured_fact_match: boolean;
+  open_conflict: boolean;
 }
 
 export type DemoRole = "patient" | "staff" | "clinician" | "admin";

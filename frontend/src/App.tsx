@@ -259,13 +259,17 @@ export default function App() {
         <div className="glance-content">
           <ol className="highlight-list">
             {highlights.map((highlight) => (
-              <li key={highlight.id} className="highlight-item">
+              <li key={highlight.id} className={`highlight-item${highlight.abstained ? " highlight-needs-review" : ""}`}>
                 <button className="highlight-source" type="button" onClick={() => navigateToSource(highlight.provenance_pointer)}>
                   <span className="highlight-topline">
                     <strong>{highlight.text}</strong>
                     <span className={`risk risk-${highlight.risk_level}`}>{formatLabel(highlight.risk_level)}</span>
                   </span>
                   <span className="risk-reason">{highlight.risk_reason}</span>
+                  <span className={`evidence-confidence confidence-${highlight.evidence_confidence_level}`}>
+                    <strong>{highlight.abstained ? "Needs review" : `Evidence: ${formatLabel(highlight.evidence_confidence_level)}`}</strong>
+                    <small>{highlight.confidence_reason}</small>
+                  </span>
                   <span className="highlight-state">
                     {highlight.unresolved_action && <span className="state-open">Action unresolved</span>}
                     {highlight.clinician_confirmed && <span className="state-confirmed">Clinician confirmed</span>}

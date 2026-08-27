@@ -108,6 +108,13 @@ clinical follow-up cannot fall below MODERATE/50. The suggestion response expose
 base score, learned adjustment, adjusted score, selected rule/floor, final score, and
 whether enforcement changed the result.
 
+Evidence confidence is a separate, response-time trust evaluation rather than part of
+importance ranking. Exact provenance and source-span verification are prerequisites;
+recognized deterministic facts with no conflict are HIGH, exact but unstructured
+evidence is MEDIUM, and a structured entity mismatch is LOW/review. Broken evidence
+or any open contradiction yields ABSTAIN/Needs review. The evaluation exposes its
+inputs and reason, is deterministic, and never invokes an LLM provider.
+
 Data decay is read-only: recent entries remain full, old low-priority entries receive
 a compact preview, and durable allergy/risk/keyword facts remain full. Original
 entries and provenance are never deleted.

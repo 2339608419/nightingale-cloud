@@ -58,3 +58,6 @@
 - Safety evaluation now preserves the original base score and learned adjustment, then promotes score/risk only when the centralized floor requires it; non-critical categories have no floor.
 - Seed highlights use the same policy, so the existing unresolved nurse follow-up is now consistently represented at MODERATE risk without changing clinical text or provenance.
 - Final verification passed: 6 focused tests, 64 full backend tests, configured frontend TypeScript checks, and production build.
+- Evidence Confidence will be computed at response time to avoid SQLite column migration and stale derived values; all three Highlight serialization paths need the same helper.
+- Deterministic mapping: missing/mismatched entry provenance or span -> ABSTAIN; any open conflict involving the source -> ABSTAIN; recognized entity extraction or clinician confirmation with exact evidence -> HIGH; exact evidence without either -> MEDIUM; structured extraction inconsistent with the declared entity -> LOW/review.
+- No numeric confidence percentage will be exposed because the requested evidence dimensions are categorical gates, not calibrated probabilities.

@@ -37,6 +37,13 @@ dd { margin: 4px 0 0; font-weight: 650; }
 .risk-moderate { color: #7b4818; background: #f8e1c8; }
 .risk-high, .risk-critical { color: #8a2929; background: #f7dada; }
 .risk-reason { display: block; margin-top: 5px; color: #58706a; font-size: .78rem; line-height: 1.35; }
+.evidence-confidence { display: grid; gap: 2px; margin-top: 9px; color: #496b63; font-size: .7rem; }
+.evidence-confidence strong { font-size: .7rem; text-transform: uppercase; }
+.evidence-confidence small { color: #687d78; font-size: .68rem; line-height: 1.3; }
+.confidence-high strong { color: #276457; }
+.confidence-medium strong { color: #796020; }
+.confidence-low strong, .confidence-abstain strong { color: #922f2f; }
+.highlight-needs-review .highlight-source { border-color: #d6a0a0; background: #fff7f7; }
 .highlight-state { display: flex; flex-wrap: wrap; gap: 7px 12px; margin-top: 9px; color: #627872; font-size: .7rem; font-weight: 700; }
 .state-open { color: #8a4c16; }
 .state-confirmed { color: #276457; }

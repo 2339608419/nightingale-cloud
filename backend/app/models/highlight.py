@@ -15,6 +15,13 @@ class RiskLevel(str, Enum):
     CRITICAL = "critical"
 
 
+class EvidenceConfidenceLevel(str, Enum):
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
+    ABSTAIN = "abstain"
+
+
 class HighlightStatus(str, Enum):
     SUGGESTED = "suggested"
     ACCEPTED = "accepted"
@@ -89,4 +96,3 @@ class Highlight(Base):
 
     patient: Mapped["Patient"] = relationship(back_populates="highlights")  # noqa: F821
     entry: Mapped["TimelineEntry"] = relationship(back_populates="highlights")  # noqa: F821
-

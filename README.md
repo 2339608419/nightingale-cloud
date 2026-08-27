@@ -166,6 +166,17 @@ clinician value differs from an existing AI/patient-derived value, the clinician
 entry remains authoritative and an internal conflict record links to both unchanged
 timeline entries. Clinicians can resolve the warning; patients cannot access it.
 
+Evidence confidence is computed when highlights are read; it is not stored as a
+model-generated opinion. An exact entry pointer and exact source-span match are
+required. A recognized deterministic clinical fact with no open conflict is `HIGH`;
+exact evidence without a structured match is `MEDIUM`; a structured entity mismatch
+is `LOW` and requires review. Missing/broken provenance, a missing source span, or an
+open contradiction produces `ABSTAIN`/`Needs review`, so the item is not presented as
+a normal trusted fact. Clinician confirmation can elevate otherwise exact evidence,
+but cannot repair broken provenance or override an open conflict. The response adds
+the level, concise reason, review flags, and each verification outcome without using
+an LLM or an arbitrary percentage.
+
 ## 13. Revision and version control
 
 Editable notes use immutable full snapshots in `EntryVersion`. Updates require `expected_version`; stale same-entry writes return HTTP `409`, while separate entries remain independent. Revert restores a selected snapshot as a new version. `AuditLog` stores actor/action/status metadata only, never clinical content. It covers entry edit/revert plus highlight decisions, comment resolution changes, assignment completion/reopening, and conflict resolution. No-op and unauthorized requests do not create successful-action events. Git history is organized into feature commits; runtime databases and build artifacts are ignored.

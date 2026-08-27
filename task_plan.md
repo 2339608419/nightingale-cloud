@@ -1,24 +1,23 @@
-# Trust Hardening Step 1 — Clinical Safety Floors
+# Trust Hardening Step 2 — Evidence Confidence
 
 ## Goal
-Add centralized deterministic safety floors after learned importance adjustment, with additive explanations and no unrelated behavior changes.
+Add deterministic, evidence-derived confidence to all Highlight responses and a minimal Top Card label without changing scoring or unrelated behavior.
 
 ## Phases
-- [x] Recover context, inspect repository status, and preserve unrelated user file
-- [x] Inspect importance service, Highlight model/schema, adaptive learning, and tests
-- [x] Define centralized floor rules compatible with current numeric/risk representation
-- [x] Integrate floor enforcement and additive structured explanation
-- [x] Add focused tests for negative/positive learning and provenance stability
+- [x] Recover context and inspect Highlight/provenance/conflict serialization paths
+- [x] Define deterministic confidence levels and review behavior
+- [x] Implement centralized confidence evaluation and additive response fields
+- [x] Add minimal Top Card confidence/review presentation
+- [x] Add focused tests including conflict, broken provenance, determinism, and no-LLM proof
 - [x] Run focused/full backend tests, frontend checks/build, and diff review
 
 ## Constraints
-- No importance redesign, RBAC changes, confidence/patient approval/redaction/conflict expansion, or unrelated modules.
-- Apply base score, then learned adjustment, then safety floor.
-- Preserve existing response fields; add explanation fields only.
+- No scoring replacement, LLM self-confidence, patient approval, redaction changes, broad UI redesign, or Trust Step 3.
+- Compute confidence only from database-verifiable evidence and deterministic extraction.
+- Preserve existing response fields and RBAC semantics.
 - Do not touch `Operation Manual(Simplified Version).txt`.
 
 ## Errors Encountered
 | Error | Attempt | Resolution |
 |---|---:|---|
-| Previous bundled Python path currently has no pytest module | 1 | Re-resolve the current workspace dependency runtime before retrying tests. |
-| Repository-local dependency install was blocked by sandbox network policy | 1 | Retried the scoped requirements install with approved network access; `.venv` remains ignored. |
+| README patch context did not match | 1 | Reapplied at the stable next-section heading; content was added without changing application behavior. |

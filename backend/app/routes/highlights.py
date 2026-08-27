@@ -19,6 +19,7 @@ from app.services.authorization_service import (
     require_patient_access,
 )
 from app.services.highlight_service import create_highlight_suggestion, set_highlight_status
+from app.services.evidence_confidence_service import highlight_read
 from app.services.patient_service import get_entry, get_patient
 
 
@@ -58,7 +59,7 @@ def suggest_highlight(
         payload=payload,
     )
     return HighlightSuggestionRead(
-        highlight=HighlightRead.model_validate(highlight),
+        highlight=highlight_read(db, highlight),
         base_score=evaluation.base_score,
         learned_bonus=evaluation.learned_adjustment,
         learned_adjustment=evaluation.learned_adjustment,
@@ -93,7 +94,7 @@ def _decide_highlight(
         new_status=decision,
         actor=user,
     )
-    return HighlightRead.model_validate(updated)
+    return highlight_read(db, updated)
 
 
 @router.post("/highlights/{highlight_id}/accept", response_model=HighlightRead)

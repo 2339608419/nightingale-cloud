@@ -21,6 +21,7 @@ from app.services.authorization_service import (
     require_patient_access,
 )
 from app.services.highlight_service import get_patient_highlights
+from app.services.evidence_confidence_service import highlight_read
 from app.services.conflict_service import detect_conflicts_for_clinician_entry
 from app.services.data_decay_service import build_decay_preview
 from app.services.patient_service import create_patient_entry, get_patient, get_patient_entries
@@ -80,7 +81,7 @@ def read_patient_highlights(patient_id: str, db: DbSession, user: Identity) -> l
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
     require_patient_access(user, patient)
     visible_highlights = filter_visible_highlights(user, highlights)
-    return [HighlightRead.model_validate(highlight) for highlight in visible_highlights]
+    return [highlight_read(db, highlight) for highlight in visible_highlights]
 
 
 @router.post("/{patient_id}/entries", response_model=TimelineEntryRead, status_code=201)
