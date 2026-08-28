@@ -65,9 +65,11 @@ patient-scoped and optionally entry-linked. Versions are immutable full snapshot
 Audit logs hold actor/action/entity/version metadata and omit note content. A unique
 `(entry_id, version_number)` constraint supports optimistic concurrency.
 
-Conflict records preserve normalized prior and clinician-authoritative values and
-reference both unchanged timeline entries. Open records are internal and may be
-resolved only by a clinician.
+Conflict records preserve normalized values and reference both unchanged timeline
+entries. The authority policy is explicit: clinician outranks staff/nurse, which
+outranks AI/patient-derived evidence. Equal-authority human contradictions assert no
+truth and require clinician review. Open records are internal and may be resolved
+only by a clinician.
 
 ## Trust, privacy, and authorization
 
@@ -88,11 +90,23 @@ boundary. Validation returns categories/counts rather than matched PHI and prese
 the demo medication, dosage, and allergy vocabulary. TLS and encryption at rest are
 deployment assumptions, not local infrastructure.
 
+Extraction and generation are deliberately separate. Small deterministic extractors
+recognize only the synthetic medication/dosage, allergy, and follow-up vocabulary for
+conflicts, Evidence Confidence, and prioritization. Generated summaries never
+self-report confidence or establish authority. A privacy-validation failure, broken
+provenance, or unresolved serious contradiction produces abstention/Needs Review
+rather than a trusted fact.
+
 Patients are limited to their own instructions and cannot access raw AI notes,
 comments, tasks, versions, or preferences. Staff edit only staff notes and cannot
 view raw AI notes. Clinicians can read AI/staff context and edit only clinician-owned
 note types. Admins have clinic-scoped oversight. Demo headers are not authentication
 and require replacement before any real deployment.
+
+There is no direct AI-to-patient path. AI-derived patient instructions start as
+drafts with a resolvable same-patient AI source. Only a clinic-scoped clinician can
+approve them; rejected and draft items remain server-side hidden. Editing approved
+content invalidates approval and returns it to draft while immutable versions remain.
 
 ## Prioritization, adaptation, and decay
 
@@ -104,6 +118,11 @@ Adaptive heuristic learning records clinic-scoped accept/reject counts for entit
 entry-type categories. Acceptance adds future bonuses (+5 entity, +2 entry type),
 while rejection subtracts smaller values. The combined bonus is capped from -10 to
 +25 and exposed with counts and explanations. This is not an ML model.
+
+Learning is treated as a ranking convenience, not evidence. Sparse or biased user
+feedback could otherwise suppress important content, so bonuses are bounded,
+inspectable, clinic-scoped, and unable to change provenance, confidence, authority,
+or approval state. Negative learning is applied before the safety policy.
 
 Clinical safety floors are applied after this learned adjustment. Allergy cannot fall
 below HIGH/50; unresolved medication dosage conflicts cannot fall below HIGH/65;
@@ -154,10 +173,10 @@ warmups and 200 clinician requests to
 
 | Metric | Result |
 |---|---:|
-| Median | 4.221 ms |
-| P95 (nearest rank) | 5.048 ms |
-| Minimum | 3.317 ms |
-| Maximum | 6.898 ms |
+| Median | 5.308 ms |
+| P95 (nearest rank) | 6.540 ms |
+| Minimum | 4.616 ms |
+| Maximum | 17.024 ms |
 
 Environment: Windows 11 (`10.0.26200`), Python 3.12.13, FastAPI 0.141.1,
 SQLAlchemy 2.0.52, TestClient transport, and in-memory SQLite. The backend route is

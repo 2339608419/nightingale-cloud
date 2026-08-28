@@ -86,6 +86,13 @@ npm run build
 
 Required candidate micro-tests are `test_rbac_scope.py`, `test_revision_history.py`, `test_highlight_provenance.py`, `test_concurrent_edits.py`, and `test_self_learning_importance.py`.
 
+Run exactly those micro-tests with:
+
+```powershell
+cd backend
+python -m pytest tests/test_rbac_scope.py tests/test_revision_history.py tests/test_highlight_provenance.py tests/test_concurrent_edits.py tests/test_self_learning_importance.py -q
+```
+
 ## 8. Demo identities and roles
 
 The role selector is labeled **Demo identity simulation**. It sends `X-User-Id`, `X-Role`, and `X-Clinic-Id` development headers.
@@ -101,24 +108,7 @@ All primary identities use clinic `clinic-demo-001`. A second synthetic clinic r
 
 ## Demo runbook
 
-### Scenario A — Glance View and AI provenance
-
-1. Select **Staff** and open the primary patient page.
-2. Read the four high-value Glance items and open actions.
-3. Click **Nurse follow-up unresolved**, marked with an exact-source action.
-4. The page jumps to and briefly emphasizes the staff-safe, AI-derived timeline source. Raw AI-scribed note types remain hidden from staff.
-
-### Scenario B — Collaboration, audit, and learning
-
-1. As **Staff**, use **Add staff note**, then add `@clinician-demo-001 please review the medication plan.` as a comment.
-2. Switch to **Clinician** and accept the AI-derived follow-up suggestion.
-3. Observe the Adaptive Learning signal (`follow up +5`, `system event +2`) for future similar information.
-4. Edit a clinician-owned note. Open **Revision History** to view versions and revert to the prior snapshot.
-5. Resolve or unresolve the comment to demonstrate collaboration state.
-
-### Scenario C — Longitudinal context
-
-The timeline includes April 15, 2025; February 6, 2026; and recent August 2026 entries across human and AI origins. Glance ordering shows why current risk and unresolved work outrank older low-value information. Open and recently completed actions are both visible. Older low-priority entries display a cold-summary preview while durable hypertension/allergy facts remain full-detail.
+Use [`DEMO_RUNBOOK.md`](DEMO_RUNBOOK.md) for a timed 5–7 minute walkthrough. It covers Glance/provenance, multi-date context, staff–clinician collaboration, adaptive importance, revision/revert, conflict review, and the clinician approval gate for AI-derived patient instructions.
 
 ## 9. RBAC enforcement
 
@@ -205,6 +195,13 @@ but cannot repair broken provenance or override an open conflict. The response a
 the level, concise reason, review flags, and each verification outcome without using
 an LLM or an arbitrary percentage.
 
+Extraction and generation are separate trust boundaries. Deterministic extractors
+recognize only the documented synthetic medication, allergy, and follow-up vocabulary
+for scoring, confidence, and conflict checks. The summarizer may paraphrase validated
+redacted input, but its output never supplies its own confidence and cannot directly
+become patient-visible. Broken evidence or failed privacy validation causes abstention;
+AI-derived patient instructions remain draft until a clinician approves them.
+
 ## 13. Revision and version control
 
 Editable notes use immutable full snapshots in `EntryVersion`. Updates require `expected_version`; stale same-entry writes return HTTP `409`, while separate entries remain independent. Revert restores a selected snapshot as a new version. `AuditLog` stores actor/action/status metadata only, never clinical content. It covers entry edit/revert plus highlight decisions, comment resolution changes, assignment completion/reopening, and conflict resolution. No-op and unauthorized requests do not create successful-action events. Git history is organized into feature commits; runtime databases and build artifacts are ignored.
@@ -218,6 +215,13 @@ This is an adaptive heuristic, not an ML model. The base combines risk, recency,
 - total learned bonus capped to `[-10, +25]`
 
 Only clinicians accept/reject. Identical decisions are idempotent; changing a decision reverses previous counters. `GET /importance-preferences` exposes counts, weights, and explanations.
+
+Adaptive feedback is intentionally bounded because user behavior can be sparse,
+biased, or mistaken. Preferences are clinic-scoped, inspectable, and capped; they do
+not change source evidence, authority, Evidence Confidence, or patient approval. The
+clinical safety floor is applied after learning, so repeated rejection cannot demote
+critical allergy, unresolved dosage-conflict, medication-change, or follow-up classes
+below their configured minimum.
 
 After the learned adjustment, a centralized deterministic safety policy enforces
 minimum score/risk floors: allergy HIGH/50; unresolved medication dosage conflict
@@ -255,9 +259,9 @@ Run the repeatable backend approximation from `backend/`:
 python scripts/benchmark_glance.py --requests 200 --warmups 20
 ```
 
-Final-audit measurement on Windows 11, Python 3.12.13, FastAPI 0.141.1,
+Final-submission measurement on Windows 11, Python 3.12.13, FastAPI 0.141.1,
 SQLAlchemy 2.0.52, and in-memory SQLite: 200 measured requests after 20 warmups,
-median 4.221 ms and P95 5.048 ms for
+median 5.308 ms and P95 6.540 ms for
 `GET /patients/patient-demo-001/highlights`. This in-process TestClient measurement
 includes routing, authorization, SQLAlchemy query work, and serialization, but
 excludes network latency, other frontend requests, and browser rendering. It is a

@@ -10,7 +10,11 @@ This repository contains the demo-ready Nightingale Cloud 72-hour prototype. Onl
 - Server-side role and clinic scoping using development identity headers
 - Full-snapshot revision history, metadata-only audit logs, revert, and optimistic concurrency
 - Deterministic importance scoring with clinic-scoped adaptive feedback
-- PHI redaction before provider invocation and reliable offline summarization
+- Post-learning clinical safety floors and deterministic Evidence Confidence/abstention
+- Provenance-preserving human/AI conflict detection with explicit authority policy
+- Clinician approval gate for AI-derived patient-facing instructions
+- PHI redaction plus validation before provider invocation and reliable offline summarization
+- Metadata-only trust-action audit coverage
 - Read-only, reversible data-decay preview
 - Idempotent synthetic demo seed
 - Demo-focused React patient page and complete backend micro-tests

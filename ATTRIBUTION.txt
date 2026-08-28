@@ -5,19 +5,19 @@ No external patient data, images, fonts, audio, or third-party source code snipp
 
 Backend libraries
 -----------------
-FastAPI — MIT License — https://github.com/fastapi/fastapi
-Pydantic — MIT License — https://github.com/pydantic/pydantic
-SQLAlchemy — MIT License — https://github.com/sqlalchemy/sqlalchemy
-Uvicorn — BSD 3-Clause License — https://github.com/encode/uvicorn
-HTTPX — BSD 3-Clause License — https://github.com/encode/httpx
-pytest — MIT License — https://github.com/pytest-dev/pytest
+FastAPI — REST API framework — MIT License — https://github.com/fastapi/fastapi
+Pydantic — request/response validation — MIT License — https://github.com/pydantic/pydantic
+SQLAlchemy — ORM and database access — MIT License — https://github.com/sqlalchemy/sqlalchemy
+Uvicorn — local ASGI server — BSD 3-Clause License — https://github.com/encode/uvicorn
+HTTPX — test/API HTTP client — BSD 3-Clause License — https://github.com/encode/httpx
+pytest — backend test runner — MIT License — https://github.com/pytest-dev/pytest
 
 Frontend libraries and tools
 ----------------------------
-React / React DOM — MIT License — https://github.com/facebook/react
-Vite — MIT License — https://github.com/vitejs/vite
-@vitejs/plugin-react — MIT License — https://github.com/vitejs/vite-plugin-react
-TypeScript — Apache License 2.0 — https://github.com/microsoft/TypeScript
+React / React DOM — patient-page UI — MIT License — https://github.com/facebook/react
+Vite — development server and production bundler — MIT License — https://github.com/vitejs/vite
+@vitejs/plugin-react — React integration for Vite — MIT License — https://github.com/vitejs/vite-plugin-react
+TypeScript — static type checking — Apache License 2.0 — https://github.com/microsoft/TypeScript
 
 Models and external services
 ----------------------------

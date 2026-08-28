@@ -20,6 +20,15 @@
 - Expanded backend tests for descending order, required fields, supported vocabularies, content mix, and required longitudinal dates.
 - Verification passed: 6 backend tests passed in 0.10s; one third-party Starlette deprecation warning remains.
 - Frontend TypeScript checks and Vite production build passed; 17 modules transformed in 102ms.
+- Began final submission preparation from clean tracked commit `fadc375`; the excluded operation manual remains untracked and was not read or modified.
+- Audited tracked deliverables, backend/frontend structure, route/service/model inventories, and all 89 named backend tests.
+- Added a standalone 5–7 minute `DEMO_RUNBOOK.md`; aligned README, technical brief, and attribution around the final trust controls without changing application behavior.
+- Technical brief is 1,264 words, a realistic 2–3 page handoff length; README is 1,774 words and delegates the live sequence to the concise runbook.
+- Repository hygiene passed: prohibited generated/runtime paths are untracked and ignored; no likely embedded secret markers were found in tracked files.
+- Required micro-tests passed 18 in 0.92s; complete backend suite passed 89 in 4.18s, with one known third-party TestClient deprecation warning.
+- Frontend TypeScript checks and production build passed; Vite transformed 17 modules in 132ms.
+- Fresh benchmark completed 200 requests after 20 warmups: median 5.308ms, P95 6.540ms, min 4.616ms, max 17.024ms.
+- Production-lifespan smoke passed for health, patient, and Glance routes; `git diff --check` passed.
 - Began Trust Step 3 with a clean tracked tree at commit `7b7415e`; the unrelated Operation Manual remains untracked and untouched.
 - Inspected ConflictRecord/service/routes/write hooks/UI/tests and selected an additive authority-policy representation that preserves existing storage and provenance contracts.
 - Extended the existing conflict service to clinician/staff human writes, added explicit authority-policy response metadata, and reused the conflict panel with peer-review labels.
