@@ -12,10 +12,10 @@ This directory records the independent audit and implementation plan requested f
 
 ## Current phase
 
-- Phase: 0 — Baseline audit and implementation plan
-- Status: verification complete; local commit pending explicit authorization
-- Application-code changes allowed: no
-- Commit target: `docs: audit real-clinic failure scenarios`
+- Phase: 1 — PHI egress, provider ordering, timeout, and safe degradation
+- Status: in progress
+- Application-code changes allowed: only the minimum changes for original scenarios 3, 4, 8, and 9
+- Commit target after explicit authorization: `feat: harden PHI boundaries and AI failure handling`
 
 ## Phase 0 objectives
 
@@ -47,7 +47,19 @@ This directory records the independent audit and implementation plan requested f
 - [x] Complete scenario matrix for scenarios 1–17.
 - [x] Complete findings and risk-ordered future-phase plan.
 - [x] Verify unstaged and staged diffs.
-- [ ] Commit only Phase 0 documents.
+- [x] Commit only Phase 0 documents (`058020d428b0a597dec14363513aae1ba8b9735c`).
+
+## Phase 1 checklist
+
+- [x] Confirm Phase 0 HEAD and preserve the pre-existing root working-tree changes.
+- [x] Inspect the AI-scribe, redaction, validation, provider, logging, exception, audit, and test paths.
+- [x] Implement typed, sanitized provider outcomes and configurable timeout handling.
+- [x] Preserve and test the single redaction → validation → provider boundary.
+- [x] Prove failure paths create no ordinary AI timeline entry and leak no clinical/PHI text.
+- [x] Run focused tests, the complete backend suite, frontend checks/build, and diff checks.
+- [x] Update scenarios 3, 4, 8, and 9 strictly from verified evidence.
+- [x] Explicitly stage only Phase 1 files and request commit authorization.
+- [x] Reverify and restage the Phase 1 source-reference PHI correction found during staged review.
 
 ## Errors encountered
 
@@ -55,6 +67,9 @@ This directory records the independent audit and implementation plan requested f
 |---|---:|---|
 | Global `python` command was unavailable when running the planning skill's session-catchup script. | 1 | Record the failure and use the repository's existing backend virtual-environment interpreter for project verification. No retry of the same command. |
 | Initial explicit `git add` could not create `.git/index.lock` because the managed workspace exposes `.git` as read-only by default. | 1 | Record the environment failure and retry the same narrow four-file staging operation with repository-scoped elevated Git permission. |
+| The first combined Phase 1 documentation patch expected `# Phase 0 Progress`, but the actual heading is `# Phase 0 Progress Log`. | 1 | No partial edit was applied; inspect the exact heading and split the patch into exact-file updates. |
+| The first focused-test command used a repository-relative virtual-environment path while its working directory was already `backend`. | 1 | Use the backend-local `.venv\\Scripts\\python.exe` path on the next invocation. |
+| The first focused run had one test false positive because it asserted that the common word `and` was absent from the entire structured response. | 1 | Keep the privacy assertion precise: check complete PHI values and meaningful clinical phrases rather than generic words used by safe validation metadata. |
 
 ## Completion gate
 

@@ -150,15 +150,25 @@ The deterministic mock provider is the default and makes the demo independent of
 $env:AI_SCRIBE_PROVIDER = "openai"
 $env:OPENAI_API_KEY = "..."
 $env:OPENAI_MODEL = "gpt-5-mini" # optional
+$env:AI_SCRIBE_PROVIDER_TIMEOUT_SECONDS = "30" # optional, bounded to 0.1–120 seconds
 ```
 
 If explicit selection or the key is absent, mock mode is used. Both providers sit
 behind the same validation gate, so even an explicitly configured external provider
-cannot receive text that failed redaction validation. No model or API output is bundled.
+cannot receive text that failed redaction validation. The API identifies mock output
+as `rule_derived_mock`; it is never presented as an external-model result. Runtime
+provider timeout, unavailability/503, malformed, or empty responses produce a typed
+safe-abstention result and no timeline entry. Provider response bodies and exception
+text are not returned or logged, and this synchronous prototype performs no retry.
+Client-provided AI source identifiers are never logged or persisted directly. Before
+logging or provenance creation, the ingestion service converts them to a stable,
+one-way `src_sha256_<digest>` reference using SHA-256 with a fixed domain separator;
+the original identifier is not stored in a parallel field.
+No model or API output is bundled.
 
 ## 12. Provenance design
 
-Every highlight stores `entry_id`, `source_span`, and `provenance_pointer`. The pointer uses stable DOM target `timeline-entry-{entry_id}`. Source spans are validated against source content. Clicking a Glance item scrolls to the originating entry; AI ingestion separately stores a stable source such as `synthetic://ai-scribe/{source_id}#transcript`.
+Every highlight stores `entry_id`, `source_span`, and `provenance_pointer`. The pointer uses stable DOM target `timeline-entry-{entry_id}`. Source spans are validated against source content. Clicking a Glance item scrolls to the originating entry; AI ingestion separately stores an opaque stable source such as `synthetic://ai-scribe/src_sha256_<digest>#transcript`, never the client-provided identifier.
 
 Clinician note creation and editing also run a deterministic conflict check for the
 synthetic medication/dosage, allergy-status, and follow-up-status vocabulary. When a

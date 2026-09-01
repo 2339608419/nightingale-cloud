@@ -4,6 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
+from app.services.ai_scribe_service import opaque_source_reference
 from app.services.summarization_provider import get_summary_provider
 
 
@@ -54,7 +55,10 @@ def test_ai_entry_has_stable_provenance_and_no_raw_transcript(client: TestClient
 
     assert response.status_code == 201
     body = response.json()
-    assert body["provenance_pointer"] == "synthetic://ai-scribe/source-nurse_consult-001#transcript"
+    expected_source_ref = opaque_source_reference("source-nurse_consult-001")
+    assert body["provenance_pointer"] == (
+        f"synthetic://ai-scribe/{expected_source_ref}#transcript"
+    )
     assert body["timeline_entry"]["provenance_pointer"] == body["provenance_pointer"]
     assert body["timeline_entry"]["author_role"] == "system"
     assert body["timeline_entry"]["version"] == 1
@@ -80,7 +84,9 @@ def test_raw_phi_is_not_logged(client: TestClient, caplog: pytest.LogCaptureFixt
     assert "John Tan" not in log_output
     assert "S1234567A" not in log_output
     assert "91234567" not in log_output
-    assert "source-doctor_consult-001" in log_output
+    source_ref = opaque_source_reference("source-doctor_consult-001")
+    assert source_ref in log_output
+    assert "source-doctor_consult-001" not in log_output
 
 
 @pytest.mark.parametrize(

@@ -1,5 +1,31 @@
 # Phase 0 Findings
 
+## Phase 1 initial inspection
+
+- Phase 1 starts from confirmed HEAD `058020d428b0a597dec14363513aae1ba8b9735c`; the pre-existing root changes and untracked user materials remain excluded.
+- The existing call order is already centralized in `ingest_synthetic_transcript`: `redact_phi` → `validate_redaction` → `provider.summarize`. Validation failure returns before provider invocation and before entry creation.
+- Provider failures currently escape without a typed/sanitized API outcome. The external provider uses a hard-coded 30-second `urlopen` timeout, does not distinguish timeout, HTTP 503/unavailable, or invalid/empty response, and has no focused failure tests.
+- The default deterministic mock is reliable offline and named `deterministic-mock`, but the API does not expose a structured generation mode. Missing OpenAI configuration silently selects mock, which should remain documented rather than represented as an external-model result.
+- Current AI-scribe logs contain source ID, interaction type, redaction count, and validation reason only. Existing focused tests prove fixture name/IC/phone absence, but provider error paths and transcript clinical-body leakage are not tested.
+- The safest minimal failure policy is abstention: typed provider failures return a sanitized result, create no Timeline Entry, and do not fall back at runtime to a result that could be mistaken for model output. No retry is required for this synchronous prototype.
+
+## Phase 1 verified result
+
+- The provider deadline is configurable through `AI_SCRIBE_PROVIDER_TIMEOUT_SECONDS`, defaults to 30 seconds, and is bounded to 0.1–120 seconds. Invalid/out-of-range configuration safely uses the default.
+- External timeout, HTTP/network unavailability, malformed JSON/shape, and empty summaries are mapped to sanitized outcomes. Error bodies and exception strings are neither logged nor returned.
+- Runtime external-provider failure uses safe abstention and creates no Timeline Entry or audit event. The service intentionally performs no retry.
+- The offline mock remains the default and is now explicitly identified as `rule_derived_mock`; external-provider success is `external_model`, and dependency-injected test doubles are labeled separately.
+- Compatibility is additive: existing `status=created|withheld`, summary, entry, provenance, redaction, and validation fields remain; new `outcome`, `generation_mode`, and `safe_abstention` fields explain the result. Provider failures use HTTP 504/503/502 while redaction withholding remains HTTP 200.
+- Scenario 3 remains PARTIAL because repository tests cannot prove reverse-proxy, crash dashboard, hosting, third-party, or retention behavior. Scenario 4 remains SURVIVES. Scenarios 8 and 9 remain PARTIAL because backend safety is now proven but clinician-facing outage UI and production resilience/operations are absent.
+- Initial verification before staged review: focused suite 25 passed; complete backend suite 98 passed; frontend TypeScript checks and production Vite build passed. The final post-correction counts are recorded below.
+
+## Phase 1 staged-review correction
+
+- Staged review identified that the client-controlled `source_id` bypassed transcript redaction through logs and provenance. The Timeline Entry ID was already a server-generated UUID, but provenance was copied into the initial EntryVersion and API response.
+- The minimal correction derives `src_sha256_<digest>` with SHA-256 plus a fixed domain separator immediately inside the ingestion service. The external identifier is never logged or persisted; only the deterministic opaque reference is used in logs and `synthetic://` provenance.
+- No raw-source field is added. Request-controlled log fields are now limited to an enum interaction type plus the opaque source reference; provider name is server-selected/dependency-injected, validation reason is fixed by server code, and no free text is logged.
+- Final post-correction verification: focused suite 26 passed; complete backend suite 99 passed; frontend TypeScript checks and production Vite build passed.
+
 ## Baseline
 
 - Branch: `master`

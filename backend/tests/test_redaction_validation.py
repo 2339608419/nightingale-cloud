@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 from app.services import ai_scribe_service
+from app.services.ai_scribe_service import opaque_source_reference
 from app.services.redaction_service import (
     RedactionResult,
     redact_phi,
@@ -159,4 +160,5 @@ def test_validation_failure_logs_no_raw_phi(
     assert "John Tan" not in caplog.text
     assert "S1234567A" not in caplog.text
     assert "91234567" not in caplog.text
-    assert "redaction-validation-source" in caplog.text
+    assert opaque_source_reference("redaction-validation-source") in caplog.text
+    assert "redaction-validation-source" not in caplog.text

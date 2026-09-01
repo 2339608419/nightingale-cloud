@@ -46,23 +46,23 @@ Each scenario records:
 ### Scenario 3 — PHI escaping through logs, errors, or metadata
 
 - **Verdict:** PARTIAL
-- **Classification:** Implemented and tested for the AI-scribe/audit paths; no centralized application-wide safe-logging policy
-- **Where:** Metadata-only AI logs in `backend/app/services/ai_scribe_service.py:58-87`; trust-audit metadata allowlist in `backend/app/services/audit_service.py:10-38`; request errors are mostly fixed messages in routes. The repository has no crash-report/dashboard integration and defines no application-log retention period, deletion policy, or third-party processor inventory.
-- **What breaks first:** Known AI-scribe transcript fixtures remain out of logs, but a future exception/logger outside these paths could log request or clinical text because there is no common redacting logger/error boundary.
-- **What could break later:** Provider/library exceptions and reverse-proxy/access logs may include more context than application tests inspect.
-- **Improvement:** Phase 1 should add centralized safe log fields, sanitized exception translation, regression tests across HTTP errors/provider failures, and a documented inventory/retention policy for application logs, access logs, crash reports, and any configured third-party dashboards.
-- **Evidence:** `test_ai_scribe.py::test_raw_phi_is_not_logged`, `test_redaction_validation.py::test_validation_failure_logs_no_raw_phi`, `test_trust_action_audit.py::test_audit_records_never_contain_clinical_or_collaboration_content`.
+- **Classification:** Implemented and directly tested for AI-scribe success, redaction-withheld, provider-failure, response, and audit paths; infrastructure-wide controls remain unproven
+- **Where:** `backend/app/services/ai_scribe_service.py` one-way transforms the external source identifier to `src_sha256_<digest>` before logging or persistence, then logs only that opaque reference, interaction type, provider category, redaction count, and sanitized outcome. It never logs Provider exception objects or response bodies. `backend/app/routes/ai_scribe.py` returns fixed safe messages. Trust audit metadata remains allowlisted in `backend/app/services/audit_service.py`. The repository still has no reverse-proxy/crash-dashboard integration, third-party processor inventory, or retention/deletion policy.
+- **What breaks first:** The tested AI-scribe boundary rejects error-body leakage, but an unrelated future route/logger or infrastructure access/error log could still capture request context because there is no deploy-time organization-wide logging/DLP enforcement.
+- **What could break later:** Framework, reverse-proxy, hosting, crash-report, and third-party retention behavior cannot be proven from this repository.
+- **Improvement:** Add deployment-specific safe logging configuration, log-field allowlists, retention/deletion controls, third-party processor review, and production log scanning before real-clinic use.
+- **Evidence:** Existing AI/redaction/audit privacy tests plus `test_ai_provider_failures.py::test_typed_provider_failures_safely_abstain_without_entry_or_audit`, `::test_unexpected_provider_error_body_is_never_logged_or_returned`, and `::test_external_source_id_is_stably_opaque_across_response_and_persistence`.
 - **Remaining limitation:** Pattern-based tests cannot prove absence of every PHI type in production infrastructure logs.
 
 ### Scenario 4 — Redaction/validation must precede provider invocation
 
 - **Verdict:** SURVIVES
 - **Classification:** Implemented and directly tested for the supported synthetic patterns
-- **Where:** `redact_phi` then `validate_redaction`, followed by an early abstention or provider call in `backend/app/services/ai_scribe_service.py:34-71`.
+- **Where:** The only provider gateway remains `ingest_synthetic_transcript`: external source ID → opaque source reference, then transcript `redact_phi` → `validate_redaction` → early `redaction_withheld` or `provider.summarize`. Entry persistence occurs only after a non-empty successful provider result, and uses only the opaque source reference.
 - **What breaks first:** Unsupported PHI formats or names outside deterministic recognition may pass; the required call order itself does not fail.
 - **What could break later:** A new provider entry point could bypass this single ingestion service unless architectural enforcement/tests cover it.
-- **Improvement:** Phase 1 should retain one provider gateway and broaden negative tests without weakening abstention.
-- **Evidence:** `test_ai_scribe.py::test_provider_receives_only_redacted_text`; `test_redaction_validation.py::test_remaining_phone_and_id_withhold_without_provider_or_entry`; fake provider receives no call on failure.
+- **Improvement:** Keep all future provider integrations behind this gateway and extend deterministic PHI recognition only with clinically reviewed synthetic fixtures.
+- **Evidence:** `test_ai_scribe.py::test_provider_receives_only_redacted_text`; `test_redaction_validation.py::test_remaining_phone_and_id_withhold_without_provider_or_entry`; Phase 1 timeout/503 tests inspect the encoded external request and prove it contains placeholders rather than raw name, IC, or phone.
 - **Remaining limitation:** This is synthetic deterministic DLP, not clinically validated PHI detection.
 
 ### Scenario 5 — Clinic B onboards next Monday
@@ -101,23 +101,23 @@ Each scenario records:
 ### Scenario 8 — External provider timeout
 
 - **Verdict:** PARTIAL
-- **Classification:** A timeout exists; safe API handling and evidence do not
-- **Where:** Fixed `urlopen(..., timeout=30)` in `backend/app/services/summarization_provider.py:52`.
-- **What breaks first:** A 45-second provider hang should hit the fixed socket timeout at roughly 30 seconds, but the exception raises through the ingestion route instead of returning a typed timeout/degraded/withheld response. There is no AI-scribe frontend workflow, so the current clinician page cannot show a waiting, timed-out, retry, or fallback state at all.
-- **What could break later:** Thirty seconds is not configurable; server worker exhaustion, retry storms, and ambiguous client state are possible.
-- **Improvement:** Phase 1 should add configurable connect/read deadlines, sanitized exception mapping, no-provider-result persistence guarantees, and timeout tests.
-- **Evidence:** Static code inspection; no timeout test exists.
+- **Classification:** Backend timeout, safe abstention, and persistence behavior are implemented/tested; clinician-facing waiting/recovery UI is absent
+- **Where:** `AI_SCRIBE_PROVIDER_TIMEOUT_SECONDS` configures a bounded 0.1–120 second external-provider deadline in `backend/app/services/summarization_provider.py`. Socket/URL timeout becomes `provider_timeout`; the route returns a fixed 504 abstention body and creates no entry.
+- **What breaks first:** A 45-second hang is cut off at the configured deadline, but the existing frontend has no AI-scribe ingestion screen or waiting/timeout/retry state, so the clinician experience is only an API contract.
+- **What could break later:** A synchronous request still occupies a worker until the deadline. There is intentionally no retry, cancellation, circuit breaker, queue, or distributed outage coordination.
+- **Improvement:** A later UI/evaluation phase should expose waiting and retry guidance; production architecture would require bounded queues, cancellation, circuit breaking, and monitoring.
+- **Evidence:** `test_ai_provider_failures.py::test_openai_provider_timeout_uses_configured_deadline_and_abstains` proves the configured 0.25-second deadline is passed to the provider and no Timeline Entry is returned; the parameterized failure test proves no entry or audit change.
 - **Remaining limitation:** Circuit breaking, queueing, cancellation, rate limits, and distributed tracing would remain production work.
 
 ### Scenario 9 — Provider unavailable / deterministic degradation
 
 - **Verdict:** PARTIAL
-- **Classification:** Reliable default mock exists; runtime external-provider failure is not handled
-- **Where:** `get_summary_provider` selects OpenAI only with explicit mode and key, otherwise returns deterministic mock (`backend/app/services/summarization_provider.py:70-78`). Responses identify the provider (`backend/app/routes/ai_scribe.py:42-62`).
-- **What breaks first:** If the external provider is selected and returns 503, invalid JSON, or no text, the ingestion request fails rather than returning a clearly labeled fallback or safe abstention. Previously stored/seeded Glance items may remain visible, but they are not marked stale or connected to this outage; no new rule-derived item is produced for the failed consult.
-- **What could break later:** Silent mock selection on missing configuration may be misunderstood operationally as successful external AI.
-- **Improvement:** Phase 1 should distinguish configuration, timeout, unavailable, invalid-response, fallback, and withheld states; never label fallback as model output.
-- **Evidence:** Mock/fake-provider success tests exist; no 503/invalid-response/fallback test exists.
+- **Classification:** Runtime 503/malformed/empty failures safely abstain and default mock is explicitly labeled; broader degraded Glance behavior and operational configuration remain incomplete
+- **Where:** Provider failures are typed as `provider_unavailable` or `invalid_provider_response`; fixed 503/502 responses contain no Provider body and persist no ordinary AI entry. Default offline output carries `generation_mode=rule_derived_mock` and a Rule-derived mock message rather than pretending to be an external-model result.
+- **What breaks first:** The failed consult produces no new summary, which is the safe policy. Existing Glance items remain visible but are not connected to outage time or explicitly marked stale. There is no AI-scribe frontend workflow displaying the abstention.
+- **What could break later:** Explicit `openai` mode without a key still selects the labeled mock rather than surfacing a configuration error; there is no provider health monitoring, SLA, or outage history.
+- **Improvement:** Add operational configuration validation/health visibility and UI handling in a later phase without weakening the current no-entry abstention rule.
+- **Evidence:** `test_ai_provider_failures.py` covers HTTP 503, typed unavailable, malformed JSON, empty responses, unexpected error bodies, no persistence/audit changes, and explicit mock labeling.
 - **Remaining limitation:** Reliable external operation still needs retries with budgets, monitoring, and provider SLAs.
 
 ### Scenario 10 — Concurrent edits and recovery from 409

@@ -41,8 +41,17 @@ class RedactionValidationMetadata(BaseModel):
 
 class AiScribeResponse(BaseModel):
     status: Literal["created", "withheld"]
+    outcome: Literal[
+        "success",
+        "redaction_withheld",
+        "provider_timeout",
+        "provider_unavailable",
+        "invalid_provider_response",
+    ]
     message: str
     provider: str
+    generation_mode: Literal["external_model", "rule_derived_mock", "test_double"]
+    safe_abstention: bool
     redaction: RedactionMetadata
     validation: RedactionValidationMetadata
     generated_summary: str | None
