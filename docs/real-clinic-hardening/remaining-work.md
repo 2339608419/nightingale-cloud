@@ -18,8 +18,8 @@ the external boundary; a scenario may contain both implemented controls and a si
 | 5 | Clinic-scoped queries and phone uniqueness | Clinic B fixture | Config, schema, membership, migration, deployment and onboarding below |
 | 6 | Text/language span preservation | Post-ASR multilingual fixtures | Real speech recognition and language-quality evaluation |
 | 7 | Final-segment provisional signal, append-only partial→final | Supplied minute-two offset | Live audio latency/ASR evaluation |
-| 8 | Configurable timeout and safe abstention | Hung provider test | Outage UI, worker/circuit-breaker operational validation |
-| 9 | Typed failure/no entry, offline mock | 503/invalid response tests | Long-outage monitoring and bounded recovery operations |
+| 8 | Configurable timeout, waiting/duplicate lock, manual retry UI | Hung provider test | Worker/circuit-breaker validation; rendered browser tests |
+| 9 | Typed failure/mode UI, draft retention, unknown-result resend lock | 503/invalid response tests, offline mock | Long-outage monitoring and server-side outcome reconciliation |
 | 10 | 409 recovery, independent-entry editing, snapshots | TestClient/local concurrency | Durable crash recovery, production DB contention tests |
 | 11 | Immutable delivery state and safe failure enum | Sent/delivered/failed channel | Messaging account, consent/templates, signed receipts |
 | 12 | Approval, invalidation, correction/replacement history | Patient phone delivery | Correction delivery/escalation; no guaranteed remote recall |
@@ -35,6 +35,10 @@ prototype scope. Reference assistance, multilingual readiness and extraction/mut
 remain PARTIAL. A journal can check general evidence, never confirm what this patient said or
 which dose is intended; human confirmation must remain separate.
 
+Phase 9 success now independently refreshes Glance/conflicts/Evidence Confidence. Failed
+reads show NOT UPDATED and permit only a read refresh, without unlocking generation retry.
+This fixes stale safety presentation, not long-outage operation or server reconciliation.
+
 ## Minimum next steps, resources and decisions
 
 | Priority | Work and smallest next step | Account / cost / user decision |
@@ -46,7 +50,7 @@ which dose is intended; human confirmation must remain separate.
 | P1 privacy/operations | Inventory proxy/crash/provider logs and retention; configure safe redaction, access and incident handling | Infrastructure/vendor admin access, approved retention/legal policy; possible hosting/monitoring fees |
 | P1 persistence | Add versioned migrations; validate orphan/cross-tenant links; test managed DB concurrency and restore | DB host/account/budget; retention/RPO/RTO decisions; never migrate real data in this prototype task |
 | P1 delivery | Implement one approved messaging adapter and signed receipt callback with bounded retries/idempotency | SMS/WhatsApp provider account, sender/template approval, consent policy and per-message budget |
-| P2 reliability | Add visible outage state and bounded worker recovery; measure deployed warm-path latency | Hosting/load-test budget and latency target; old benchmark is not current SLA proof |
+| P2 reliability | Phase 9 adds per-request failure UI, not long-outage coordination. Add outcome reconciliation/idempotency, bounded worker recovery and deployed latency evaluation | Hosting/load-test budget and latency target; old benchmark is not current SLA proof |
 | P2 audio/languages | Evaluate one streaming ASR adapter on consented or synthetic noisy/code-switched material before integration | ASR account or local hardware, audio-minute/compute budget, language reviewers and consent policy |
 | P2 clinical/reference | Version a reviewed terminology/reference set and test capture errors and dose ambiguity | Clinician time, journal/API access/licensing if used; choose supported vocabulary/languages |
 | P2 learning | Verify real actors, audit correlated decisions and review-queue sampling without lowering floors | Clinical governance and study design; no claim of unbiased learning |

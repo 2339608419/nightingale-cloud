@@ -1,5 +1,29 @@
 # Phase 0 Progress Log
 
+## Phase 9 — AI Scribe request recovery UI
+
+- Review correction: success now refreshes clinical safety views independently of generation;
+  failure marks Glance/conflicts/Evidence Confidence NOT UPDATED with read-only retry.
+  Existing success/draft is retained and generation remains locked. Four new refresh tests
+  cover updated evidence/conflicts, failed reads, context switch and latest-request ordering.
+  Frontend final: 18 passed; TypeScript app/config and build passed (22 modules, 92 ms).
+  Backend was not rerun for this frontend-only correction; prior Phase 9 182-pass result below
+  remains attributed to that earlier run. No browser E2E or external provider invocation.
+
+- Confirmed HEAD `3d2f7a6a08ed2204b5cee8a7c881f5786c4d8061`; user files protected.
+- Added minimal panel, dedicated root-response adapter, memory-only controller and tests;
+  reused backend contract and existing form styles. No backend or dependency changes.
+- First frontend test run: 14 passed; build failed TS5097 on the runtime .ts import used by
+  Node strip-types tests. Enabled allowImportingTsExtensions under existing noEmit; subsequent
+  tests, app/config TypeScript checks and build passed without weakening assertions.
+- Frontend: 14 passed (11 new); backend: 182 passed, one existing Starlette/httpx warning
+  in 18.59s. No real provider invoked. No rendered browser smoke performed this phase.
+- Updated scenario 8/9 mapping and remaining work without upgrading PARTIAL. Long-outage,
+  worker capacity, production SLA and unknown-outcome reconciliation remain unsolved.
+- Final build passed (21 modules, 89 ms); working/staged diff checks passed. Twelve files
+  explicitly staged: six frontend/config/test files and six hardening documents. User-owned
+  root files/media remain unstaged; no commit or push. Awaiting authorization.
+
 ## Phase 8 — final documentation and delivery reconciliation
 
 - Confirmed master HEAD `c6c3f309d28709c2060665eafb9f704af961f1cf`.

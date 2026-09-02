@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   acceptHighlight,
   approvePatientInstruction,
@@ -54,6 +54,9 @@ import {
   reloadCurrentServerVersion,
 } from "./conflictRecovery";
 import { SyntheticConsultLab } from "./SyntheticConsultLab";
+import { AiScribePanel } from "./AiScribePanel";
+import { createClinicalRefresh, clinicalSyncMessage } from "./clinicalRefresh";
+import type { ClinicalSync } from "./clinicalRefresh";
 
 const DEMO_PATIENT_ID = "patient-demo-001";
 const DEMO_IDENTITIES: Record<DemoRole, ApiIdentity> = {
@@ -98,11 +101,37 @@ export default function App() {
   const displayReference = useRef(`display_${crypto.randomUUID().replaceAll("-", "")}`);
   const [error, setError] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
+  const [clinicalSync, setClinicalSync] = useState<ClinicalSync>("current");
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  const clinicalPatientId = patient?.id ?? DEMO_PATIENT_ID;
+  const clinicalRefresh = useMemo(() => {
+    const identity = DEMO_IDENTITIES[demoRole];
+    return createClinicalRefresh(
+      () => Promise.all([
+        getPatientHighlights(clinicalPatientId, identity),
+        demoRole === "clinician" || demoRole === "admin"
+          ? getOpenConflicts(clinicalPatientId, identity) : Promise.resolve([]),
+        demoRole === "clinician" ? getHighlightReviewQueue(clinicalPatientId, identity) : Promise.resolve([]),
+        demoRole === "clinician" ? getHighlightTrustMetrics(clinicalPatientId, identity) : Promise.resolve(null),
+      ]),
+      ([freshHighlights, freshConflicts, freshQueue, freshMetrics]) => {
+        setHighlights(freshHighlights); setConflicts(freshConflicts);
+        setReviewQueue(freshQueue); setTrustMetrics(freshMetrics);
+        setHighlightSources({}); setHighlightSourceErrors({});
+      },
+      setClinicalSync,
+    );
+  }, [clinicalPatientId, demoRole, reloadToken]);
+  useLayoutEffect(() => {
+    clinicalRefresh.activate(); setClinicalSync("current");
+    return () => clinicalRefresh.dispose();
+  }, [clinicalRefresh]);
 
   useEffect(() => {
     const identity = DEMO_IDENTITIES[demoRole];
     let cancelled = false;
     setPatient(null);
+    setInitialLoadComplete(false);
     setError(null);
     setCommentsByEntry({});
     setVersionsByEntry({});
@@ -183,6 +212,7 @@ export default function App() {
         setCompletedAssignments(completedAssignmentData);
         setPreferences(preferenceData);
         setConflicts(conflictData);
+        setInitialLoadComplete(true);
       } catch (reason: unknown) {
         if (cancelled) return;
         setError(reason instanceof Error ? reason.message : "Unable to load patient");
@@ -384,10 +414,14 @@ export default function App() {
         <div className="glance-heading">
           <p className="eyebrow">At a glance</p>
           <h2 id="glance-heading">Glance View</h2>
-          <p>Highest-priority current items</p>
+          <p>{clinicalSync === "current" ? "Highest-priority current items" : "Clinical safety views not updated"}</p>
+          {clinicalSync !== "current" && <div role="alert">
+            <p>{clinicalSyncMessage[clinicalSync]}</p>
+            {clinicalSync === "stale" && <button type="button" onClick={() => void clinicalRefresh.refresh()}>Refresh clinical views only</button>}
+          </div>}
         </div>
         <div className="glance-content">
-          {demoRole === "clinician" && conflicts.some((item) => item.entity_type === "allergy") && (
+          {clinicalSync === "current" && demoRole === "clinician" && conflicts.some((item) => item.entity_type === "allergy") && (
             <div className="glance-conflict-warning" role="alert">
               <strong>High-risk allergy contradiction · Needs clinician review</strong>
               <span>Both sources are retained. Staff-over-AI is a prototype authority policy, not an automatic medical truth.</span>
@@ -401,7 +435,7 @@ export default function App() {
               </div>
             </div>
           )}
-          <ol className="highlight-list">
+          {clinicalSync === "current" && <ol className="highlight-list">
             {highlights.map((highlight) => (
               <li key={highlight.id} className={`highlight-item${highlight.abstained ? " highlight-needs-review" : ""}`}>
                 <button className="highlight-source" type="button" onClick={() => void openHighlightSource(highlight)}>
@@ -450,7 +484,7 @@ export default function App() {
                 )}
               </li>
             ))}
-          </ol>
+          </ol>}
           {demoRole !== "patient" && (
             <section className="open-actions" aria-labelledby="open-actions-heading">
               <div className="open-actions-heading">
@@ -482,14 +516,14 @@ export default function App() {
               </ul>
             </section>
           )}
-          {demoRole === "clinician" && trustMetrics && (
+          {clinicalSync === "current" && demoRole === "clinician" && trustMetrics && (
             <section className="learning-summary" aria-label="Exposure bias diagnostics">
               <strong>Exposure review · not accuracy</strong>
               <span>{trustMetrics.exposed_count} exposed · {trustMetrics.unexposed_count} not yet surfaced</span>
               <span>{trustMetrics.negative_feedback_suppressed_count} negative categories suppressed · {trustMetrics.negative_feedback_applied_count} applied</span>
             </section>
           )}
-          {demoRole === "clinician" && reviewQueue.length > 0 && (
+          {clinicalSync === "current" && demoRole === "clinician" && reviewQueue.length > 0 && (
             <section className="review-queue" aria-label="Not yet surfaced review candidates">
               <strong>Review candidates · outside Top Glance</strong>
               <ul>{reviewQueue.slice(0, 5).map((item) => (
@@ -509,7 +543,10 @@ export default function App() {
         </div>
       </section>
 
-      {(demoRole === "clinician" || demoRole === "admin") && conflicts.length > 0 && (
+      {clinicalSync !== "current" && <section className="panel" aria-label="Clinical conflicts not updated" role="alert">
+        <h2>Clinical conflicts · Not updated</h2><p>{clinicalSyncMessage[clinicalSync]}</p>
+      </section>}
+      {clinicalSync === "current" && (demoRole === "clinician" || demoRole === "admin") && conflicts.length > 0 && (
         <section className="conflict-panel" aria-labelledby="conflict-heading">
           <div className="conflict-heading">
             <div><p className="eyebrow">Internal review</p><h2 id="conflict-heading">Clinical conflicts</h2></div>
@@ -575,6 +612,15 @@ export default function App() {
         </ul>
       </section>
 
+      {initialLoadComplete && demoRole !== "patient" && <AiScribePanel
+        patientId={patient.id}
+        identity={DEMO_IDENTITIES[demoRole]}
+        onCreated={(entry) => {
+          setEntries((current) => [entry, ...current.filter((item) => item.id !== entry.id)]);
+          void clinicalRefresh.refresh();
+        }}
+      />}
+
       {demoRole === "clinician" && <SyntheticConsultLab
         patientId={DEMO_PATIENT_ID}
         identity={DEMO_IDENTITIES.clinician}
@@ -602,8 +648,8 @@ export default function App() {
                     {entry.type === "instruction" && entry.ai_derived && entry.patient_facing_status === "draft" && <span className="approval-badge approval-draft">Patient-facing draft · Needs clinician approval</span>}
                     {entry.type === "instruction" && entry.patient_facing_status === "approved" && <span className="approval-badge approval-approved">Clinician approved</span>}
                     {entry.type === "instruction" && entry.ai_derived && entry.patient_facing_status === "rejected" && <span className="approval-badge approval-rejected">Rejected · Not visible to patient</span>}
-                    {conflicts.some((item) => item.authoritative_entry_id === entry.id && !item.requires_clinician_review) && <span className="authoritative-badge">Authoritative source</span>}
-                    {conflicts.some((item) => item.requires_clinician_review && (item.authoritative_entry_id === entry.id || item.conflicting_entry_id === entry.id)) && <span className="review-badge">Conflict · review required</span>}
+                    {clinicalSync === "current" && conflicts.some((item) => item.authoritative_entry_id === entry.id && !item.requires_clinician_review) && <span className="authoritative-badge">Authoritative source</span>}
+                    {clinicalSync === "current" && conflicts.some((item) => item.requires_clinician_review && (item.authoritative_entry_id === entry.id || item.conflicting_entry_id === entry.id)) && <span className="review-badge">Conflict · review required</span>}
                     {decayByEntry[entry.id]?.durable_exempt && <span className="decay-badge durable">Durable · full detail</span>}
                     {decayByEntry[entry.id]?.storage_tier === "cold_summary" && <span className="decay-badge">Cold summary preview</span>}
                   </div>

@@ -1,5 +1,32 @@
 # Phase 0 Findings
 
+## Phase 9 AI Scribe UI
+
+- Staged review identified a genuine safety-view gap: initial success callback inserted only
+  Timeline data, leaving Glance/conflicts/evidence stale after server conflict detection.
+  Success now starts an independent all-or-nothing read of highlights (including confidence),
+  permitted conflicts, review queue and metrics. Cached source views are cleared on success.
+- Refreshing/failed views are explicitly not current; old safety lists/badges are withheld,
+  not silently shown as fresh. Read-only retry never changes generation success/draft state.
+  Initial patient loading completes before enabling Scribe, preventing its older response
+  from overwriting post-generation safety data. Context disposal/latest-request epochs guard
+  late reads. No full-page reload or Scribe unmount is used for this refresh.
+
+- Existing backend protocol already supplies five outcomes; failure bodies on 502/503/504
+  are root JSON, unlike the generic API helper's detail-only errors. Added a dedicated adapter;
+  no backend changes, provider configuration changes or external provider calls.
+- A memory-only controller owns draft/request state, synchronous submission lock, stable random
+  source ID for known-safe retries, and an invalidation epoch. The keyed React form resets on
+  patient/clinic/user/role change and disposes on unmount; late callbacks cannot add old entries.
+- Only validated success adds a Timeline entry; failure never clears existing clinical content.
+  Drafts are not saved in browser storage. Waiting disables inputs/submission. Known abstention
+  permits explicit manual retry; unknown network/lost/inconsistent responses block retry and
+  require refresh/Timeline inspection. No automatic retry, cancellation or reconciliation claim.
+- Mode is unknown until server response, then explicitly mock/external/test double. Form does
+  not enable/select providers; default backend configuration remains offline mock.
+- 11 new controller/adapter tests plus 3 existing frontend tests pass. These are not DOM/E2E
+  tests. Full backend regression remains 182 passes/one existing warning. Scenarios 8/9 PARTIAL.
+
 ## Phase 8 documentation/delivery reconciliation
 
 - Confirmed Phase 7 HEAD; no application edits, dependency installation or test rerun.

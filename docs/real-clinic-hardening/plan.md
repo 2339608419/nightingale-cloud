@@ -12,10 +12,24 @@ This directory records the independent audit and implementation plan requested f
 
 ## Current phase
 
-- Phase: 8 — final documentation and delivery reconciliation only
-- Status: documentation checks complete; eight documents staged, awaiting commit authorization
-- Application-code changes allowed: none; record gaps, stop on blocking defects
-- Commit target after explicit authorization: `docs: finalize real-clinic evidence and delivery guide`
+- Phase: 9 — AI Scribe waiting and failure recovery UI (scenarios 8/9 only)
+- Status: staged-review clinical refresh correction verified; fourteen Phase 9 files intended for staging
+- Application-code changes allowed: minimal frontend integration; existing backend protocol unchanged
+- Commit target after explicit authorization: `feat: add AI scribe failure recovery UI`
+
+## Phase 9 plan
+
+- [x] Confirm Phase 8 HEAD and inspect AI Scribe contract, role policy and frontend entry points.
+- [x] Add typed response handling, in-memory request controller and minimal panel.
+- [x] Test waiting/duplicate lock, typed outcomes, explicit retry, unknown result and stale context.
+- [x] Fix success-only Timeline update: refresh clinical views independently, mark failed reads stale,
+  preserve success/draft, and test context/latest-request isolation; frontend 18 tests passed.
+- [x] Run frontend tests/TypeScript/build and full backend regression; update evidence.
+- [x] Precisely stage Phase 9 files and request authorization.
+- [ ] Commit only after authorization. No push or unrelated implementation.
+
+Root user planning/media/output files remain excluded. Network/lost response is unknown,
+not a safe automatic retry. Clinical content is never cleared by generation failure.
 
 ## Phase 0 objectives
 

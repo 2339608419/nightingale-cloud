@@ -21,6 +21,18 @@ import type {
 
 const API_BASE_URL = import.meta.env?.VITE_API_URL ?? "/api";
 
+import { parseScribeResponse } from "./aiScribeRecovery.ts";
+import type { ScribePayload } from "./aiScribeRecovery.ts";
+
+export async function submitAiScribe(payload: ScribePayload, identity: ApiIdentity) {
+  const response = await fetch(`${API_BASE_URL}/ai-scribe`, {
+    method: "POST", cache: "no-store",
+    headers: { ...identityHeaders(identity), "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  return parseScribeResponse(response.status, await response.json(), payload.patient_id);
+}
+
 const identityHeaders = (identity: ApiIdentity) => ({
   "X-User-Id": identity.userId,
   "X-Role": identity.role,

@@ -112,24 +112,30 @@ Each scenario records:
 ### Scenario 8 — External provider timeout
 
 - **Verdict:** PARTIAL
-- **Classification:** Backend timeout, safe abstention, and persistence behavior are implemented/tested; clinician-facing waiting/recovery UI is absent
+- **Classification:** Backend timeout/abstention and Phase 9 waiting/manual-recovery UI implemented; worker/outage operations remain incomplete
 - **Where:** `AI_SCRIBE_PROVIDER_TIMEOUT_SECONDS` configures a bounded 0.1–120 second external-provider deadline in `backend/app/services/summarization_provider.py`. Socket/URL timeout becomes `provider_timeout`; the route returns a fixed 504 abstention body and creates no entry.
-- **What breaks first:** A 45-second hang is cut off at the configured deadline, but the existing frontend has no AI-scribe ingestion screen or waiting/timeout/retry state, so the clinician experience is only an API contract.
-- **What could break later:** A synchronous request still occupies a worker until the deadline. There is intentionally no retry, cancellation, circuit breaker, queue, or distributed outage coordination.
-- **Improvement:** A later UI/evaluation phase should expose waiting and retry guidance; production architecture would require bounded queues, cancellation, circuit breaking, and monitoring.
+- **What breaks first:** The UI waits with duplicate submission locked, then shows typed timeout and retains the draft. Network/response loss instead produces unknown outcome, locks retry and tells the user to refresh/check Timeline first. No response cannot prove the server did not commit.
+- **What could break later:** A synchronous request still occupies a worker until the deadline. There is no automatic retry, cancellation, circuit breaker, queue, distributed outage coordination or idempotency reconciliation endpoint.
+- **Improvement:** Validate rendered browser interactions and production worker/transport timeouts, cancellation and operational monitoring; do not equate UI recovery with infrastructure resilience.
 - **Evidence:** `test_ai_provider_failures.py::test_openai_provider_timeout_uses_configured_deadline_and_abstains` proves the configured 0.25-second deadline is passed to the provider and no Timeline Entry is returned; the parameterized failure test proves no entry or audit change.
 - **Remaining limitation:** Circuit breaking, queueing, cancellation, rate limits, and distributed tracing would remain production work.
+- **Phase 9 UI evidence:** `frontend/src/AiScribePanel.tsx`, `aiScribeRecovery.ts` and `frontend/tests/aiScribeRecovery.test.ts` implement/test waiting, duplicate lock, explicit retry, unknown result, draft preservation and late-response isolation. Tests exercise the controller/HTTP adapter, not a rendered browser E2E.
 
 ### Scenario 9 — Provider unavailable / deterministic degradation
 
 - **Verdict:** PARTIAL
 - **Classification:** Runtime 503/malformed/empty failures safely abstain and default mock is explicitly labeled; broader degraded Glance behavior and operational configuration remain incomplete
 - **Where:** Provider failures are typed as `provider_unavailable` or `invalid_provider_response`; fixed 503/502 responses contain no Provider body and persist no ordinary AI entry. Default offline output carries `generation_mode=rule_derived_mock` and a Rule-derived mock message rather than pretending to be an external-model result.
-- **What breaks first:** The failed consult produces no new summary, which is the safe policy. Existing Glance items remain visible but are not connected to outage time or explicitly marked stale. There is no AI-scribe frontend workflow displaying the abstention.
+- **What breaks first:** The failed consult produces no new summary. Phase 9 shows separate redaction/timeout/unavailable/invalid-response states and confirmed generation mode; existing clinical content stays unchanged, but Glance is not linked to outage time or explicitly outage-stale.
 - **What could break later:** Explicit `openai` mode without a key still selects the labeled mock rather than surfacing a configuration error; there is no provider health monitoring, SLA, or outage history.
-- **Improvement:** Add operational configuration validation/health visibility and UI handling in a later phase without weakening the current no-entry abstention rule.
+- **Improvement:** Add operational configuration validation/health visibility and long-outage evaluation without weakening the current no-entry abstention rule. Phase 9 manual retry is not automatic failover.
 - **Evidence:** `test_ai_provider_failures.py` covers HTTP 503, typed unavailable, malformed JSON, empty responses, unexpected error bodies, no persistence/audit changes, and explicit mock labeling.
 - **Remaining limitation:** Reliable external operation still needs retries with budgets, monitoring, and provider SLAs.
+- **Phase 9 UI evidence:** Full root JSON bodies on 502/503/504 are validated, not discarded as generic errors. Malformed/lost responses are unknown, not safe retry. Success alone adds an entry to the existing Timeline. No provider mode is selected/enabled by the form. Verdict remains PARTIAL.
+- **Staged-review correction:** Success separately reloads Glance/conflicts/confidence and review
+  diagnostics; pending/failed reads explicitly withhold old safety views as not updated.
+  Read-only retry preserves generation success/draft and cannot re-create a note. Context and
+  latest-request guards are tested in `frontend/tests/clinicalRefresh.test.ts`.
 
 ### Scenario 10 — Concurrent edits and recovery from 409
 

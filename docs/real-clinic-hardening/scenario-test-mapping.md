@@ -13,8 +13,8 @@ PARTIAL/DOES NOT capability into a claimed success.
 | 5 | PARTIAL | `test_scenario_05_clinic_b_isolation_not_full_onboarding` | clinic/phone tenant tests | Clinic B scoped patient lookup | no production onboarding/membership/migrations |
 | 6 | PARTIAL | `test_scenario_06_code_switched_synthetic_text_and_no_audio_claim` | Phase 6 consult suite | Synthetic Consult Lab/API | no audio or ASR |
 | 7 | PARTIAL | `test_scenario_07_minute_two_final_signal_partial_withheld` | Phase 6 consult suite | partial→final segment → signal | post-ASR timing only |
-| 8 | PARTIAL | `test_scenario_08_provider_timeout_typed_abstention_no_entry` | `test_ai_provider_failures.py` | configured timeout → 504 abstention | synchronous worker/no circuit breaker |
-| 9 | PARTIAL | `test_scenario_09_provider_unavailable_safe_abstention` | `test_ai_provider_failures.py` | 503/invalid → no entry | no outage UI/operations |
+| 8 | PARTIAL | `test_scenario_08_provider_timeout_typed_abstention_no_entry` | `test_ai_provider_failures.py`; frontend `aiScribeRecovery.test.ts` | AI Scribe waiting → timeout → explicit retry | synchronous worker/no circuit breaker; no browser E2E |
+| 9 | PARTIAL | `test_scenario_09_provider_unavailable_safe_abstention` | `test_ai_provider_failures.py`; frontend `aiScribeRecovery.test.ts` | typed failures/mode labels; unknown outcome blocks resend | long-outage operations and reconciliation absent |
 | 10 | SURVIVES | `test_scenario_10_stale_edit_safe_409_and_history` | concurrency/revision + frontend logic | stale edit → structured 409 recovery | no automatic merge/multi-worker DB proof |
 | 11 | PARTIAL | `test_scenario_11_created_is_not_delivered_and_states_are_distinct` | delivery suite | created/queued/simulated sent/delivered/failed | no real channel/receipt |
 | 12 | PARTIAL | `test_scenario_12_wrong_sent_version_requires_traceable_correction` | approval/revision/delivery suite | edit → Draft/correction_required → replacement | no message recall |
@@ -25,6 +25,10 @@ PARTIAL/DOES NOT capability into a claimed success.
 
 Scenario 17 remains the dimension-by-dimension rubric in `scenario-matrix.md`; it is not an
 additional scenario 1–16 acceptance test.
+
+Phase 9 staged-review addition: `frontend/tests/clinicalRefresh.test.ts` covers generation
+success followed by refreshed Glance/conflicts/evidence, failed-read stale labeling without
+regeneration, and context/latest-request isolation. Frontend suite: 18 passes; no browser E2E.
 
 ## Exact Phase 7 evidence lines
 
