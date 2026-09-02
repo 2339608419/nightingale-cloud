@@ -43,7 +43,7 @@ This fixes stale safety presentation, not long-outage operation or server reconc
 
 | Priority | Work and smallest next step | Account / cost / user decision |
 |---|---|---|
-| P0 delivery | Render updated Markdown to 2–3 page PDF; check all pages and links; do not assume existing PDF is current | Choose export tool/layout and destination; no dependency installed this phase |
+| P0 delivery - complete | Updated Markdown exported to existing PDF; all 3 pages visually checked, text bounds and 3 document links verified | Bundled tools used; no new dependencies or paid services |
 | P0 delivery | Record selected 1–16 scenarios using runbook; review labels, audio and timestamps | User recording/review time; choose duration and output filename; existing video untouched |
 | P0 delivery | Verify intended repository/zip includes authorized commits, links are recipient-accessible, and final email attachments match | User authorization for publication/sending and recipient access check; no push/send performed |
 | P1 identity/tenancy | Replace forgeable headers; model Clinic/User/Membership and select active clinic from verified membership | Identity provider account, hosting budget and multi-membership policy; costs depend on vendor/usage |
@@ -75,12 +75,13 @@ to buy services or use real patient data.
 - [x] Local Git Phase 7 baseline and scenario 1–16 tests exist.
 - [x] README setup/run/test instructions and detailed scenario mapping exist.
 - [x] Phase 8 Markdown brief covers 1–17, failure attempts and changed assumptions.
-- [ ] Exported current brief PDF visually checked and verified at 2–3 pages.
+- [x] Exported current brief PDF visually checked and verified at 3 pages, including Phase 9.
 - [ ] New-feature video coverage reviewed with a scenario/timestamp list.
 - [ ] Recipient-accessible repo/zip and exact submitted revision checked.
 - [ ] Final email/attachments reviewed and sent by authorized user.
 
-Existing `Nightingale_Technical_Brief.pdf` is tracked but not inspected or regenerated here.
+`Nightingale_Technical_Brief.pdf` was updated from TECHNICAL_BRIEF_FINAL.md after confirming
+no user modifications; three rendered pages, text bounds and three repository links checked.
 Existing `Demo Video.mp4` is user-owned and has not been read, overwritten or assessed.
 Original submission: reply under “Nightingale 72HR Build — <Your Name>”, repo link/zip,
 brief and demo to irakumar@ntngale.com; cc frank.ng@ntu.edu.sg and carrene.teo@ntu.edu.sg.

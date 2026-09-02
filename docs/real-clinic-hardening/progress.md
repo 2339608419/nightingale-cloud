@@ -1,5 +1,23 @@
 # Phase 0 Progress Log
 
+## Final brief/PDF delivery checkpoint
+
+- Confirmed master at Phase 9 `0517978a715c67f12e2487917b31721553809ace`; existing PDF clean.
+- Updated the existing final brief with Phase 9 waiting/retry/unknown-result controls and
+  post-generation clinical refresh. Cites prior 182 backend passes/one warning, 18 frontend
+  passes and TypeScript/build; no application tests rerun in this documentation task.
+- Regenerated existing PDF with bundled ReportLab; rendered and visually inspected all 3
+  pages: readable fonts/tables, no clipping/overlap, correct footers. Extracted text/bounds
+  and 3 repository document links verified. Temporary QA files remain outside the repository.
+- Video/recipient access/email remain unchecked; protected user files were not read or changed.
+- Remote is existing GitHub 2339608419/nightingale-cloud. Fetch confirmed no divergence and
+  10 local commits ahead of remote `84834e38f6b93b8a30d616102bb2fbb6c2ad05f7` before this commit.
+  Reviewed outgoing paths/history for forbidden artifacts/personal files and common credential
+  patterns; none found. The detected IC fixture is synthetic S1234567A. This is not a formal
+  production DLP certification. Authorized normal push will include those 10 commits plus this one.
+- Initial sandbox network check failed; repository-scoped authorized fetch succeeded.
+  Only final brief, PDF, this progress log and remaining-work checklist are commit targets.
+
 ## Phase 9 — AI Scribe request recovery UI
 
 - Review correction: success now refreshes clinical safety views independently of generation;

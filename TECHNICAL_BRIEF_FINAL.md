@@ -2,9 +2,9 @@
 
 Zhanchen Lin · Synthetic data only · 3 September 2026
 
-Organized into three compact page units for a **2–3 page target**. Phase 8 has not rendered
-or paginated this Markdown; PDF length/content remain unverified. Implementation baseline:
-`c6c3f309d28709c2060665eafb9f704af961f1cf` (Phase 7).
+Three-page technical brief, updated through Phase 9. Implementation baseline:
+`0517978a715c67f12e2487917b31721553809ace`. Synthetic prototype verdicts are not
+production-readiness claims.
 
 ## Page unit 1 — Architecture, privacy, and clinic readiness
 
@@ -33,8 +33,8 @@ Formal Clinic/User/Membership models, migrations and database RLS are absent.
 | 5 Clinic B | PARTIAL | Scoped queries and same-phone/per-clinic lookup work; production onboarding/membership/migrations absent. |
 | 6 Trilingual consult | PARTIAL | Code-switched synthetic text/spans survive; real speech cannot enter this text-only contract. |
 | 7 Minute-two allergy | PARTIAL | Final post-ASR segment creates provisional signal at supplied offset; no audio-time detection. |
-| 8 Model hangs | PARTIAL | Configurable deadline returns safe abstention/no entry; synchronous workers/outage UX remain limited. |
-| 9 Hour-long 503 | PARTIAL | Failure abstains without trusted entry; offline mock remains available, but no operational failover/circuit breaker. |
+| 8 Model hangs | PARTIAL | Configurable deadline, waiting/duplicate lock and timeout UI; synchronous worker capacity remains limited. |
+| 9 Hour-long 503 | PARTIAL | Typed failure/manual retry UI and labeled mock; no operational failover or circuit breaker. |
 
 Client source IDs become stable opaque SHA-256 references before persistence/logging;
 this prevents direct plaintext leakage, not guessing attacks. Only validated redacted text
@@ -64,6 +64,14 @@ verifiability; CURRENT/STALE/BROKEN answers currency. Ranking applies bounded le
 adjustment before safety floors. Allergy and unresolved dosage conflicts retain HIGH floors.
 Two distinct clinician IDs do not prove two independent humans. Feedback cannot approve
 patient instructions.
+
+Phase 9 AI Scribe distinguishes success, redaction-withheld, timeout, unavailable and invalid
+provider response. Waiting locks duplicate submission; mode is confirmed as mock/external
+only from the response. Drafts stay in memory, clear on identity/patient change, and survive
+known failures for explicit manual retry. Network/lost responses lock retry as outcome unknown:
+refresh and inspect Timeline first. Late responses cannot update a changed context.
+Success independently refreshes Glance, conflicts and Evidence Confidence. Failed reads show
+NOT UPDATED and offer read-only refresh; generation remains successful, not retryable.
 
 AI-derived instructions follow Draft → clinician Approved or Rejected. Patients cannot see
 raw AI notes or internal collaboration. Existing manual clinician instructions remain
@@ -101,20 +109,23 @@ lost part of a dose; tests exposed it. Summaries initially committed independent
 injection drove an atomic transaction. An older local server invalidated initial fresh-state
 demo evidence; a separate fresh setup was used. SQLite/create_all still cannot migrate old
 column changes. Small services, offline mock and human review remain appropriate demo choices.
+Phase 9 review exposed a Timeline-only success update that left safety warnings stale;
+independent guarded clinical refresh corrected it without regenerating the note.
 
-**Verification provenance.** Phase 7 recorded **182 backend passes, one Starlette/httpx
-deprecation warning**, including 19 numbered/audit/database tests; frontend **3 passes**,
-both TypeScript checks and production build passed. Phase 8 did not rerun them. Fresh and
+**Verification provenance.** Latest Phase 9 evidence: **182 backend passes, one existing
+Starlette/httpx deprecation warning**; frontend **18 passes**, both TypeScript checks and
+production build passed. These were not rerun during this brief/PDF task. The final UI-only
+correction reused the earlier backend run. Phase 7 fresh and
 current-schema restart smoke passed, not general historic migration. Manual UI covered
 Glance, consult, confirmation, summaries and approval; other paths use TestClient evidence,
 not comprehensive browser E2E. No real provider/message was invoked. Historical
 20-warmup/200-request Glance median 5.308 ms/P95 6.540 ms was an earlier in-process
 TestClient/in-memory SQLite measurement, not current deployed SLA evidence.
 
-**Delivery status.** Local repository, tests, README and updated Markdown exist. Updated
-PDF pagination/content and video coverage still need verification; existing PDF/video were
-not validated or replaced. Export/review a 2–3 page PDF, record selected scenarios with mock
-labels, and check repository access before sending. Original deadline: 3 September 2026,
+**Delivery status.** This Markdown is the source of the updated three-page PDF. Video coverage,
+recipient access and email remain pending; existing video was not inspected or replaced.
+Record selected scenarios with mock labels and check recipient access before sending.
+Original deadline: 3 September 2026,
 18:00 SGT. [Remaining work](docs/real-clinic-hardening/remaining-work.md) separates delivery
 checks from identity, messaging, audio/reference resources and user decisions. Phase 8
 completion does not mean all requirements are implemented.
