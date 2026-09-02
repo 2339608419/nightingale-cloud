@@ -12,10 +12,10 @@ This directory records the independent audit and implementation plan requested f
 
 ## Current phase
 
-- Phase: 1 — PHI egress, provider ordering, timeout, and safe degradation
+- Phase: 2 — clinic-isolation defense in depth and multi-clinic readiness
 - Status: in progress
-- Application-code changes allowed: only the minimum changes for original scenarios 3, 4, 8, and 9
-- Commit target after explicit authorization: `feat: harden PHI boundaries and AI failure handling`
+- Application-code changes allowed: only the minimum changes for original scenarios 2 and 5
+- Commit target after explicit authorization: `feat: add defense-in-depth clinic isolation`
 
 ## Phase 0 objectives
 
@@ -61,6 +61,17 @@ This directory records the independent audit and implementation plan requested f
 - [x] Explicitly stage only Phase 1 files and request commit authorization.
 - [x] Reverify and restage the Phase 1 source-reference PHI correction found during staged review.
 
+## Phase 2 checklist
+
+- [x] Confirm Phase 1 HEAD and preserve all pre-existing root/user working-tree state.
+- [x] Enumerate every patient-ID and linked-entity access path and its tenant constraint.
+- [x] Document the current single boundary, actual blast radius, and unscoped entities before code changes.
+- [x] Implement a centralized independent clinic-scoped query boundary.
+- [x] Add guard-failure injection and cross-entity read/write/association tests.
+- [x] Run focused, relevant, full-backend, frontend-build, and diff verification.
+- [x] Update scenarios 2 and 5 plus the Clinic B onboarding categories without overclaiming.
+- [x] Explicitly stage only Phase 2 files and request commit authorization.
+
 ## Errors encountered
 
 | Error | Attempt | Resolution |
@@ -70,6 +81,7 @@ This directory records the independent audit and implementation plan requested f
 | The first combined Phase 1 documentation patch expected `# Phase 0 Progress`, but the actual heading is `# Phase 0 Progress Log`. | 1 | No partial edit was applied; inspect the exact heading and split the patch into exact-file updates. |
 | The first focused-test command used a repository-relative virtual-environment path while its working directory was already `backend`. | 1 | Use the backend-local `.venv\\Scripts\\python.exe` path on the next invocation. |
 | The first focused run had one test false positive because it asserted that the common word `and` was absent from the entire structured response. | 1 | Keep the privacy assertion precise: check complete PHI values and meaningful clinical phrases rather than generic words used by safe validation metadata. |
+| The first Phase 2 focused matrix setup queried comments on `entry-demo-006`, but seeded comments belong to `entry-demo-007`; all 17 parameterized cases therefore failed before exercising isolation. | 1 | Inspect the seed relationship, correct the fixture entry ID to `entry-demo-007`, and rerun the focused matrix; the three setup-independent cases already passed. |
 
 ## Completion gate
 

@@ -21,6 +21,11 @@ from app.services.authorization_service import (
 from app.services.highlight_service import create_highlight_suggestion, set_highlight_status
 from app.services.evidence_confidence_service import highlight_read
 from app.services.patient_service import get_entry, get_patient
+from app.services.clinic_scope_service import (
+    get_entry_in_clinic,
+    get_highlight_in_clinic,
+    get_patient_in_clinic,
+)
 
 
 router = APIRouter(tags=["highlights"])
@@ -46,20 +51,24 @@ def suggest_highlight(
     if patient is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
     require_patient_access(user, patient)
-    require_entry_collaboration_access(user, entry)
-    if payload.source_span not in entry.content:
+    scoped_entry = get_entry_in_clinic(db, entry_id, user.clinic_id)
+    scoped_patient = get_patient_in_clinic(db, patient.id, user.clinic_id)
+    if scoped_entry is None or scoped_patient is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Entry not found")
+    require_entry_collaboration_access(user, scoped_entry)
+    if payload.source_span not in scoped_entry.content:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="Source span must occur in the timeline entry",
         )
     highlight, evaluation, explanation = create_highlight_suggestion(
         db,
-        patient=patient,
-        entry=entry,
+        patient=scoped_patient,
+        entry=scoped_entry,
         payload=payload,
     )
     return HighlightSuggestionRead(
-        highlight=highlight_read(db, highlight),
+        highlight=highlight_read(db, highlight, user.clinic_id),
         base_score=evaluation.base_score,
         learned_bonus=evaluation.learned_adjustment,
         learned_adjustment=evaluation.learned_adjustment,
@@ -87,14 +96,18 @@ def _decide_highlight(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
     require_patient_access(user, patient)
     require_highlight_decision_access(user)
+    scoped_highlight = get_highlight_in_clinic(db, highlight_id, user.clinic_id)
+    scoped_patient = get_patient_in_clinic(db, patient.id, user.clinic_id)
+    if scoped_highlight is None or scoped_patient is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Highlight not found")
     updated = set_highlight_status(
         db,
-        highlight=highlight,
-        patient=patient,
+        highlight=scoped_highlight,
+        patient=scoped_patient,
         new_status=decision,
         actor=user,
     )
-    return highlight_read(db, updated)
+    return highlight_read(db, updated, user.clinic_id)
 
 
 @router.post("/highlights/{highlight_id}/accept", response_model=HighlightRead)

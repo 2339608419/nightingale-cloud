@@ -12,6 +12,7 @@ from app.models import (
 )
 from app.schemas.highlight import HighlightRead
 from app.services.conflict_service import extract_clinical_facts
+from app.services.clinic_scope_service import get_entry_in_clinic
 
 
 @dataclass(frozen=True)
@@ -26,9 +27,15 @@ class EvidenceConfidence:
     open_conflict: bool
 
 
-def evaluate_evidence_confidence(db: Session, highlight: Highlight) -> EvidenceConfidence:
+def evaluate_evidence_confidence(
+    db: Session, highlight: Highlight, clinic_id: str | None = None
+) -> EvidenceConfidence:
     """Evaluate confidence only from resolvable evidence and deterministic state."""
-    source = db.get(TimelineEntry, highlight.entry_id)
+    source = (
+        get_entry_in_clinic(db, highlight.entry_id, clinic_id)
+        if clinic_id is not None
+        else db.get(TimelineEntry, highlight.entry_id)
+    )
     expected_pointer = f"timeline-entry-{highlight.entry_id}"
     provenance_resolved = source is not None and highlight.provenance_pointer == expected_pointer
     source_span_verified = bool(source and highlight.source_span in source.content)
@@ -133,6 +140,8 @@ def evaluate_evidence_confidence(db: Session, highlight: Highlight) -> EvidenceC
     )
 
 
-def highlight_read(db: Session, highlight: Highlight) -> HighlightRead:
-    confidence = evaluate_evidence_confidence(db, highlight)
+def highlight_read(
+    db: Session, highlight: Highlight, clinic_id: str | None = None
+) -> HighlightRead:
+    confidence = evaluate_evidence_confidence(db, highlight, clinic_id)
     return HighlightRead.model_validate({**highlight.__dict__, **confidence.__dict__})

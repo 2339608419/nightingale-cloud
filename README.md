@@ -112,14 +112,50 @@ Use [`DEMO_RUNBOOK.md`](DEMO_RUNBOOK.md) for a timed 5–7 minute walkthrough. I
 
 ## 9. RBAC enforcement
 
-RBAC and clinic scope are enforced server-side in `authorization_service.py`:
+RBAC and clinic scope are enforced server-side through two independent application
+boundaries:
+
+- Routes retain the outer `require_patient_access` authorization guard. It enforces
+  role, patient self-access, note ownership, approval authority, and the normal
+  cross-clinic `403` contract.
+- `clinic_scope_service.py` is an inner data-access boundary. Its SQL queries include
+  `Patient.clinic_id` directly; linked entry, version, audit, highlight, comment,
+  assignment, conflict, and approval lookups join back to the owning patient before
+  returning an object. If the outer clinic comparison is omitted or fault-injected
+  to a no-op, a foreign-clinic object remains invisible and the route returns `404`.
+- Importance preferences are directly filtered by their stored `clinic_id`.
 
 - Patient: self-only, patient-facing instructions; no internal comments, tasks, raw AI notes, or revision internals.
 - Staff: create/edit staff notes only; permitted clinical context; no clinician-note overwrite or cross-clinic access.
 - Clinician: create/edit clinician notes and instructions; view staff and AI notes; no staff-note overwrite.
 - Admin: oversight within the admin's clinic; no implicit cross-clinic access.
 
-Frontend hiding is convenience only. Unauthorized requests return `401` or `403` from FastAPI.
+Frontend hiding is convenience only. Authorization failures return `401`/`403`, while
+the inner tenant query uses non-disclosing `404` semantics. Fault-injection tests
+disable the outer clinic comparison and verify that known Clinic A IDs still cannot
+be read or mutated by Clinic B.
+
+### Clinic B onboarding readiness
+
+The tenant-aware query boundary improves application isolation, but it is not a
+complete clinic-onboarding platform. Launching Clinic B would require separate work:
+
+1. **Configuration:** clinic display/configuration, allowed origins, provider/channel
+   settings, secrets, and feature flags.
+2. **Schema:** first-class `Clinic`, `User`, and `ClinicMembership` records; explicit
+   tenant ownership constraints/indexes; and versioned migrations.
+3. **Identity and membership:** replace forgeable development headers, verify a user's
+   clinic roles, and support users who belong to multiple clinics.
+4. **Data migration:** create Clinic A/B, backfill tenant ownership, detect orphaned or
+   cross-tenant links, and remove production-startup demo-seed overwrite behavior.
+5. **Deployment and operations:** managed database and migrations, TLS, managed
+   secrets/encryption, backup/restore, tenant-aware monitoring, capacity planning,
+   and incident response.
+6. **Application and product:** onboarding workflow, clinic administration, user
+   invitations, support, and offboarding.
+
+These items remain explicitly `PARTIAL`; no placeholder model or UI is presented as a
+production onboarding implementation.
 
 ## 10. PHI redaction pipeline
 
@@ -255,6 +291,8 @@ The service never mutates or deletes `TimelineEntry`. It demonstrates future hot
 
 - Development headers are not production authentication.
 - SQLite and metadata `create_all` are prototype persistence, not a migration strategy.
+- Tenant isolation has two tested application-layer boundaries, but no database row-level
+  security, authenticated clinic membership, or composite tenant foreign keys.
 - PHI detection is deterministic pattern matching, not production clinical NER/DLP.
 - External-provider retries, rate limits, and operational monitoring are not implemented.
 - Preference updates are not designed for multi-process high-contention workloads.

@@ -14,6 +14,7 @@ from app.models import (
     TimelineEntry,
 )
 from app.services.audit_service import add_trust_action_audit
+from app.services.clinic_scope_service import get_comment_in_clinic
 
 
 MENTION_PATTERN = re.compile(
@@ -45,9 +46,10 @@ def create_comment(
     user: CurrentUser,
     content: str,
     parent_comment_id: str | None,
+    clinic_id: str,
 ) -> Comment:
     if parent_comment_id is not None:
-        parent = db.get(Comment, parent_comment_id)
+        parent = get_comment_in_clinic(db, parent_comment_id, clinic_id)
         if parent is None or parent.entry_id != entry.id:
             raise ValueError("Parent comment must belong to the same entry")
     comment = Comment(

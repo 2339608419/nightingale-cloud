@@ -20,12 +20,15 @@ from app.services.authorization_service import (
     require_patient_instruction_approval_access,
 )
 from app.services.patient_service import get_entry, get_patient
+from app.services.clinic_scope_service import (
+    get_entry_audit_logs_in_clinic,
+    get_entry_in_clinic,
+    get_entry_versions_in_clinic,
+)
 from app.services.patient_instruction_service import set_patient_instruction_status
 from app.services.conflict_service import detect_conflicts_for_entry
 from app.services.revision_service import (
     VersionConflictError,
-    get_audit_logs,
-    get_versions,
     revert_entry_to_version,
     update_entry_with_version,
 )
@@ -49,16 +52,19 @@ def edit_note(
     if patient is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
     require_patient_access(user, patient)
-    require_entry_edit_access(user, entry)
+    scoped_entry = get_entry_in_clinic(db, entry_id, user.clinic_id)
+    if scoped_entry is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Entry not found")
+    require_entry_edit_access(user, scoped_entry)
     provenance_pointer = (
         payload.provenance_pointer
         if "provenance_pointer" in payload.model_fields_set
-        else entry.provenance_pointer
+        else scoped_entry.provenance_pointer
     )
     try:
         updated = update_entry_with_version(
             db,
-            entry,
+            scoped_entry,
             user,
             content=payload.content,
             provenance_pointer=provenance_pointer,
@@ -86,9 +92,16 @@ def _decide_patient_instruction(
     if patient is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
     require_patient_access(user, patient)
+    scoped_entry = get_entry_in_clinic(db, entry_id, user.clinic_id)
+    if scoped_entry is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Entry not found")
     require_patient_instruction_approval_access(user)
     updated = set_patient_instruction_status(
-        db, entry=entry, new_status=decision, actor=user
+        db,
+        entry=scoped_entry,
+        new_status=decision,
+        actor=user,
+        clinic_id=user.clinic_id,
     )
     return TimelineEntryRead.model_validate(updated)
 
@@ -119,20 +132,29 @@ def _authorized_entry(entry_id: str, db: Session, user: CurrentUser) -> Timeline
     if patient is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
     require_patient_access(user, patient)
-    require_entry_collaboration_access(user, entry)
-    return entry
+    scoped_entry = get_entry_in_clinic(db, entry_id, user.clinic_id)
+    if scoped_entry is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Entry not found")
+    require_entry_collaboration_access(user, scoped_entry)
+    return scoped_entry
 
 
 @router.get("/{entry_id}/versions", response_model=list[EntryVersionRead])
 def read_versions(entry_id: str, db: DbSession, user: Identity) -> list[EntryVersionRead]:
     _authorized_entry(entry_id, db, user)
-    return [EntryVersionRead.model_validate(item) for item in get_versions(db, entry_id)]
+    return [
+        EntryVersionRead.model_validate(item)
+        for item in get_entry_versions_in_clinic(db, entry_id, user.clinic_id)
+    ]
 
 
 @router.get("/{entry_id}/audit", response_model=list[AuditLogRead])
 def read_audit(entry_id: str, db: DbSession, user: Identity) -> list[AuditLogRead]:
     _authorized_entry(entry_id, db, user)
-    return [AuditLogRead.model_validate(item) for item in get_audit_logs(db, entry_id)]
+    return [
+        AuditLogRead.model_validate(item)
+        for item in get_entry_audit_logs_in_clinic(db, entry_id, user.clinic_id)
+    ]
 
 
 @router.post("/{entry_id}/revert/{version_number}", response_model=TimelineEntryRead)

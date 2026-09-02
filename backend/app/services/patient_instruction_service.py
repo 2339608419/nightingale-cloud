@@ -11,6 +11,10 @@ from app.models import (
     TimelineEntryType,
 )
 from app.services.audit_service import add_trust_action_audit
+from app.services.clinic_scope_service import (
+    get_entry_in_clinic,
+    get_patient_instruction_approval_in_clinic,
+)
 
 
 def set_patient_instruction_status(
@@ -19,15 +23,16 @@ def set_patient_instruction_status(
     entry: TimelineEntry,
     new_status: PatientFacingStatus,
     actor: CurrentUser,
+    clinic_id: str,
 ) -> TimelineEntry:
-    approval = db.get(PatientInstructionApproval, entry.id)
+    approval = get_patient_instruction_approval_in_clinic(db, entry.id, clinic_id)
     if entry.type != TimelineEntryType.INSTRUCTION or approval is None or not approval.ai_derived:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Entry is not an AI-derived patient-facing instruction",
         )
     if new_status == PatientFacingStatus.APPROVED:
-        source = db.get(TimelineEntry, approval.source_entry_id)
+        source = get_entry_in_clinic(db, approval.source_entry_id, clinic_id)
         expected_pointer = f"timeline-entry-{approval.source_entry_id}"
         if (
             source is None

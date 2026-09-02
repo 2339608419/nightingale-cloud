@@ -25,12 +25,18 @@ from app.services.collaboration_service import (
     extract_mentions,
     get_assignment,
     get_comment,
-    get_entry_comments,
-    get_patient_assignments,
     set_assignment_status,
     set_comment_resolved,
 )
 from app.services.patient_service import get_entry, get_patient
+from app.services.clinic_scope_service import (
+    get_assignment_in_clinic,
+    get_comment_in_clinic,
+    get_entry_comments_in_clinic,
+    get_entry_in_clinic,
+    get_patient_assignments_in_clinic,
+    get_patient_in_clinic,
+)
 
 router = APIRouter(tags=["collaboration"])
 DbSession = Annotated[Session, Depends(get_db)]
@@ -51,14 +57,20 @@ def _authorized_entry(entry_id: str, db: Session, user: CurrentUser):
     if patient is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
     require_patient_access(user, patient)
-    require_entry_collaboration_access(user, entry)
-    return entry
+    scoped_entry = get_entry_in_clinic(db, entry_id, user.clinic_id)
+    if scoped_entry is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Entry not found")
+    require_entry_collaboration_access(user, scoped_entry)
+    return scoped_entry
 
 
 @router.get("/entries/{entry_id}/comments", response_model=list[CommentRead])
 def read_comments(entry_id: str, db: DbSession, user: Identity) -> list[CommentRead]:
     _authorized_entry(entry_id, db, user)
-    return [_comment_read(comment) for comment in get_entry_comments(db, entry_id)]
+    return [
+        _comment_read(comment)
+        for comment in get_entry_comments_in_clinic(db, entry_id, user.clinic_id)
+    ]
 
 
 @router.post("/entries/{entry_id}/comments", response_model=CommentRead, status_code=201)
@@ -73,6 +85,7 @@ def add_comment(
             user=user,
             content=payload.content,
             parent_comment_id=payload.parent_comment_id,
+            clinic_id=user.clinic_id,
         )
     except ValueError as error:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(error)) from error
@@ -90,7 +103,12 @@ def update_comment_resolution(
     if comment is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
     _authorized_entry(comment.entry_id, db, user)
-    return _comment_read(set_comment_resolved(db, comment, payload.resolved, user))
+    scoped_comment = get_comment_in_clinic(db, comment_id, user.clinic_id)
+    if scoped_comment is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
+    return _comment_read(
+        set_comment_resolved(db, scoped_comment, payload.resolved, user)
+    )
 
 
 @router.get("/patients/{patient_id}/assignments", response_model=list[TaskAssignmentRead])
@@ -105,9 +123,13 @@ def read_assignments(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
     require_patient_access(user, patient)
     require_internal_comments_access(user)
+    if get_patient_in_clinic(db, patient_id, user.clinic_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
     return [
         TaskAssignmentRead.model_validate(assignment)
-        for assignment in get_patient_assignments(db, patient_id, task_status)
+        for assignment in get_patient_assignments_in_clinic(
+            db, patient_id, user.clinic_id, task_status
+        )
     ]
 
 
@@ -127,8 +149,11 @@ def add_assignment(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
     require_patient_access(user, patient)
     require_internal_comments_access(user)
+    scoped_patient = get_patient_in_clinic(db, patient_id, user.clinic_id)
+    if scoped_patient is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
     if payload.entry_id is not None:
-        entry = get_entry(db, payload.entry_id)
+        entry = get_entry_in_clinic(db, payload.entry_id, user.clinic_id)
         if entry is None or entry.patient_id != patient_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -137,7 +162,7 @@ def add_assignment(
         require_entry_collaboration_access(user, entry)
     assignment = create_assignment(
         db,
-        patient_id=patient_id,
+        patient_id=scoped_patient.id,
         title=payload.title,
         entry_id=payload.entry_id,
         assigned_role=payload.assigned_role,
@@ -161,6 +186,9 @@ def update_assignment(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
     require_patient_access(user, patient)
     require_internal_comments_access(user)
+    scoped_assignment = get_assignment_in_clinic(db, assignment_id, user.clinic_id)
+    if scoped_assignment is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assignment not found")
     return TaskAssignmentRead.model_validate(
-        set_assignment_status(db, assignment, payload.status, user)
+        set_assignment_status(db, scoped_assignment, payload.status, user)
     )

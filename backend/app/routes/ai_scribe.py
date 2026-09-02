@@ -11,6 +11,7 @@ from app.services.ai_scribe_service import (
     provider_generation_mode,
 )
 from app.services.authorization_service import require_ai_scribe_access, require_patient_access
+from app.services.clinic_scope_service import get_patient_in_clinic
 from app.services.patient_service import get_patient
 from app.services.summarization_provider import SummaryProvider, get_summary_provider
 
@@ -34,9 +35,12 @@ def create_ai_scribed_note(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
     require_patient_access(user, patient)
     require_ai_scribe_access(user)
+    scoped_patient = get_patient_in_clinic(db, payload.patient_id, user.clinic_id)
+    if scoped_patient is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
     result = ingest_synthetic_transcript(
         db,
-        patient=patient,
+        patient=scoped_patient,
         interaction_type=payload.interaction_type,
         external_source_id=payload.source_id,
         transcript=payload.transcript,

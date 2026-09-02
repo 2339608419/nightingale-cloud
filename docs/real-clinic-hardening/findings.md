@@ -1,5 +1,26 @@
 # Phase 0 Findings
 
+## Phase 2 initial tenant-boundary inspection
+
+- The only effective runtime clinic-isolation boundary is the clinic comparison in `require_patient_access` (`backend/app/services/authorization_service.py:29-34`), called by routes after unscoped `get_patient`/`get_entry`/`db.get` lookups. Role, self-access, note ownership, and patient visibility rules are valuable authorization controls but are not a second tenant boundary.
+- If that comparison is omitted or becomes a no-op, a caller asserting Clinic B development headers and knowing or guessing Clinic A IDs can reach every currently addressable patient and linked route. There is no patient-list endpoint, so this does not automatically enumerate every tenant record, but known/guessed IDs enable reads and state changes across patient data, timeline entries, versions/audits, highlights, comments, assignments, conflicts, approvals, AI ingestion, and decay preview.
+- Patient, TimelineEntry, EntryVersion, AuditLog-by-entry, Highlight, Comment, TaskAssignment, ConflictRecord, and PatientInstructionApproval are currently fetched without a clinic predicate. Tenant ownership is inferred through Patient, and no Clinic/User/Membership model or composite tenant foreign key exists.
+- ImportancePreference is the exception: its read/update queries already include `ImportancePreference.clinic_id == clinic_id`; it still trusts the forgeable development identity header and therefore is not production authentication.
+- The minimal reliable design keeps the existing outer route guard for RBAC/API compatibility, then re-fetches the target through centralized SQLAlchemy clinic-scoped queries before any response, content access, association, or mutation. Under normal mismatch the outer guard retains the existing 403 contract; when fault-injected to a no-op, the independent scoped query returns no object and the route uses 404/non-visible semantics.
+- Indirect scoped queries will join from linked IDs through TimelineEntry or Patient to `Patient.clinic_id`; EntryVersion and AuditLog scope through their parent entry; comments through entry; highlights/assignments/conflicts through patient; approvals through instruction entry, with source entry independently scoped.
+- Phase 2 is expected to add one centralized scoped-query service, update all six tenant-bearing route modules and the approval service where needed, add a parameterized guard-failure/cross-entity test matrix, and update README plus the four hardening documents. No schema migration, identity system, frontend redesign, or fake onboarding UI is justified.
+
+## Phase 2 verified result
+
+- `clinic_scope_service.py` now supplies the independent inner SQL boundary. Patient queries bind `Patient.id` and `Patient.clinic_id`; every linked-object lookup joins or filters through that scoped patient instead of reading globally and checking clinic ownership afterward.
+- The route-level authorization guard remains intact and executes first under normal operation. Its role, patient-self, ownership, and approval rules are not duplicated into or replaced by the tenant repository.
+- Guard-failure testing monkeypatches the effective route imports of `require_patient_access` to a no-op, rather than merely asserting the normal guard returns `403`. Seventeen known-ID read/write/state-change paths then fail at the inner query with `404` and neither disclose clinical markers nor create successful audits.
+- Cross-tenant association injection is separately rejected: a Clinic B assignment cannot attach a known Clinic A entry. Same-clinic access continues to work with the outer comparison disabled.
+- Existing indexes cover the join/filter columns used by the new queries: patient clinic, entry patient, version entry, audit entity ID, highlight patient/entry, comment entry, assignment patient/entry, conflict patient, approval source entry, and preference clinic. No speculative schema/index migration was added.
+- Verified results: focused isolation suite 20 passed; required security/collaboration regressions 98 passed; complete backend suite 119 passed. The remaining warning is a third-party Starlette/httpx deprecation.
+- The post-change in-process warm-path check (20 warm-ups, 200 measured requests) reported 5.849 ms median and 7.006 ms P95. This is useful only as a regression approximation because it excludes network latency, browser rendering, production data volume/storage, and concurrent users.
+- Scenario 2 now SURVIVES for the repository's tested application paths. Scenario 5 remains PARTIAL because authenticated membership, first-class clinic/user schema, migration tooling, managed deployment, and operational onboarding do not exist.
+
 ## Phase 1 initial inspection
 
 - Phase 1 starts from confirmed HEAD `058020d428b0a597dec14363513aae1ba8b9735c`; the pre-existing root changes and untracked user materials remain excluded.

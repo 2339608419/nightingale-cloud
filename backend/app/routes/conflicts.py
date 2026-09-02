@@ -14,10 +14,15 @@ from app.services.authorization_service import (
 )
 from app.services.conflict_service import (
     conflict_authority_policy,
-    get_patient_conflicts,
     resolve_conflict,
 )
-from app.services.patient_service import get_entry, get_patient
+from app.services.patient_service import get_patient
+from app.services.clinic_scope_service import (
+    get_conflict_in_clinic,
+    get_entry_in_clinic,
+    get_patient_conflicts_in_clinic,
+    get_patient_in_clinic,
+)
 
 
 router = APIRouter(tags=["conflicts"])
@@ -25,9 +30,15 @@ DbSession = Annotated[Session, Depends(get_db)]
 Identity = Annotated[CurrentUser, Depends(get_current_user)]
 
 
-def _read(db: Session, conflict: ConflictRecord) -> ConflictRecordRead:
-    authoritative_entry = get_entry(db, conflict.authoritative_entry_id)
-    conflicting_entry = get_entry(db, conflict.conflicting_entry_id)
+def _read(
+    db: Session, conflict: ConflictRecord, clinic_id: str
+) -> ConflictRecordRead:
+    authoritative_entry = get_entry_in_clinic(
+        db, conflict.authoritative_entry_id, clinic_id
+    )
+    conflicting_entry = get_entry_in_clinic(
+        db, conflict.conflicting_entry_id, clinic_id
+    )
     if authoritative_entry is None or conflicting_entry is None:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -65,7 +76,14 @@ def read_conflicts(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
     require_patient_access(user, patient)
     require_conflict_review_access(user)
-    return [_read(db, item) for item in get_patient_conflicts(db, patient_id, conflict_status)]
+    if get_patient_in_clinic(db, patient_id, user.clinic_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
+    return [
+        _read(db, item, user.clinic_id)
+        for item in get_patient_conflicts_in_clinic(
+            db, patient_id, user.clinic_id, conflict_status
+        )
+    ]
 
 
 @router.post("/conflicts/{conflict_id}/resolve", response_model=ConflictRecordRead)
@@ -80,4 +98,11 @@ def mark_conflict_resolved(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
     require_patient_access(user, patient)
     require_conflict_resolution_access(user)
-    return _read(db, resolve_conflict(db, conflict, user))
+    scoped_conflict = get_conflict_in_clinic(db, conflict_id, user.clinic_id)
+    if scoped_conflict is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conflict not found")
+    return _read(
+        db,
+        resolve_conflict(db, scoped_conflict, user),
+        user.clinic_id,
+    )

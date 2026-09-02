@@ -1,5 +1,25 @@
 # Phase 0 Progress Log
 
+## Phase 2 — started
+
+- Confirmed Phase 1 HEAD `b0fe21256da4363b938f7ceb6713c8d0b201ea9f` on `master`.
+- Confirmed the three root planning-file modifications plus video, resume, `output/`, and `read.md` remain user-owned and excluded.
+- Re-read all four hardening documents and began a complete route/service/model inventory before selecting the inner tenant-query design.
+- Enumerated patient, entry, version/audit, highlight, comment, assignment, conflict, approval, AI-scribe, decay, and importance-preference access paths. Confirmed all except importance preferences currently depend on an unscoped lookup followed by the single outer clinic guard.
+- Selected a two-boundary design that preserves existing outer authorization and 403 behavior, then requires a separate SQL query joined to `Patient.clinic_id` before data use; fault injection of the outer comparison will therefore yield an inner 404 rather than exposure.
+- Added the centralized `clinic_scope_service.py` query boundary for patients, entries, versions, entry audits, highlights, comments, assignments, conflicts, and patient-instruction approvals.
+- Updated patient, AI-scribe, and entry/version/audit/approval paths so the existing outer guard runs first and a separately clinic-scoped SQL result is required before use or mutation.
+- Updated collaboration reads/mutations and parent-comment association checks to require independently scoped entry/comment/patient/assignment queries.
+- Updated highlight and conflict reads/mutations so both target records and indirect source entries are re-resolved through the clinic-scoped query boundary before use.
+- Added a 17-case guard-failure matrix plus same-clinic, cross-tenant assignment injection, importance-preference, no-audit, and no-clinical-content checks. The first run exposed a test-fixture entry-ID mistake before isolation assertions; corrected it from seeded entry 006 to 007.
+- Corrected Phase 2 focused isolation suite: **20 passed, 1 third-party deprecation warning in 2.19s**.
+- Required RBAC/collaboration/revision/conflict/approval/AI/audit regression set including Phase 2 matrix: **98 passed, 1 third-party warning in 6.26s**.
+- Complete backend suite: **119 passed, 1 third-party warning in 7.32s**.
+- Reviewed tenant-query join columns and confirmed existing model indexes cover the new scoped lookups; no unmeasured schema optimization was introduced.
+- Updated README and scenarios 2/5 to distinguish the outer authorization guard from the inner SQL tenant boundary and to separate all six Clinic B onboarding work categories.
+- Frontend TypeScript checks and production build passed (`vite v8.2.2`, 17 modules, 127 ms).
+- Rechecked the warm Glance/highlights path after adding tenant predicates: 20 warm-ups and 200 measured in-process requests produced 5.849 ms median and 7.006 ms P95. This excludes network, browser rendering, production storage/volume, and concurrency.
+
 ## Phase 1 — started
 
 - Confirmed HEAD `058020d428b0a597dec14363513aae1ba8b9735c` on `master`.
