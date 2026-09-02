@@ -1,5 +1,20 @@
 # Phase 0 Findings
 
+## Phase 8 documentation/delivery reconciliation
+
+- Confirmed Phase 7 HEAD; no application edits, dependency installation or test rerun.
+- Old brief reported 89 tests and early provenance design. Updated three-unit brief targets
+  2–3 pages and covers original 1–17, failed attempts and changed assumptions; not rendered.
+- README now names the clone destination and avoids implying a formal Clinic model or
+  authenticated independent reviewers. Old benchmark is historical, not current SLA proof.
+- remaining-work.md separates local implementation, mocks, absent/external work, Clinic B
+  change categories, resource decisions and delivery gates; verdicts unchanged.
+- Local repo/tests/instructions exist. Recipient access, current PDF and video coverage remain
+  unverified. Existing PDF/video and protected user files were not read or changed.
+- Phase 7 evidence: 182 backend passes/one warning, 3 frontend passes, TypeScript/build passed.
+  Phase 8 did not rerun them. No blocking defect found in documentation review; no fresh
+  runtime audit is claimed.
+
 ## Phase 7 integration acceptance result
 
 - The pre-change baseline was 163 passing backend tests. No application regression or demo

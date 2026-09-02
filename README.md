@@ -8,6 +8,18 @@ Nightingale is a shared longitudinal care-note prototype for clinicians, staff, 
 
 The primary demo patient is `Maya Chen (Synthetic)` (`patient-demo-001`). The architecture intentionally favors a small, reliable 72-hour prototype over production-EHR complexity.
 
+### Final evidence and delivery status (Phase 8)
+
+Phase 8 updates documentation only, not all remaining functionality. Phase 7 commit
+`c6c3f309d28709c2060665eafb9f704af961f1cf` recorded 182 backend passes (one existing
+Starlette/httpx warning), 3 frontend logic passes, both TypeScript checks and a successful
+production build. These were **not rerun in Phase 8**. See the
+[updated brief](TECHNICAL_BRIEF_FINAL.md), [scenario evidence](docs/real-clinic-hardening/scenario-test-mapping.md),
+[recording guide](DEMO_RUNBOOK.md), and [remaining work/delivery gates](docs/real-clinic-hardening/remaining-work.md).
+The updated Markdown targets 2–3 pages but is not rendered; existing PDF and video are not
+verified as covering current functionality. Production identity, messaging and real audio/ASR
+remain absent. Passing mock/boundary tests does not upgrade scenario verdicts.
+
 ## 2. Architecture
 
 ```text
@@ -41,7 +53,7 @@ Backend code is separated into `models`, `schemas`, `routes`, `services`, and `d
 Python 3.11+ and Node.js 20+ are recommended.
 
 ```powershell
-git clone <repository-url>
+git clone <repository-url> "Nightingale Cloud"
 cd "Nightingale Cloud"
 
 cd backend
@@ -82,6 +94,9 @@ python -m pytest -q
 python -m pytest tests/test_real_clinic_scenarios.py -q
 
 cd ..\frontend
+npm test
+npx tsc --noEmit -p tsconfig.app.json
+npx tsc --noEmit -p tsconfig.node.json
 npm run build
 ```
 
@@ -112,7 +127,8 @@ The role selector is labeled **Demo identity simulation**. It sends `X-User-Id`,
 | Clinician | `clinician-demo-001` | Clinician notes, AI notes, decisions, revisions |
 | Admin | `admin-demo-001` | Clinic-scoped oversight |
 
-All primary identities use clinic `clinic-demo-001`. A second synthetic clinic record demonstrates isolation.
+All primary identities use clinic `clinic-demo-001`. Second-clinic synthetic patient/test
+fixtures demonstrate isolation; there is no formal Clinic model or production onboarding.
 
 ### Synthetic phone-first access
 
@@ -402,8 +418,9 @@ Highlight, actor, role, decision, timestamp, entity, and entry type—never clin
 One actor has one active decision per Highlight; changing it reverses the old contribution.
 `POST /highlights/{id}/feedback/undo` returns the actor's decision to undone/suggested,
 recomputes aggregates, and repeated undo is an unaudited no-op. Positive feedback applies
-immediately. Negative learning is suppressed until two independent clinicians reject the
-same category; after that it uses the existing weights and cap. Legacy aggregates cannot
+immediately. Negative learning is suppressed until two distinct clinician IDs reject the
+same category; forgeable development headers do not prove independent humans. After that
+it uses the existing weights and cap. Legacy aggregates cannot
 be reconstructed into historical actor events: untouched categories remain compatible,
 while a category receiving a Phase 5 event is recomputed only from attributable actor events.
 `GET /importance-preferences` and `/importance-feedback-policy/{entity}` expose the policy.
@@ -525,7 +542,7 @@ Run the repeatable backend approximation from `backend/`:
 python scripts/benchmark_glance.py --requests 200 --warmups 20
 ```
 
-Final-submission measurement on Windows 11, Python 3.12.13, FastAPI 0.141.1,
+Historical pre-hardening measurement (not rerun in Phase 7 or 8) on Windows 11, Python 3.12.13, FastAPI 0.141.1,
 SQLAlchemy 2.0.52, and in-memory SQLite: 200 measured requests after 20 warmups,
 median 5.308 ms and P95 6.540 ms for
 `GET /patients/patient-demo-001/highlights`. This in-process TestClient measurement

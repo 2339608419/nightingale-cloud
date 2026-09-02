@@ -12,10 +12,10 @@ This directory records the independent audit and implementation plan requested f
 
 ## Current phase
 
-- Phase: 7 — scenarios 1–16 integration acceptance and demo stability
-- Status: verification complete; eight Phase 7 files staged, awaiting explicit commit authorization
-- Application-code changes allowed: only concrete regressions found by acceptance testing
-- Commit target after explicit authorization: `test: cover real-clinic resilience scenarios`
+- Phase: 8 — final documentation and delivery reconciliation only
+- Status: documentation checks complete; eight documents staged, awaiting commit authorization
+- Application-code changes allowed: none; record gaps, stop on blocking defects
+- Commit target after explicit authorization: `docs: finalize real-clinic evidence and delivery guide`
 
 ## Phase 0 objectives
 
@@ -142,7 +142,20 @@ This directory records the independent audit and implementation plan requested f
   signal, Montelukast confirmation, distinct summaries, approval, and patient visibility.
 - [x] Update README, Demo Runbook, and hardening evidence without changing verdict boundaries.
 - [x] Explicitly stage only Phase 7 files and request commit authorization.
-- [ ] Create Phase 7 commit only after explicit authorization.
+- [x] Create authorized Phase 7 commit: `c6c3f309d28709c2060665eafb9f704af961f1cf`.
+
+## Phase 8 checklist
+
+- [x] Verify HEAD and preserve user-owned files; read original scenarios and targeted docs.
+- [x] Calibrate README/brief/runbook and distinguish implemented/mock/absent/external work.
+- [x] Organize brief for 2–3 page target without claiming rendered pagination.
+- [x] Attribute Phase 7 test/build evidence; no new execution or dependency installation.
+- [x] Document pending PDF/video/access checks without reading existing video.
+- [x] Check paths/diffs and stage only Phase 8 documentation.
+- [ ] Create local commit only after explicit authorization.
+
+Phase 8 completion does not implement all remaining requirements. PDF/video verification,
+publication and email remain separate delivery gates in remaining-work.md.
 
 ## Errors encountered
 
@@ -186,7 +199,5 @@ This directory records the independent audit and implementation plan requested f
 
 ## Completion gate
 
-Phase 7 is ready for commit authorization only when final evidence and test/build results are
-captured, the staged diff contains only explicitly listed Phase 7 test/documentation files,
-and no user-owned root files are staged. The local commit remains a separate, user-authorized
-action.
+Phase 8 is ready for commit authorization only after document checks and precise documentation
+staging, with user-owned files excluded. Commit, PDF/video and publication remain separate.

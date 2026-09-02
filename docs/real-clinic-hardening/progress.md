@@ -1,5 +1,21 @@
 # Phase 0 Progress Log
 
+## Phase 8 — final documentation and delivery reconciliation
+
+- Confirmed master HEAD `c6c3f309d28709c2060665eafb9f704af961f1cf`.
+- Read original requirements and targeted docs; calibrated README, final brief, runbook,
+  four hardening documents and new remaining-work.md. No application/test changes.
+- No test/build/benchmark rerun: attributed Phase 7 evidence is 182 backend passes/one warning,
+  3 frontend passes and both TypeScript checks/production build passed.
+- No PDF rendering, video reading, upload, email or push. Current PDF pagination/content,
+  new-feature video coverage and recipient access remain unverified; verdicts unchanged.
+- Two patch attempts failed without changes: same-path delete/add, then an incorrect matrix
+  heading. Used exact update patches after checking the heading; no application files touched.
+- Final path/diff/scope checks precede staging. Commit requires authorization; no next phase.
+- Final local Markdown links passed; brief is approximately 1,149 whitespace-separated words,
+  not rendered pages. Working diff has no backend/frontend changes; diff format check passed.
+  Eight Phase 8 documents are the explicit staging scope; protected user files remain excluded.
+
 ## Phase 7 — integration acceptance and demo stability
 
 - Confirmed Phase 6 HEAD `25dabb04ff8eca6f9eebb8122406c3c200408f65`; protected root

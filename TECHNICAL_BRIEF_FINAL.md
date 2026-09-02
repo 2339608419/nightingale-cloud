@@ -1,136 +1,120 @@
-# Nightingale Cloud - Shared Longitudinal Care Note
+# Nightingale Cloud — Real-Clinic Evidence Brief
 
-*A communication and trust layer that turns fragmented longitudinal clinical notes into an actionable, provenance-linked shared record.*
+Zhanchen Lin · Synthetic data only · 3 September 2026
 
-## 1. Problem and design principles
+Organized into three compact page units for a **2–3 page target**. Phase 8 has not rendered
+or paginated this Markdown; PDF length/content remain unverified. Implementation baseline:
+`c6c3f309d28709c2060665eafb9f704af961f1cf` (Phase 7).
 
-Electronic health records are effective at storing structured observations, orders, and encounter documents, but they often fail to express the patient's evolving story. Free-text notes are fragmented by visit, author, and workflow. Important risks compete with old details, unresolved actions are easy to lose, and AI-generated summaries add value only when clinicians can verify their evidence.
+## Page unit 1 — Architecture, privacy, and clinic readiness
 
-Nightingale Cloud is a synthetic-data-only 72-hour prototype centered on one shared Care Note per patient. It combines a longitudinal timeline with a clinician-facing Glance View, inline collaboration, revision history, and AI-scribed entries. Five principles shape the design:
-
-- **Glanceability:** expose the three to five most actionable facts and open actions first.
-- **Collaboration:** let staff and clinicians contribute without overwriting each other's sections.
-- **Provenance:** make every highlighted claim traceable to an exact timeline entry and source span.
-- **Deterministic safety:** use inspectable rules for authority, conflicts, ranking floors, and evidence state.
-- **Abstention over unsupported generation:** withhold or require review when privacy or evidence checks fail.
-
-The result is not a production EHR. It is a focused demonstration that AI can assist while clinicians retain verification and final authority.
-
-## 2. Architecture
+Nightingale combines one longitudinal Care Note per patient, a ranked Glance View,
+collaboration and auditable clinician decisions. It is a prototype, not a production EHR.
 
 ```text
-React + TypeScript + Vite
-            |
-            v
-        FastAPI API
-            |
-            +-- server-side RBAC and clinic scope
-            +-- timeline, comments, tasks, revisions
-            +-- highlight and adaptive importance engine
-            +-- conflict and evidence confidence
-            +-- metadata-only audit service
-            +-- AI-scribe safety pipeline
-            |
-            v
-      SQLAlchemy ORM
-            |
-            v
-     SQLite prototype
+React/TypeScript/Vite → REST → FastAPI authorization → clinic-scoped SQL
+                                              → SQLAlchemy / SQLite
+Patient → TimelineEntry → immutable EntryVersion → approval → mock delivery
+                     ↘ comments/tasks; highlights → version/span provenance
+                     ↘ conflicts → two immutable sources; metadata-only audit
+Consult → immutable segments → signals/captures → three audience summaries
 ```
 
-FastAPI routes resolve a development identity, load the patient, enforce reusable authorization policies, and delegate to focused services. SQLAlchemy models and Pydantic API schemas remain separate. The React client is a typed REST consumer; role controls in the interface simulate identities for the demo and are not the security boundary.
+Outer role/self-access authorization and inner clinic-filtered SQL are independent
+boundaries. They do not replace production identity: development headers remain forgeable.
+Formal Clinic/User/Membership models, migrations and database RLS are absent.
 
-The AI path has a separate safety boundary:
+| Scenario | Verdict | Implemented evidence; first remaining failure |
+|---|---|---|
+| 1 Phone-only patient | PARTIAL | Digest lookup, atomic one-use challenge, self-only portal; mock token delivery does not prove phone ownership. |
+| 2 Isolation guard bug | SURVIVES | Disabling outer guard still yields scoped SQL denial for foreign IDs; forged clinic identity remains outside that proof. |
+| 3 Other PHI exits | PARTIAL | Application errors/logs and metadata audits tested; proxy, crash dashboard and external retention unverified. |
+| 4 Ordering | SURVIVES | Raw synthetic text → redaction → validation → provider; validation failure calls no provider and creates no entry. |
+| 5 Clinic B | PARTIAL | Scoped queries and same-phone/per-clinic lookup work; production onboarding/membership/migrations absent. |
+| 6 Trilingual consult | PARTIAL | Code-switched synthetic text/spans survive; real speech cannot enter this text-only contract. |
+| 7 Minute-two allergy | PARTIAL | Final post-ASR segment creates provisional signal at supplied offset; no audio-time detection. |
+| 8 Model hangs | PARTIAL | Configurable deadline returns safe abstention/no entry; synchronous workers/outage UX remain limited. |
+| 9 Hour-long 503 | PARTIAL | Failure abstains without trusted entry; offline mock remains available, but no operational failover/circuit breaker. |
 
-```text
-Synthetic transcript
-  -> PHI redaction
-  -> redaction validation
-  -> provider abstraction
-  -> system-authored AI timeline entry
+Client source IDs become stable opaque SHA-256 references before persistence/logging;
+this prevents direct plaintext leakage, not guessing attacks. Only validated redacted text
+crosses the provider boundary. The separate Consult Lab is offline rule-derived and stores
+synthetic segments for provenance; no provider receives them. TLS, encryption and external
+retention controls remain deployment work.
 
-Validation failure
-  -> WITHHELD / review
-  -> no provider call
-  -> no AI timeline entry
-```
+Evidence: `backend/tests/test_real_clinic_scenarios.py:59–106`. Exact per-scenario
+file/line, services and failure analysis are in
+[scenario-test-mapping](docs/real-clinic-hardening/scenario-test-mapping.md) and
+[scenario-matrix](docs/real-clinic-hardening/scenario-matrix.md).
 
-The default provider is a deterministic offline mock so the demo is reproducible without credentials or network access. An external provider is opt-in behind the same validated boundary.
+## Page unit 2 — Editing, delivery, and clinical trust
 
-## 3. Data model
+| Scenario | Verdict | Implemented evidence; first remaining failure |
+|---|---|---|
+| 10 Concurrent edits | SURVIVES | Expected-version updates reject stale writes with 409; UI retains draft with explicit recovery. Browser crash can lose unsaved text. |
+| 11 Link never received | PARTIAL | Created/queued/simulated-sent/simulated-delivered/failed differ; no provider receipt proves handset delivery. |
+| 12 Wrong dose sent | PARTIAL | Approval binds a version; edits invalidate approval and flag sent copies for correction. Review can miss errors; remote copies cannot be recalled. |
+| 13 Nurse allergy vs AI | SURVIVES | Exact synthetic contradiction produces HIGH/Needs Review with both immutable sources; unsupported phrasing may escape extraction. |
+| 14 Evidence Confidence | SURVIVES | Deterministic version/span/entity/conflict checks fail closed; verifiability is not medical truth or probability. |
+| 15 Biased learning | PARTIAL | Reversible feedback, two-ID negative guard, exposure de-duplication and separate review queue; correlated bias/spoofable identity remain. |
+| 16 Edited source | SURVIVES | Cited version/span remain immutable; currency becomes STALE. Missing/corrupt evidence becomes BROKEN/ABSTAIN, never guessed. |
 
-`Patient` owns the longitudinal record. `TimelineEntry` is the canonical unit for clinician notes, staff notes, patient-facing instructions, AI summaries, and system events. Each entry records author role, timestamp, type, content, and provenance. Immutable `EntryVersion` snapshots support history and revert; update requests carry an expected version so stale same-entry edits fail with HTTP 409 while unrelated entries remain independently editable.
+Risk answers potential harm; importance answers review order; Evidence Confidence answers
+verifiability; CURRENT/STALE/BROKEN answers currency. Ranking applies bounded learned
+adjustment before safety floors. Allergy and unresolved dosage conflicts retain HIGH floors.
+Two distinct clinician IDs do not prove two independent humans. Feedback cannot approve
+patient instructions.
 
-```text
-Patient -> TimelineEntry -> EntryVersion
-                    |----> Comment -> threaded replies
-                    |----> TaskAssignment
-                    |----> Highlight
-                    |----> ConflictRecord
+AI-derived instructions follow Draft → clinician Approved or Rejected. Patients cannot see
+raw AI notes or internal collaboration. Existing manual clinician instructions remain
+inherently approved for compatibility. Changes to approved AI-derived content/evidence require
+reapproval. Delivery retains the approved EntryVersion and replacement relationship, not
+a claim to erase a sent copy. Audit stores actor/action/entity/status, not clinical text.
 
-Highlight -> provenance_pointer
-          -> TimelineEntry + exact source span
-AI-derived instruction -> source AI entry
-                       -> approval metadata
-Clinic -> adaptive feedback counters
-AuditLog -> metadata-only lifecycle records
-```
+Evidence: `backend/tests/test_real_clinic_scenarios.py:110–197`, plus mapped revision,
+approval, delivery, conflict, confidence and Phase 5 suites. SURVIVES applies to the tested
+synthetic prototype, not unrestricted clinical language or production load.
 
-Highlights never stand alone: `entry_id`, `source_span`, and a stable `timeline-entry-{id}` pointer connect each item to evidence. Conflict records retain both unchanged sources and structured entity/value comparisons. AI-derived patient instructions reuse the timeline instruction type and add draft/approved/rejected metadata rather than creating a parallel patient-content store.
+## Page unit 3 — Scenario 17, lessons, verification and delivery
 
-## 4. Glance, prioritization, and trust
+**Scenario 17 overall: PARTIAL.** Real streaming audio and noisy-clinic ASR: **DOES NOT**.
+Code-switching: **SURVIVES for synthetic text** with ordered spans. Terminology/dosage:
+**SURVIVES for demo vocabulary**, retaining Montelukast 20/50 mg ambiguity until clinician
+confirmation. Reference assistance: **PARTIAL**; the curated term/unit catalog is neither
+journal search nor proof of a patient's dose. Multilingual readiness: **PARTIAL**, without
+evaluated speech accuracy or comprehension studies.
 
-The Glance View returns up to five non-rejected highlights. Its ranking remains deterministic and explainable:
+Provenance: **SURVIVES in prototype**. Complete segment-version pointer lists live in
+`ConsultSummary.source_provenance`; each TimelineEntry has one primary pointer, and
+patient output traces through clinician summary/approval. Mutation robustness: **PARTIAL**;
+partial→final and corrections append versions and invalidate derived state, but vocabulary
+and multi-worker validation remain narrow. Distinct clinician/staff/patient summaries:
+**SURVIVES as rule-derived outputs**, not model generation. Finalization commits all three
+together; failure rolls back partial output and closes the session as failed. Evidence:
+`backend/tests/test_phase6_multilingual_consult.py:45–325` and the full dimension matrix.
 
-```text
-base score + learned adjustment = adjusted score
-final score = max(adjusted score, clinical safety floor)
-```
+**Failed attempts and changed assumptions.** One clinic guard, mutable source anchors and
+pre-model redaction alone were insufficient: independent scoped queries, version-bound
+evidence and opaque source IDs were added. Phone enumeration, non-atomic challenge use,
+global phone uniqueness and free-text failure reasons were corrected. A greedy dose regex
+lost part of a dose; tests exposed it. Summaries initially committed independently; fault
+injection drove an atomic transaction. An older local server invalidated initial fresh-state
+demo evidence; a separate fresh setup was used. SQLite/create_all still cannot migrate old
+column changes. Small services, offline mock and human review remain appropriate demo choices.
 
-The base score combines explicit risk, recency, unresolved work, clinical entity type, and clinician confirmation. Clinic-scoped accept/reject counters add a bounded entity and entry-type adjustment. Feedback is a ranking convenience, not evidence: it cannot change provenance, authority, approval state, or Evidence Confidence.
+**Verification provenance.** Phase 7 recorded **182 backend passes, one Starlette/httpx
+deprecation warning**, including 19 numbered/audit/database tests; frontend **3 passes**,
+both TypeScript checks and production build passed. Phase 8 did not rerun them. Fresh and
+current-schema restart smoke passed, not general historic migration. Manual UI covered
+Glance, consult, confirmation, summaries and approval; other paths use TestClient evidence,
+not comprehensive browser E2E. No real provider/message was invoked. Historical
+20-warmup/200-request Glance median 5.308 ms/P95 6.540 ms was an earlier in-process
+TestClient/in-memory SQLite measurement, not current deployed SLA evidence.
 
-Safety floors apply after learning. Allergy remains at least HIGH/50; an unresolved medication dosage conflict remains at least HIGH/65; a recent or unresolved medication change remains at least MODERATE/35; and unresolved clinically relevant follow-up remains at least MODERATE/50. Repeated negative feedback therefore cannot demote a critical class below its configured floor.
-
-Evidence Confidence is not LLM confidence. It is a deterministic state derived from verifiable evidence:
-
-- **HIGH:** source and span resolve, with a recognized structured fact or clinician confirmation and no open conflict.
-- **MEDIUM:** source and span resolve, but deterministic structured confirmation is absent.
-- **LOW:** the source exists but structured evidence is inconsistent, so review is required.
-- **ABSTAIN / Needs Review:** provenance is broken, the span is invalid, or an unresolved contradiction prevents safe presentation.
-
-This directly answers the Nightingale trust hint. **What is it?** An evidence-based deterministic trust state. **How would we know if it were wrong?** The service verifies provenance, source spans, extracted fact consistency, and open conflicts. **What happens when it is wrong?** The system abstains or requires clinician review instead of displaying unsupported content as trusted.
-
-## 5. AI safety, conflicts, and patient safety
-
-Every AI-scribe provider call occurs after redaction and validation. The redactor covers names, Singapore-style identity numbers, and phone numbers. Validation checks that known PHI patterns and synthetic fixture names are absent, that protected terms such as Penicillin and Lisinopril and medication dosages survive, and that meaningful clinical text remains. Failure returns WITHHELD, calls no provider, logs no raw transcript, and persists no AI timeline entry.
-
-Conflict extraction is deliberately limited to the synthetic demo vocabulary for medication and dosage, allergy status, and follow-up status. It compares clinician with AI/patient evidence, clinician with staff, and staff with staff. The prototype authority hierarchy is clinician, then staff/nurse, then AI/patient-derived evidence. A higher-authority clinician fact takes precedence without deleting the lower-authority source. Equal-authority human contradictions stay open, assert no truth, and require clinician review. Both provenance links remain resolvable.
-
-There is no direct AI-to-patient path. AI-derived instructions begin as Draft and remain invisible to patients until a clinic-scoped clinician explicitly approves them. Rejected instructions stay internal. Editing or reverting approved AI-derived content invalidates approval, returns the instruction to Draft, and requires re-approval while prior versions remain available. Existing manually authored clinician instructions are treated as inherently clinician-approved.
-
-## 6. RBAC, privacy, and audit
-
-Authorization and clinic isolation are enforced server-side. Patients can retrieve only their approved patient-facing instructions and cannot access raw AI notes, internal comments, conflicts, tasks, versions, or audit data. Staff can create and edit staff notes within their clinic but cannot overwrite clinician notes or approve patient instructions. Clinicians can read permitted staff and AI context, edit clinician-owned notes, decide highlights, review conflicts, and approve patient instructions. Admins have clinic-scoped oversight but no implicit approval authority.
-
-The prototype uses synthetic data only. Audit logs store actor, role, action, entity identifiers, timestamps, and minimal status transitions; note, comment, highlight, instruction, and transcript content are excluded. Unauthorized and no-op operations do not create successful-action events. Development identity headers are prototype identity injection, not production authentication. TLS in transit and encryption at rest are deployment controls that a real environment would supply, not claims about this local build.
-
-## 7. Performance and verification
-
-The final warm-path benchmark used 20 warm-ups followed by 200 measured clinician requests to the Glance endpoint.
-
-| Metric | Result |
-|---|---:|
-| Median | 5.308 ms |
-| P95 | 6.540 ms |
-| Minimum | 4.616 ms |
-| Maximum | 17.024 ms |
-
-Environment: Windows 11, Python 3.12.13, FastAPI TestClient, and in-memory SQLite. This is an in-process backend approximation. It excludes browser rendering, network latency, deployed infrastructure, production data volume, and concurrency, so it is not evidence of a deployed end-to-end P95 at or below 300 ms.
-
-Final verification recorded 18 passing required micro-tests, 89 passing backend tests, a passing frontend TypeScript check, and a successful frontend production build. No external LLM was invoked during verification.
-
-## 8. Trade-offs and next steps
-
-The prototype uses SQLite instead of a production database, SQLAlchemy `create_all` instead of migration infrastructure, and development headers instead of SSO. The deterministic mock provider favors reproducibility. Clinical extraction covers only the synthetic demonstration vocabulary and is not general medical NLP. Raw AI transcript viewing is not implemented; only stable synthetic source identifiers are retained. Data decay is a reversible policy preview rather than physical cold storage, and ambient voice capture is not implemented.
-
-These choices intentionally prioritize a working longitudinal workflow, provenance, clinical authority, deterministic safety, evaluation, and clear demonstration within a 72-hour build window. Production next steps would begin with authenticated identity, managed migrations and storage, broader clinically validated extraction, direct source-review tooling, deployed performance testing, and operational security controls.
+**Delivery status.** Local repository, tests, README and updated Markdown exist. Updated
+PDF pagination/content and video coverage still need verification; existing PDF/video were
+not validated or replaced. Export/review a 2–3 page PDF, record selected scenarios with mock
+labels, and check repository access before sending. Original deadline: 3 September 2026,
+18:00 SGT. [Remaining work](docs/real-clinic-hardening/remaining-work.md) separates delivery
+checks from identity, messaging, audio/reference resources and user decisions. Phase 8
+completion does not mean all requirements are implemented.

@@ -1,5 +1,10 @@
 # Real-Clinic Failure Scenario Matrix
 
+Phase 8 preserves all verdicts below. [Remaining work](remaining-work.md) distinguishes
+implemented/mock/absent/external requirements and pending PDF/video delivery checks.
+Phase 7 results are not Phase 8 reruns or proof of full completion. Distinct development
+clinician IDs do not establish independent authenticated humans.
+
 Phase 7 direct automated acceptance index: `backend/tests/test_real_clinic_scenarios.py`.
 The scenario-by-scenario supporting-test/UI/limitation map is
 `docs/real-clinic-hardening/scenario-test-mapping.md`. Final Phase 7 evidence is 19 direct/

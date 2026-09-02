@@ -1,5 +1,9 @@
 # Nightingale Demo Runbook (5–7 minutes)
 
+Phase 8 supplies recording instructions, not proof of a completed recording. Existing
+`Demo Video.mp4` was not read, changed or checked for new-feature coverage. Phase 7 manual
+checks covered only the documented UI subset; API tests are not a complete browser E2E.
+
 Use only the seeded patient **Maya Chen (Synthetic)** (`patient-demo-001`). Start the backend and frontend using the README, then open `http://localhost:5173`.
 
 | Time | Role | Action | Expected result | Why it matters |
@@ -58,3 +62,30 @@ database containing real patient information.
 - Do not enter real patient information.
 - If a browser state looks stale after a role change, refresh once; seed data is idempotent.
 - Describe the benchmark as an in-process warm-path approximation, not a deployed end-to-end SLA.
+
+## Final recording sequence and pending checks
+
+1. Before recording, choose a separate disposable synthetic environment using the existing
+   README workflow; do not delete user databases or reset a live environment for a take.
+   Verify current frontend/backend pair, Maya Chen, and explicit mock labels.
+2. Record Glance → cited immutable source and explain CURRENT/STALE/BROKEN (16/14).
+   Show the exact nurse/AI allergy fixture if present (13); otherwise show its focused test,
+   labeled API evidence rather than pretending the seed contains that conflict.
+3. Show two editor attempts/409 recovery only after rehearsing both sessions (10). Show
+   phone request/exchange via existing API evidence (1), keeping tokens off the recording.
+4. Show failed appointment label (11), approval and version-bound correction path (12).
+   Explain that simulated delivery cannot prove a phone received or recalled anything.
+5. Show Consult Lab fixture, minute-two signal, clinician dose confirmation, distinct summaries
+   and patient approval (6/7/17). Explicitly say text is post-ASR; no microphone or journal search.
+6. Show feedback undo/review queue and safety floors (15). For 2–5 and 8–9, display selected
+   named test results/call-path evidence with limits; do not simulate a real provider outage
+   as if an external service was contacted. Re-running tests is a future recording action,
+   not something Phase 8 has done.
+7. Review the exported recording and fill in timestamps for each demonstrated scenario.
+   Leave unshown scenarios marked “not demonstrated in video”; do not infer video coverage
+   from passing tests. Export/check current brief separately before sending.
+
+Pending verification: [ ] startup/current build [ ] clear synthetic/mock labels
+[ ] legible source/409/approval states [ ] no visible tokens/personal data
+[ ] scenario timestamps [ ] playable audio/video [ ] current 2–3 page PDF
+[ ] recipient-accessible repository/zip. These checks are not completed by this document.
