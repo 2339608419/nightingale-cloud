@@ -12,6 +12,7 @@ from app.schemas.ai_scribe import (
     RedactionValidationMetadata,
 )
 from app.services.patient_service import create_patient_entry
+from app.services.conflict_service import detect_conflicts_for_entry
 from app.services.redaction_service import redact_phi, validate_redaction
 from app.services.summarization_provider import (
     InvalidProviderResponseError,
@@ -164,6 +165,7 @@ def ingest_synthetic_transcript(
         content=summary,
         provenance_pointer=provenance_pointer,
     )
+    detect_conflicts_for_entry(db, entry)
     logger.info(
         "Synthetic AI-scribe entry created source_ref=%s interaction_type=%s redactions=%d",
         source_ref,

@@ -155,36 +155,36 @@ Each scenario records:
 
 ### Scenario 13 — Nurse allergy vs AI “no known allergy” contradiction
 
-- **Verdict:** PARTIAL
-- **Classification:** Allergy contradiction machinery exists, but the original nurse-first then AI-later ordering is not detected
-- **Where:** Allergy extraction and negation handling exist in `backend/app/services/conflict_service.py:70-81`; conflict creation can preserve both sources and rank staff above AI in `:103-197`; open conflicts make Evidence Confidence abstain (`backend/app/services/evidence_confidence_service.py:70-95`) and the UI shows both sources (`frontend/src/App.tsx:344-366`). However, `detect_conflicts_for_entry` immediately returns for a changed SYSTEM/AI entry (`backend/app/services/conflict_service.py:123-131`), and AI ingestion does not call conflict detection (`backend/app/services/ai_scribe_service.py:69-87`).
-- **What breaks first:** With the exact original order—nurse records Penicillin allergy, then the patient tells the AI “no known allergies”—both entries appear in the timeline but no ConflictRecord is created by the later AI entry. The clinician may continue to see an existing allergy highlight if one was created, but receives no deterministic warning that the new AI statement contradicts it.
-- **What could break later:** Even supported conflicts miss allergens/phrasings outside Penicillin/Sulfa/simple negation, and mutable source edits can change the displayed evidence after conflict creation.
-- **Improvement:** Phase 5 should run conflict comparison whenever a relevant AI/patient entry is created as well as on human edits, preserve both sources, apply staff-over-AI authority without silently deleting evidence, make the Glance item Needs Review, and add the exact nurse-first/AI-second scenario test.
-- **Evidence:** Current allergy extractor test and AI-first/human-later conflict tests pass, but no test exercises nurse-first/AI-second creation. Static call-path inspection proves the later AI entry does not trigger detection.
+- **Verdict:** SURVIVES
+- **Classification:** Exact nurse-first/AI-second synthetic contradiction is retained, surfaced at Glance, immutable, and clinician-reviewable
+- **Where:** General no-known-allergy extraction and all-source conflict detection are in `backend/app/services/conflict_service.py:52-260`; successful AI ingestion invokes detection in `backend/app/services/ai_scribe_service.py:168`. `ConflictProvenance` binds both versions. The Top Card warning and dual-source controls are in `frontend/src/App.tsx:390`.
+- **What breaks first:** Only the deterministic Penicillin/Sulfa demo vocabulary is recognized; unsupported allergens or phrasing may not create a warning.
+- **What could break later:** Prototype authority order may be clinically inappropriate in another context, so it remains reviewable and is not treated as truth.
+- **Improvement:** Add clinically governed terminology, reviewed extraction fixtures, and broader immutable conflict-source viewers.
+- **Evidence:** `test_exact_nurse_then_ai_no_allergy_is_visible_safe_conflict` proves both entries, open conflict, staff-over-AI prototype policy, unresolved review, HIGH Glance warning, ABSTAIN, patient/Clinic B denial, resolution audit, and immutable v1 references. The edit/revert test proves pointers stay at v1. Manual UI confirmed the warning and both source actions.
 - **Remaining limitation:** This is not general medical NLP and cannot establish clinical truth independently.
 
 ### Scenario 14 — Verifiable Evidence Confidence metric
 
 - **Verdict:** SURVIVES
-- **Classification:** Implemented and directly tested
-- **Where:** Deterministic inputs and mapping in `backend/app/services/evidence_confidence_service.py:29-133`; concise UI display in `frontend/src/App.tsx:277-293`.
-- **What breaks first:** Unsupported structured facts often receive MEDIUM rather than clinically validated extraction confidence; broken evidence safely abstains.
-- **What could break later:** Mutable source entries cause old confidence to become ABSTAIN rather than resolving the original version.
-- **Improvement:** Phase 5 should retain deterministic definitions and Phase 4 should bind confidence to immutable source versions.
-- **Evidence:** All five tests in `backend/tests/test_evidence_confidence.py`, including determinism, open conflict, broken provenance, and no provider call.
+- **Classification:** Definition, inputs, outputs, immutable evidence, safety actions, and fail-closed behavior are aligned and tested
+- **Where:** `backend/app/services/evidence_confidence_service.py:32` evaluates immutable source, version pointer, exact span, declared entity, open conflict, human confirmation, and separate source currency. `frontend/src/App.tsx` shows level/rule/action separately from CURRENT/STALE/BROKEN.
+- **What breaks first:** Unsupported deterministic entities produce MEDIUM rather than evidence of medical correctness; LOW/ABSTAIN correctly require review.
+- **What could break later:** Wider vocabularies require clinical validation; this remains evidence verifiability rather than truth or model calibration.
+- **Improvement:** Add governed extraction rules and external clinical evaluation without converting this into model self-confidence.
+- **Evidence:** Expanded tests cover HIGH/MEDIUM/LOW/ABSTAIN, pointer/version/span failures, entity mismatch, conflict, confirmation, deterministic repetition, STALE currency, no provider call, and injected invariant failure returning ABSTAIN without exception leakage.
 - **Remaining limitation:** It is evidence verification, not probability of medical correctness.
 
 ### Scenario 15 — Fatigue dismissals and adaptive-ranking bias
 
 - **Verdict:** PARTIAL
-- **Classification:** Safety floors/caps implemented and tested; bias controls incomplete
-- **Where:** Clinic-scoped counters and cap in `backend/app/services/adaptive_importance_service.py:10-54`; floors applied after learning in `backend/app/services/importance_service.py:139-185`; feedback updates in `backend/app/services/highlight_service.py:87-127`.
-- **What breaks first:** One rejection immediately changes future ranking, and rejected noncritical items disappear from Glance; there is no minimum sample or explicit undo control in the UI.
-- **What could break later:** Exposure bias reinforces categories already shown, stale preferences persist indefinitely, and sparse feedback may encode individual fatigue.
-- **Improvement:** Phase 5 should add feedback undo, minimum samples, decay/offline audit, and an exploration or review mechanism while retaining caps and safety floors.
-- **Evidence:** `test_self_learning_importance.py`; `test_importance_safety_floors.py` proves repeated allergy rejection cannot cross the HIGH floor.
-- **Remaining limitation:** Adaptive heuristics are not clinically validated learning and should remain decision support only.
+- **Classification:** Actor-aware reversible feedback, a negative aggregation guard, explicit impressions, diagnostics, review queue, caps, and floors are implemented; human/selection bias remains only partially mitigated
+- **Where:** Event tables are in `backend/app/models/ranking_feedback.py`; recompute/policy/metrics in `backend/app/services/ranking_feedback_service.py`; endpoints in `backend/app/routes/highlights.py`; UI controls and review surfaces in `frontend/src/App.tsx`.
+- **What breaks first:** Two clinicians may share the same workflow bias, while legacy aggregate history lacks actor/exposure reconstruction.
+- **What could break later:** Small samples, correlated reviewers, stale decisions, and organization-wide conventions can still reinforce incorrect preferences.
+- **Improvement:** Add time decay, governed sampling, durable privacy-reviewed impression sessions, and production identity/membership.
+- **Evidence:** Tests prove one reject is suppressed, two independent clinicians enable bounded negative adjustment, decision change/undo does not drift, repeated undo is an unaudited no-op, exposure is explicit/idempotent, an unexposed item reaches the queue, clinic scope holds, and floors run last. Manual UI confirmed Undo, diagnostics, and Not previously surfaced queue.
+- **Remaining limitation:** PARTIAL is retained deliberately: the controls expose and reduce selection/fatigue risk but cannot prove unbiased human behavior or clinical validity.
 
 ### Scenario 16 — Source edited after highlight creation
 

@@ -47,6 +47,9 @@ class HighlightRead(BaseModel):
     provenance_status: ProvenanceStatus
     source_changed: bool
     version_provenance_pointer: str | None
+    confidence_inputs_evaluated: list[str]
+    confidence_rule_triggered: str
+    confidence_required_action: str
 
 
 class HighlightSuggestionCreate(BaseModel):
@@ -93,3 +96,4 @@ class ImportancePreferenceRead(BaseModel):
     rejected_count: int
     weight: float
     explanation: str
+    negative_feedback_state: str = "legacy_aggregate"

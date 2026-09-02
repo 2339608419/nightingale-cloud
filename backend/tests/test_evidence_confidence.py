@@ -144,3 +144,58 @@ def test_confidence_calculation_does_not_call_summary_provider(
 
     assert _highlights(client)
     assert provider.calls == 0
+
+
+def test_confidence_explanation_is_structured_and_contains_no_clinical_text(
+    client: TestClient,
+) -> None:
+    allergy = next(item for item in _highlights(client) if item["id"] == "highlight-demo-allergy")
+    assert allergy["confidence_rule_triggered"] == "exact_structured_evidence_confirmed"
+    assert allergy["confidence_required_action"] == "none"
+    assert set(allergy["confidence_inputs_evaluated"]) == {
+        "immutable_source", "version_pointer", "exact_span", "structured_entity",
+        "conflict", "human_confirmation", "source_currency",
+    }
+    serialized = " ".join(allergy["confidence_inputs_evaluated"])
+    assert "Penicillin" not in serialized
+    assert allergy["source_span"] not in serialized
+
+
+def test_unexpected_evidence_invariant_failure_abstains_instead_of_500(
+    client: TestClient, monkeypatch,
+) -> None:
+    import app.services.evidence_confidence_service as confidence_service
+
+    def broken_resolver(*_args, **_kwargs):
+        raise RuntimeError("synthetic invariant failure with forbidden clinical body")
+
+    monkeypatch.setattr(confidence_service, "resolve_highlight_provenance", broken_resolver)
+    response = client.get(
+        f"/patients/{SYNTHETIC_PATIENT_ID}/highlights", headers=CLINICIAN
+    )
+    assert response.status_code == 200
+    assert response.json()
+    assert all(item["evidence_confidence_level"] == "abstain" for item in response.json())
+    assert all(item["confidence_rule_triggered"] == "evaluation_failed_closed" for item in response.json())
+    assert "forbidden clinical body" not in response.text
+
+
+def test_high_medium_low_and_human_confirmation_rules_are_explicit(client: TestClient) -> None:
+    current = {item["id"]: item for item in _highlights(client)}
+    assert current["highlight-demo-allergy"]["evidence_confidence_level"] == "high"
+    assert current["highlight-demo-lab"]["evidence_confidence_level"] == "medium"
+
+    mismatch = client.post("/entries/entry-demo-006/highlights", headers=CLINICIAN, json={
+        "source_span": "Lisinopril increased from 10 mg to 20 mg daily.",
+        "text": "Declared as wrong synthetic entity", "risk_level": "low",
+        "risk_reason": "Negative deterministic test.", "unresolved_action": False,
+        "clinical_entity_type": "lab",
+    })
+    assert mismatch.status_code == 201
+    assert mismatch.json()["highlight"]["evidence_confidence_level"] == "low"
+    assert mismatch.json()["highlight"]["confidence_rule_triggered"] == "structured_entity_mismatch"
+
+    confirmed = client.post("/highlights/highlight-demo-lab/accept", headers=CLINICIAN)
+    assert confirmed.status_code == 200
+    assert confirmed.json()["evidence_confidence_level"] == "high"
+    assert confirmed.json()["confidence_rule_triggered"] == "exact_evidence_human_confirmed"

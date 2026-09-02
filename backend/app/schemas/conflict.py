@@ -25,3 +25,8 @@ class ConflictRecordRead(BaseModel):
     conflicting_role: AuthorRole
     authority_policy: ConflictAuthorityPolicy
     requires_clinician_review: bool
+    unresolved_requires_review: bool
+    authoritative_version_number: int | None = None
+    conflicting_version_number: int | None = None
+    authoritative_version_pointer: str | None = None
+    conflicting_version_pointer: str | None = None

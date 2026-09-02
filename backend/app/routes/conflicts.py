@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.auth import CurrentUser, get_current_user
 from app.database import get_db
-from app.models import ConflictRecord, ConflictStatus
+from app.models import ConflictProvenance, ConflictRecord, ConflictStatus
 from app.schemas import ConflictRecordRead
 from app.services.authorization_service import (
     require_conflict_resolution_access,
@@ -45,6 +45,7 @@ def _read(
             detail="Conflict source entry cannot be resolved",
         )
     authority_policy = conflict_authority_policy(authoritative_entry, conflicting_entry)
+    immutable = db.get(ConflictProvenance, conflict.id)
     return ConflictRecordRead.model_validate(
         {
             **conflict.__dict__,
@@ -58,6 +59,11 @@ def _read(
             "requires_clinician_review": (
                 authority_policy.value == "clinician_review_required"
             ),
+            "unresolved_requires_review": conflict.status == ConflictStatus.OPEN,
+            "authoritative_version_number": immutable.authoritative_version_number if immutable else None,
+            "conflicting_version_number": immutable.conflicting_version_number if immutable else None,
+            "authoritative_version_pointer": immutable.authoritative_version_pointer if immutable else None,
+            "conflicting_version_pointer": immutable.conflicting_version_pointer if immutable else None,
         }
     )
 

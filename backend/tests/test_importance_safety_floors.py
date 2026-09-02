@@ -56,7 +56,8 @@ def test_repeated_rejection_cannot_push_allergy_below_high_floor(
 
     future = suggest(client, "entry-demo-006", ALLERGY)
 
-    assert future["learned_adjustment"] == -10.0
+    # One actor's repeated rejects are suppressed by the Phase 5 negative guard.
+    assert future["learned_adjustment"] == 0.0
     assert future["adjusted_score"] < future["safety_floor"]
     assert future["safety_floor"] == 50.0
     assert future["safety_floor_risk"] == "high"
@@ -81,7 +82,7 @@ def test_unresolved_medication_dosage_conflict_cannot_fall_below_floor(
 
     future = suggest(client, "entry-demo-006", MEDICATION_CONFLICT)
 
-    assert future["learned_adjustment"] == -10.0
+    assert future["learned_adjustment"] == 0.0
     assert future["safety_floor_rule"] == "unresolved_medication_dosage_conflict"
     assert future["safety_floor"] == 65.0
     assert future["safety_floor_risk"] == "high"
@@ -92,11 +93,21 @@ def test_unresolved_medication_dosage_conflict_cannot_fall_below_floor(
 def test_noncritical_category_can_move_down_with_feedback(client: TestClient) -> None:
     initial = suggest(client, "entry-demo-007", LAB)
     reject(client, initial)
+    second = suggest(client, "entry-demo-007", {**LAB, "text": "Independent lab review"})
+    response = client.post(
+        f"/highlights/{second['highlight']['id']}/reject",
+        headers={
+            "X-User-Id": "clinician-demo-002",
+            "X-Role": "clinician",
+            "X-Clinic-Id": "clinic-demo-001",
+        },
+    )
+    assert response.status_code == 200
     future = suggest(client, "entry-demo-007", {**LAB, "text": "Future lab item"})
 
     assert initial["safety_floor"] is None
     assert future["floor_applied"] is False
-    assert future["learned_adjustment"] == -3.0
+    assert future["learned_adjustment"] == -6.0
     assert future["final_score"] < initial["final_score"]
 
 

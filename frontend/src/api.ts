@@ -11,6 +11,7 @@ import type {
   PatientDelivery,
   TaskAssignment,
   TimelineEntry,
+  TrustMetrics,
 } from "./types.ts";
 
 const API_BASE_URL = import.meta.env?.VITE_API_URL ?? "/api";
@@ -108,6 +109,22 @@ export const acceptHighlight = (highlightId: string, identity: ApiIdentity) =>
 
 export const rejectHighlight = (highlightId: string, identity: ApiIdentity) =>
   requestJson<Highlight>(`/highlights/${highlightId}/reject`, identity, { method: "POST" });
+
+export const undoHighlightFeedback = (highlightId: string, identity: ApiIdentity) =>
+  requestJson<Highlight>(`/highlights/${highlightId}/feedback/undo`, identity, { method: "POST" });
+
+export const recordHighlightExposure = (
+  highlightId: string, displayReference: string, identity: ApiIdentity,
+) => requestJson<{ recorded: boolean }>(`/highlights/${highlightId}/exposures`, identity, {
+  method: "POST",
+  body: JSON.stringify({ display_reference: displayReference }),
+});
+
+export const getHighlightReviewQueue = (patientId: string, identity: ApiIdentity) =>
+  requestJson<Highlight[]>(`/patients/${patientId}/highlight-review-queue`, identity);
+
+export const getHighlightTrustMetrics = (patientId: string, identity: ApiIdentity) =>
+  requestJson<TrustMetrics>(`/patients/${patientId}/highlight-trust-metrics`, identity);
 
 export const getDataDecayPreview = (patientId: string, identity: ApiIdentity) =>
   requestJson<DataDecayPreview[]>(`/patients/${patientId}/decay-preview`, identity);

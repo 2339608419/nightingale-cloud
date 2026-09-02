@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from enum import Enum
 
-from sqlalchemy import DateTime, Enum as SqlEnum, ForeignKey, Index, String
+from sqlalchemy import DateTime, Enum as SqlEnum, ForeignKey, Index, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.session import Base
@@ -68,3 +68,21 @@ class ConflictRecord(Base):
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
     )
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class ConflictProvenance(Base):
+    """Immutable version binding for both contradictory sources."""
+
+    __tablename__ = "conflict_provenance"
+    __table_args__ = (UniqueConstraint("conflict_id"),)
+
+    conflict_id: Mapped[str] = mapped_column(
+        ForeignKey("conflict_records.id", ondelete="CASCADE"), primary_key=True
+    )
+    authoritative_version_number: Mapped[int] = mapped_column(nullable=False)
+    conflicting_version_number: Mapped[int] = mapped_column(nullable=False)
+    authoritative_version_pointer: Mapped[str] = mapped_column(String(500), nullable=False)
+    conflicting_version_pointer: Mapped[str] = mapped_column(String(500), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )

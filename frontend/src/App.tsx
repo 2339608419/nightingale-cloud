@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   acceptHighlight,
   approvePatientInstruction,
@@ -18,6 +18,9 @@ import {
   getHighlightSource,
   getPatientDeliveries,
   getImportancePreferences,
+  getHighlightReviewQueue,
+  getHighlightTrustMetrics,
+  recordHighlightExposure,
   setCommentResolution,
   setMockDeliveryStatus,
   revertEntry,
@@ -25,6 +28,7 @@ import {
   rejectPatientInstruction,
   resolveConflict,
   updateNote,
+  undoHighlightFeedback,
   ApiError,
 } from "./api";
 import type {
@@ -42,6 +46,7 @@ import type {
   PatientDelivery,
   TaskAssignment,
   TimelineEntry,
+  TrustMetrics,
 } from "./types";
 import {
   cancelConflictAndKeepDraft,
@@ -69,8 +74,8 @@ const canRevertEntry = (role: DemoRole, entry: TimelineEntry) =>
   (role === "clinician" && entry.author_role === "clinician" &&
     ["clinician_note", "instruction"].includes(entry.type));
 
-const formatLabel = (value: string) =>
-  value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+const formatLabel = (value: string | null | undefined) =>
+  (value ?? "unknown").replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 
 export default function App() {
   const [demoRole, setDemoRole] = useState<DemoRole>("clinician");
@@ -87,6 +92,9 @@ export default function App() {
   const [deliveries, setDeliveries] = useState<PatientDelivery[]>([]);
   const [highlightSources, setHighlightSources] = useState<Record<string, HighlightSourceSnapshot | null>>({});
   const [highlightSourceErrors, setHighlightSourceErrors] = useState<Record<string, string>>({});
+  const [reviewQueue, setReviewQueue] = useState<Highlight[]>([]);
+  const [trustMetrics, setTrustMetrics] = useState<TrustMetrics | null>(null);
+  const displayReference = useRef(`display_${crypto.randomUUID().replaceAll("-", "")}`);
   const [error, setError] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
 
@@ -104,6 +112,8 @@ export default function App() {
     setDeliveries([]);
     setHighlightSources({});
     setHighlightSourceErrors({});
+    setReviewQueue([]);
+    setTrustMetrics(null);
 
     const load = async () => {
       try {
@@ -155,6 +165,16 @@ export default function App() {
           conflictData = openConflicts;
           commentData = Object.fromEntries(entryComments);
           if (!cancelled) setVersionsByEntry(Object.fromEntries(entryVersions));
+          if (demoRole === "clinician") {
+            const [queue, metrics] = await Promise.all([
+              getHighlightReviewQueue(DEMO_PATIENT_ID, identity),
+              getHighlightTrustMetrics(DEMO_PATIENT_ID, identity),
+            ]);
+            if (!cancelled) {
+              setReviewQueue(queue);
+              setTrustMetrics(metrics);
+            }
+          }
         }
         if (cancelled) return;
         setCommentsByEntry(commentData);
@@ -170,6 +190,16 @@ export default function App() {
     void load();
     return () => { cancelled = true; };
   }, [demoRole, reloadToken]);
+
+  useEffect(() => {
+    if (demoRole !== "clinician" || highlights.length === 0) return;
+    // This effect runs after the Glance list has rendered; GET alone is not an impression.
+    void Promise.all(highlights.map((highlight) =>
+      recordHighlightExposure(
+        highlight.id, displayReference.current, DEMO_IDENTITIES.clinician,
+      )
+    )).catch(() => undefined);
+  }, [demoRole, highlights]);
 
   if (error) {
     return <main className="page"><DemoIdentity role={demoRole} onChange={setDemoRole} /><div className="error">{error}</div></main>;
@@ -260,6 +290,17 @@ export default function App() {
     }
   };
 
+  const undoFeedback = async (highlight: Highlight) => {
+    try {
+      const updated = await undoHighlightFeedback(highlight.id, DEMO_IDENTITIES[demoRole]);
+      setHighlights((current) => current.map((item) => item.id === updated.id ? updated : item));
+      setReviewQueue((current) => current.map((item) => item.id === updated.id ? updated : item));
+      setReloadToken((value) => value + 1);
+    } catch (reason: unknown) {
+      setError(reason instanceof Error ? reason.message : "Unable to undo feedback");
+    }
+  };
+
   const addDemoNote = async (content: string) => {
     const type = demoRole === "staff" ? "staff_note" : "clinician_note";
     await createNote(DEMO_PATIENT_ID, type, content, DEMO_IDENTITIES[demoRole]);
@@ -345,6 +386,20 @@ export default function App() {
           <p>Highest-priority current items</p>
         </div>
         <div className="glance-content">
+          {demoRole === "clinician" && conflicts.some((item) => item.entity_type === "allergy") && (
+            <div className="glance-conflict-warning" role="alert">
+              <strong>High-risk allergy contradiction · Needs clinician review</strong>
+              <span>Both sources are retained. Staff-over-AI is a prototype authority policy, not an automatic medical truth.</span>
+              <div className="conflict-actions">
+                {conflicts.filter((item) => item.entity_type === "allergy").slice(0, 1).map((item) => (
+                  <span key={item.id}>
+                    <button type="button" onClick={() => navigateToSource(item.authoritative_provenance_pointer)}>Staff source · v{item.authoritative_version_number}</button>
+                    <button type="button" onClick={() => navigateToSource(item.conflicting_provenance_pointer)}>AI/patient source · v{item.conflicting_version_number}</button>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
           <ol className="highlight-list">
             {highlights.map((highlight) => (
               <li key={highlight.id} className={`highlight-item${highlight.abstained ? " highlight-needs-review" : ""}`}>
@@ -357,6 +412,7 @@ export default function App() {
                   <span className={`evidence-confidence confidence-${highlight.evidence_confidence_level}`}>
                     <strong>{highlight.abstained ? "Needs review" : `Evidence: ${formatLabel(highlight.evidence_confidence_level)}`}</strong>
                     <small>{highlight.confidence_reason}</small>
+                    <small>Rule: {formatLabel(highlight.confidence_rule_triggered)} · Action: {formatLabel(highlight.confidence_required_action)}</small>
                   </span>
                   <span className="highlight-state">
                     {highlight.unresolved_action && <span className="state-open">Action unresolved</span>}
@@ -384,6 +440,11 @@ export default function App() {
                   <div className="highlight-decisions" aria-label={`Review ${highlight.text}`}>
                     <button type="button" onClick={() => void decideHighlight(highlight, "accept")}>Accept</button>
                     <button type="button" onClick={() => void decideHighlight(highlight, "reject")}>Reject</button>
+                  </div>
+                )}
+                {demoRole === "clinician" && highlight.status !== "suggested" && (
+                  <div className="highlight-decisions">
+                    <button type="button" onClick={() => void undoFeedback(highlight)}>Undo feedback</button>
                   </div>
                 )}
               </li>
@@ -420,6 +481,24 @@ export default function App() {
               </ul>
             </section>
           )}
+          {demoRole === "clinician" && trustMetrics && (
+            <section className="learning-summary" aria-label="Exposure bias diagnostics">
+              <strong>Exposure review · not accuracy</strong>
+              <span>{trustMetrics.exposed_count} exposed · {trustMetrics.unexposed_count} not yet surfaced</span>
+              <span>{trustMetrics.negative_feedback_suppressed_count} negative categories suppressed · {trustMetrics.negative_feedback_applied_count} applied</span>
+            </section>
+          )}
+          {demoRole === "clinician" && reviewQueue.length > 0 && (
+            <section className="review-queue" aria-label="Not yet surfaced review candidates">
+              <strong>Review candidates · outside Top Glance</strong>
+              <ul>{reviewQueue.slice(0, 5).map((item) => (
+                <li key={item.id}>
+                  <span>{item.text} · {item.status === "rejected" ? "Feedback recorded" : "Not previously surfaced"}</span>
+                  {item.status === "rejected" && <button type="button" onClick={() => void undoFeedback(item)}>Undo feedback</button>}
+                </li>
+              ))}</ul>
+            </section>
+          )}
           {demoRole !== "patient" && completedAssignments.length > 0 && (
             <section className="completed-actions" aria-label="Recently completed actions">
               <strong>Recently completed</strong>
@@ -435,7 +514,7 @@ export default function App() {
             <div><p className="eyebrow">Internal review</p><h2 id="conflict-heading">Clinical conflicts</h2></div>
             <span>{conflicts.length} open</span>
           </div>
-          <p>Both sources remain available. Authority follows clinician → staff → AI/patient; equal-authority contradictions require clinician review.</p>
+          <p>Both sources remain available. Prototype authority policy follows clinician → staff → AI/patient; every unresolved contradiction still requires clinician review and is not an automatic medical truth.</p>
           <ul>
             {conflicts.map((conflict) => (
               <li key={conflict.id}>

@@ -7,10 +7,11 @@ from sqlalchemy.orm import Session
 from app.auth import CurrentUser
 from app.models import Highlight, HighlightStatus, Patient, TimelineEntry
 from app.schemas.highlight import HighlightSuggestionCreate
-from app.services.adaptive_importance_service import learned_bonus, record_feedback
+from app.services.adaptive_importance_service import learned_bonus
 from app.services.importance_service import ImportanceEvaluation, evaluate_importance
-from app.services.audit_service import add_trust_action_audit
 from app.services.highlight_provenance_service import bind_highlight_to_current_version
+from app.models import FeedbackDecision
+from app.services.ranking_feedback_service import record_actor_feedback
 
 
 GLANCE_LIMIT = 5
@@ -101,36 +102,23 @@ def set_highlight_status(
     new_status: HighlightStatus,
     actor: CurrentUser,
 ) -> Highlight:
-    previous_status = highlight.status
-    if previous_status == new_status:
-        return highlight
-    record_feedback(
-        db,
-        clinic_id=patient.clinic_id,
-        entity_type=highlight.clinical_entity_type,
-        entry_type=highlight.entry.type,
-        previous_status=previous_status.value,
-        new_status=new_status.value,
+    decision = (
+        FeedbackDecision.ACCEPTED
+        if new_status == HighlightStatus.ACCEPTED
+        else FeedbackDecision.REJECTED
     )
-    if previous_status != HighlightStatus.ACCEPTED and new_status == HighlightStatus.ACCEPTED:
-        highlight.importance_score += 15.0
-    elif previous_status == HighlightStatus.ACCEPTED and new_status != HighlightStatus.ACCEPTED:
-        highlight.importance_score -= 15.0
-    highlight.status = new_status
-    highlight.clinician_confirmed = new_status == HighlightStatus.ACCEPTED
-    add_trust_action_audit(
-        db,
-        actor=actor,
-        action=(
-            "highlight.accepted"
-            if new_status == HighlightStatus.ACCEPTED
-            else "highlight.rejected"
-        ),
-        entity_type="highlight",
-        entity_id=highlight.id,
-        from_status=previous_status.value,
-        to_status=new_status.value,
+    record_actor_feedback(
+        db, highlight=highlight, clinic_id=patient.clinic_id, actor=actor,
+        decision=decision,
     )
-    db.commit()
-    db.refresh(highlight)
     return highlight
+
+
+def undo_highlight_feedback(
+    db: Session, *, highlight: Highlight, patient: Patient, actor: CurrentUser
+) -> tuple[Highlight, bool]:
+    changed, _ = record_actor_feedback(
+        db, highlight=highlight, clinic_id=patient.clinic_id, actor=actor,
+        decision=FeedbackDecision.UNDONE,
+    )
+    return highlight, changed

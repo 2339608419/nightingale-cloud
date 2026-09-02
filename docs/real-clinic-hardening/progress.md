@@ -1,5 +1,19 @@
 # Phase 0 Progress Log
 
+## Phase 5 — implementation and verification
+
+- Confirmed Phase 4 HEAD `551a4a5128ce027b172ae593f2bc31dfce44b14d`; pre-existing root planning changes and personal/output materials remain excluded.
+- Inspected deterministic extraction, authority, conflict/Glance, immutable provenance, Evidence Confidence, preferences, weights/floors, audit, authorization, AI-scribe, and frontend decision paths; reported the pre-change behavior and risks.
+- Extended conflict detection to successful AI/patient-derived ingestion, added general no-known-allergy extraction for the fixed synthetic vocabulary, conflict-aware HIGH Glance generation, and immutable dual-source ConflictProvenance.
+- Added structured Evidence Confidence inputs/rule/action and fail-closed ABSTAIN behavior. Confidence remains deterministic and provider-free; source currency remains separate.
+- Added actor-aware feedback replacement/undo, two-independent-clinician negative threshold, idempotent explicit exposure, diagnostic metrics, and independent lower-ranked review queue.
+- Focused implementation runs exposed and corrected: omitted explicit expected-source version, an entity-only compatibility recomputation, old single-actor negative-learning assertions, actual frontend interface/CSS shapes, and an older local frontend/backend mismatch. All are recorded in the Phase 5 error table.
+- Phase 5 focused safety/trust suite: **20 passed, 1 third-party warning in 2.38s**. The broader RBAC/clinic/revision/approval/audit/AI/conflict/provenance/concurrency regression: **93 passed, 1 third-party warning in 8.96s**.
+- Complete backend: **152 passed, 1 third-party warning in 14.26s**.
+- Frontend recovery logic: **3 passed**; TypeScript checks and Vite production build passed (18 modules, 92 ms).
+- Manual isolated synthetic UI verified: HIGH allergy conflict at Glance, both source buttons with immutable v1 labels, abstention rule/action, Undo feedback, explicit exposure diagnostic (`not accuracy`), and a lower-ranked `Not previously surfaced` review candidate. Temporary ignored databases only; no user/runtime database was used.
+- Final diff and precise staging remain pending; no commit has been created.
+
 ## Phase 4 — started
 
 - Confirmed Phase 3 HEAD `dd926de9e06c3cbb2365e3acf8de27b8ce82b8fc`; root planning files and personal/output materials remain untouched and excluded.

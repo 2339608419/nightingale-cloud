@@ -140,6 +140,17 @@ def get_patient_highlights_in_clinic(
     return list(db.scalars(statement))
 
 
+def get_all_patient_highlights_in_clinic(
+    db: Session, patient_id: str, clinic_id: str
+) -> list[Highlight]:
+    return list(db.scalars(
+        select(Highlight).join(Patient, Highlight.patient_id == Patient.id).where(
+            Highlight.patient_id == patient_id,
+            Patient.clinic_id == clinic_id,
+        ).order_by(Highlight.importance_score.desc(), Highlight.id)
+    ))
+
+
 def get_highlight_in_clinic(
     db: Session, highlight_id: str, clinic_id: str
 ) -> Highlight | None:

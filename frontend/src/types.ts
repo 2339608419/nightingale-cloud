@@ -78,6 +78,22 @@ export interface Highlight {
   provenance_status: "current" | "stale" | "broken";
   source_changed: boolean;
   version_provenance_pointer: string | null;
+  confidence_inputs_evaluated: string[];
+  confidence_rule_triggered: string;
+  confidence_required_action: string;
+}
+
+export interface TrustMetrics {
+  eligible_candidate_count: number;
+  exposed_count: number;
+  unexposed_count: number;
+  decided_count: number;
+  undecided_exposed_count: number;
+  feedback_undone_count: number;
+  negative_feedback_suppressed_count: number;
+  negative_feedback_applied_count: number;
+  safety_floor_protected_count: number;
+  metric_purpose: string;
 }
 
 export interface HighlightSourceSnapshot {
@@ -171,4 +187,9 @@ export interface ConflictRecord {
   conflicting_role: "patient" | "staff" | "clinician" | "system";
   authority_policy: "clinician_authoritative" | "staff_authoritative" | "clinician_review_required";
   requires_clinician_review: boolean;
+  unresolved_requires_review: boolean;
+  authoritative_version_number: number | null;
+  conflicting_version_number: number | null;
+  authoritative_version_pointer: string | null;
+  conflicting_version_pointer: string | null;
 }

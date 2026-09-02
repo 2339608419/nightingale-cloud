@@ -8,6 +8,12 @@ from app.schemas.collaboration import (
 )
 from app.schemas.data_decay import DataDecayPreviewRead
 from app.schemas.conflict import ConflictRecordRead
+from app.schemas.ranking_feedback import (
+    ExposureCreate,
+    ExposureRead,
+    FeedbackPolicyRead,
+    TrustMetricsRead,
+)
 from app.schemas.ai_scribe import (
     AiScribeRequest,
     AiScribeResponse,
@@ -58,6 +64,10 @@ __all__ = [
     "CommentRead",
     "CommentResolutionUpdate",
     "ConflictRecordRead",
+    "ExposureCreate",
+    "ExposureRead",
+    "FeedbackPolicyRead",
+    "TrustMetricsRead",
     "DataDecayPreviewRead",
     "TaskAssignmentCreate",
     "TaskAssignmentRead",

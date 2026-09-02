@@ -1,10 +1,12 @@
 from app.models.collaboration import CollaborationRole, Comment, TaskAssignment, TaskStatus
 from app.models.conflict import (
+    ConflictProvenance,
     ConflictAuthorityPolicy,
     ConflictEntityType,
     ConflictRecord,
     ConflictStatus,
 )
+from app.models.ranking_feedback import FeedbackDecision, HighlightExposure, HighlightFeedback
 from app.models.highlight import (
     ClinicalEntityType,
     EvidenceConfidenceLevel,
@@ -37,6 +39,7 @@ __all__ = [
     "ConflictAuthorityPolicy",
     "ConflictEntityType",
     "ConflictRecord",
+    "ConflictProvenance",
     "ConflictStatus",
     "ClinicalEntityType",
     "Highlight",
@@ -46,6 +49,9 @@ __all__ = [
     "Comment",
     "EntryVersion",
     "EvidenceConfidenceLevel",
+    "FeedbackDecision",
+    "HighlightExposure",
+    "HighlightFeedback",
     "Patient",
     "PatientDelivery",
     "PatientPortalSession",

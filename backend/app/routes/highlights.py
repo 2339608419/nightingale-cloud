@@ -5,13 +5,17 @@ from sqlalchemy.orm import Session
 
 from app.auth import CurrentUser, get_current_user
 from app.database import get_db
-from app.models import Highlight, HighlightStatus
+from app.models import ClinicalEntityType, Highlight, HighlightStatus
 from app.schemas import (
     HighlightRead,
     HighlightSourceSnapshotRead,
     HighlightSuggestionCreate,
     HighlightSuggestionRead,
     ImportancePreferenceRead,
+    ExposureCreate,
+    ExposureRead,
+    FeedbackPolicyRead,
+    TrustMetricsRead,
 )
 from app.services.adaptive_importance_service import get_preferences, preference_weight
 from app.services.authorization_service import (
@@ -20,7 +24,9 @@ from app.services.authorization_service import (
     require_patient_access,
     can_view_entry,
 )
-from app.services.highlight_service import create_highlight_suggestion, set_highlight_status
+from app.services.highlight_service import (
+    create_highlight_suggestion, set_highlight_status, undo_highlight_feedback,
+)
 from app.services.evidence_confidence_service import highlight_read
 from app.services.patient_service import get_entry, get_patient
 from app.services.clinic_scope_service import (
@@ -28,6 +34,10 @@ from app.services.clinic_scope_service import (
     get_highlight_in_clinic,
     get_highlight_provenance_in_clinic,
     get_patient_in_clinic,
+    get_all_patient_highlights_in_clinic,
+)
+from app.services.ranking_feedback_service import (
+    feedback_policy, record_exposure, trust_metrics,
 )
 from app.services.highlight_provenance_service import (
     HighlightSourceVersionConflict,
@@ -142,6 +152,79 @@ def reject_highlight(highlight_id: str, db: DbSession, user: Identity) -> Highli
     return _decide_highlight(highlight_id, HighlightStatus.REJECTED, db, user)
 
 
+@router.post("/highlights/{highlight_id}/feedback/undo", response_model=HighlightRead)
+def undo_feedback(highlight_id: str, db: DbSession, user: Identity) -> HighlightRead:
+    highlight = db.get(Highlight, highlight_id)
+    if highlight is None:
+        raise HTTPException(status_code=404, detail="Highlight not found")
+    patient = get_patient(db, highlight.patient_id)
+    if patient is None:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    require_patient_access(user, patient)
+    require_highlight_decision_access(user)
+    scoped_highlight = get_highlight_in_clinic(db, highlight_id, user.clinic_id)
+    scoped_patient = get_patient_in_clinic(db, patient.id, user.clinic_id)
+    if scoped_highlight is None or scoped_patient is None:
+        raise HTTPException(status_code=404, detail="Highlight not found")
+    updated, _ = undo_highlight_feedback(
+        db, highlight=scoped_highlight, patient=scoped_patient, actor=user
+    )
+    return highlight_read(db, updated, user.clinic_id)
+
+
+@router.post("/highlights/{highlight_id}/exposures", response_model=ExposureRead)
+def expose_highlight(
+    highlight_id: str, payload: ExposureCreate, db: DbSession, user: Identity
+) -> ExposureRead:
+    require_highlight_decision_access(user)
+    highlight = get_highlight_in_clinic(db, highlight_id, user.clinic_id)
+    if highlight is None:
+        raise HTTPException(status_code=404, detail="Highlight not found")
+    patient = get_patient_in_clinic(db, highlight.patient_id, user.clinic_id)
+    if patient is None:
+        raise HTTPException(status_code=404, detail="Highlight not found")
+    require_patient_access(user, patient)
+    return ExposureRead(recorded=record_exposure(
+        db, highlight=highlight, clinic_id=user.clinic_id, actor=user,
+        display_reference=payload.display_reference,
+    ))
+
+
+@router.get("/patients/{patient_id}/highlight-review-queue", response_model=list[HighlightRead])
+def review_queue(patient_id: str, db: DbSession, user: Identity) -> list[HighlightRead]:
+    require_highlight_decision_access(user)
+    patient = get_patient_in_clinic(db, patient_id, user.clinic_id)
+    if patient is None:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    require_patient_access(user, patient)
+    all_items = get_all_patient_highlights_in_clinic(db, patient_id, user.clinic_id)
+    # Keep the main Glance ranking untouched; queue lower-ranked suggested candidates.
+    ranked = [item for item in all_items if item.status != HighlightStatus.REJECTED]
+    queue = [item for item in all_items if item.status == HighlightStatus.REJECTED]
+    queue.extend(item for item in ranked[5:] if item.status == HighlightStatus.SUGGESTED)
+    return [highlight_read(db, item, user.clinic_id) for item in queue]
+
+
+@router.get("/patients/{patient_id}/highlight-trust-metrics", response_model=TrustMetricsRead)
+def read_trust_metrics(patient_id: str, db: DbSession, user: Identity) -> TrustMetricsRead:
+    require_highlight_decision_access(user)
+    patient = get_patient_in_clinic(db, patient_id, user.clinic_id)
+    if patient is None:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    require_patient_access(user, patient)
+    return TrustMetricsRead(**trust_metrics(db, user.clinic_id, patient_id))
+
+
+@router.get("/importance-feedback-policy/{entity_type}", response_model=FeedbackPolicyRead)
+def read_feedback_policy(entity_type: str, db: DbSession, user: Identity) -> FeedbackPolicyRead:
+    require_highlight_decision_access(user)
+    try:
+        category = ClinicalEntityType(entity_type)
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail="Unknown entity type") from error
+    return FeedbackPolicyRead(**feedback_policy(db, user.clinic_id, category))
+
+
 @router.get(
     "/highlights/{highlight_id}/source",
     response_model=HighlightSourceSnapshotRead,
@@ -196,6 +279,11 @@ def read_importance_preferences(db: DbSession, user: Identity) -> list[Importanc
                 f"{5 if item.category_type == 'entity' else 2}; "
                 f"{item.rejected_count} rejected × "
                 f"-{2 if item.category_type == 'entity' else 1}"
+            ),
+            negative_feedback_state=(
+                feedback_policy(db, user.clinic_id, item.category_value)["negative_feedback_state"]
+                if item.category_type == "entity"
+                else "derived_from_actor_events_or_legacy_baseline"
             ),
         )
         for item in get_preferences(db, user.clinic_id)

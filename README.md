@@ -290,7 +290,7 @@ retry. A stale failure creates no version/audit and does not invalidate approval
 delivery state, or trigger clinical-conflict mutation. SQLite tests verify repository
 behavior but do not prove distributed/multi-process concurrency.
 
-Clinician note creation and editing also run a deterministic conflict check for the
+Human note creation/editing and successful AI-scribe ingestion run a deterministic conflict check for the
 synthetic medication/dosage, allergy-status, and follow-up-status vocabulary. When a
 clinician value differs from an existing AI/patient-derived value, the clinician
 entry remains authoritative and an internal conflict record links to both unchanged
@@ -303,6 +303,12 @@ with provenance to both timeline entries. Equal-authority contradictions (includ
 staff versus staff) remain open with `clinician_review_required`; the UI labels both
 as sources and does not invent an authoritative truth. This remains deliberately
 limited to the synthetic medication/dosage, allergy-status, and follow-up vocabulary.
+The exact nurse-first `Penicillin allergy` then AI/patient-derived `No known allergies`
+flow retains both entries, creates an open ConflictRecord, and creates a HIGH-floor
+conflict-aware Glance warning. Staff-over-AI is labeled as a prototype authority policy,
+not medical truth; every unresolved contradiction remains clinician-reviewable. An
+additive `ConflictProvenance` record binds both sides to their exact immutable EntryVersion,
+so later edit/revert does not silently retarget the original evidence.
 
 AI-derived patient-facing instructions reuse `TimelineEntry(type=instruction)` plus
 a one-to-one approval metadata record. They are created as `draft`, must point to a
@@ -346,16 +352,23 @@ Failed deliveries accept only server-defined safe reason codes:
 content, names, phone numbers, and unknown codes are rejected before persistence; audit
 metadata continues to contain only status transitions.
 
-Evidence confidence is computed when highlights are read; it is not stored as a
-model-generated opinion. An exact entry pointer and exact source-span match are
-required. A recognized deterministic clinical fact with no open conflict is `HIGH`;
+Evidence Confidence answers only: “Can this Highlight be verified from its cited
+immutable evidence?” It does not measure clinical correctness, risk, model probability,
+decision quality, or whether the source is current. It is computed when highlights are
+read and is not a model-generated opinion. Inputs are immutable version existence,
+version-aware pointer, exact span, declared-versus-extracted entity, open conflict,
+clinician confirmation, and separate CURRENT/STALE/BROKEN source currency. A recognized
+deterministic clinical fact with no open conflict is `HIGH`;
 exact evidence without a structured match is `MEDIUM`; a structured entity mismatch
 is `LOW` and requires review. Missing/broken provenance, a missing source span, or an
 open contradiction produces `ABSTAIN`/`Needs review`, so the item is not presented as
 a normal trusted fact. Clinician confirmation can elevate otherwise exact evidence,
 but cannot repair broken provenance or override an open conflict. The response adds
-the level, concise reason, review flags, and each verification outcome without using
-an LLM or an arbitrary percentage.
+the level, concise reason, input names, triggered rule, required action, review flags,
+and each verification outcome without clinical text, an LLM, or an arbitrary percentage.
+Unexpected evaluation errors fail closed to `ABSTAIN` instead of returning a stale label
+or exposing an internal exception. STALE evidence can remain verifiable while separately
+requiring currentness review; BROKEN always abstains.
 
 Extraction and generation are separate trust boundaries. Deterministic extractors
 recognize only the documented synthetic medication, allergy, and follow-up vocabulary
@@ -376,7 +389,23 @@ This is an adaptive heuristic, not an ML model. The base combines risk, recency,
 - accepted source entry type `+2`; rejected source entry type `-1`
 - total learned bonus capped to `[-10, +25]`
 
-Only clinicians accept/reject. Identical decisions are idempotent; changing a decision reverses previous counters. `GET /importance-preferences` exposes counts, weights, and explanations.
+Only clinicians accept/reject. New actor-aware `HighlightFeedback` rows record clinic,
+Highlight, actor, role, decision, timestamp, entity, and entry type—never clinical text.
+One actor has one active decision per Highlight; changing it reverses the old contribution.
+`POST /highlights/{id}/feedback/undo` returns the actor's decision to undone/suggested,
+recomputes aggregates, and repeated undo is an unaudited no-op. Positive feedback applies
+immediately. Negative learning is suppressed until two independent clinicians reject the
+same category; after that it uses the existing weights and cap. Legacy aggregates cannot
+be reconstructed into historical actor events: untouched categories remain compatible,
+while a category receiving a Phase 5 event is recomputed only from attributable actor events.
+`GET /importance-preferences` and `/importance-feedback-policy/{entity}` expose the policy.
+
+Explicit `POST /highlights/{id}/exposures` impressions are idempotent by opaque display
+reference and occur only after clinician UI rendering; GET does not count as exposure.
+Clinic-scoped trust metrics distinguish eligible, exposed, unexposed, decided, undecided,
+undone, suppressed/applied negative feedback, and safety-floor protection. These are
+selection-bias diagnostics, not accuracy. A separate lower-ranked review queue surfaces
+not-yet-Glance candidates without changing the Top Card's 3–5 item safety ranking.
 
 Adaptive feedback is intentionally bounded because user behavior can be sparse,
 biased, or mistaken. Preferences are clinic-scoped, inspectable, and capped; they do
@@ -384,6 +413,9 @@ not change source evidence, authority, Evidence Confidence, or patient approval.
 clinical safety floor is applied after learning, so repeated rejection cannot demote
 critical allergy, unresolved dosage-conflict, medication-change, or follow-up classes
 below their configured minimum.
+
+The tested ordering is: base score → eligible learned adjustment (suppressed negative
+feedback contributes zero) → adjusted score → clinical safety floor → final score/risk.
 
 After the learned adjustment, a centralized deterministic safety policy enforces
 minimum score/risk floors: allergy HIGH/50; unresolved medication dosage conflict

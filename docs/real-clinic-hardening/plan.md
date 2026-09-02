@@ -12,10 +12,10 @@ This directory records the independent audit and implementation plan requested f
 
 ## Current phase
 
-- Phase: 4 — concurrent-edit recovery and immutable Highlight provenance
+- Phase: 5 — contradiction visibility, Evidence Confidence, and feedback-bias controls
 - Status: in progress
-- Application-code changes allowed: only the minimum changes for original scenarios 10 and 16
-- Commit target after explicit authorization: `feat: preserve concurrent edits and immutable provenance`
+- Application-code changes allowed: only the minimum changes for original scenarios 13, 14, and 15
+- Commit target after explicit authorization: `feat: harden clinical trust and ranking feedback`
 
 ## Phase 0 objectives
 
@@ -104,6 +104,20 @@ This directory records the independent audit and implementation plan requested f
 - [x] Update README and scenarios 10/16 from final verified evidence.
 - [x] Explicitly stage only Phase 4 files and request commit authorization.
 
+## Phase 5 checklist
+
+- [x] Confirm Phase 4 HEAD and preserve all root/user working-tree state.
+- [x] Inspect conflict extraction/order, Glance visibility, immutable evidence, confidence, feedback, floors, audit, and UI.
+- [x] Detect the exact nurse-allergy then AI-no-allergy ordering and retain both sources.
+- [x] Bind both conflict sources to immutable versions and create a HIGH conflict-aware Glance warning.
+- [x] Make Evidence Confidence definition/inputs/rules/actions explicit and fail closed.
+- [x] Add actor-aware decision replacement/undo and a two-independent-clinician negative guard.
+- [x] Add explicit idempotent exposure, trust diagnostics, and a lower-ranked review queue.
+- [x] Prove learning-before-floor order, clinic isolation, metadata-only records, and no LLM confidence call.
+- [x] Run focused/security/full backend tests, frontend tests/build, manual UI review, and diff checks.
+- [x] Update README and scenarios 13–15 without overstating residual bias.
+- [x] Explicitly stage only Phase 5 files and request commit authorization.
+
 ## Errors encountered
 
 | Error | Attempt | Resolution |
@@ -128,7 +142,12 @@ This directory records the independent audit and implementation plan requested f
 | The initial isolated UI backend could not bind port 8000, and direct 5174→8002 requests initially failed CORS. | 1 | Do not terminate unknown processes; verify the old ports were later free, then use allowed frontend origin 5173 with isolated backend 8002. |
 | The first temporary SQLite command for BROKEN UI state had PowerShell/Python quote syntax failure. | 1 | Use a corrected single nonclinical companion-row update against only the ignored temporary Phase 4 database. |
 | Two final verification invocations used repository-relative backend paths while already running from the repository or backend directory, so pytest did not start. | 1 | Correct the working-directory/path pairing and rerun the focused and complete suites; treat these as invocation errors, not test failures. |
+| First Phase 5 related regression exposed the intended compatibility gap: actor events initially recomputed entity but not entry-type contribution. | 1 | Store the safe entry-type category on the same actor event and deterministically recompute both existing aggregate dimensions; restored the tested +7 positive behavior. |
+| First Phase 5 focused run called immutable Highlight binding without its explicit expected-version argument and retained three old tests that expected one actor's repeated rejects to learn immediately. | 1 | Pass `None` explicitly and update the tests to the new independent-clinician negative guard; subsequent focused/security runs passed. |
+| First Phase 5 frontend patch expected type aliases and a multiline CSS selector while the repository uses interfaces and compact selectors. | 1 | No partial frontend change was applied; inspect actual declarations and apply smaller exact-context patches. |
+| First manual UI load used an older local frontend process pointed at an unavailable/older backend and exposed a missing-field render error. | 1 | Make label rendering defensive, then use isolated ignored Phase 5 databases and an isolated allowed-origin frontend/backend pair; manual UI review passed. |
+| A final combined regression command referenced the nonexistent historical filename `test_clinic_isolation.py`, so that invocation collected no tests. | 1 | Enumerate the repository's actual test filenames, rerun the intended regression with `test_clinic_isolation_defense.py`, then run the complete suite; 93 and 152 tests passed respectively. |
 
 ## Completion gate
 
-Phase 4 is ready for commit authorization only when implementation evidence and test/build results are captured, the staged diff contains only explicitly listed Phase 4 files, and no user-owned root files are staged. The local commit remains a separate, user-authorized action.
+Phase 5 is ready for commit authorization only when implementation evidence and test/build results are captured, the staged diff contains only explicitly listed Phase 5 files, and no user-owned root files are staged. The local commit remains a separate, user-authorized action.
