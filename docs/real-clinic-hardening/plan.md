@@ -12,10 +12,10 @@ This directory records the independent audit and implementation plan requested f
 
 ## Current phase
 
-- Phase: 6 — multilingual consult ingestion and audience-specific summaries
-- Status: in progress
-- Application-code changes allowed: only the minimum changes for original scenarios 6, 7, and 17
-- Commit target after explicit authorization: `feat: add multilingual consult and audience-aware summaries`
+- Phase: 7 — scenarios 1–16 integration acceptance and demo stability
+- Status: verification complete; eight Phase 7 files staged, awaiting explicit commit authorization
+- Application-code changes allowed: only concrete regressions found by acceptance testing
+- Commit target after explicit authorization: `test: cover real-clinic resilience scenarios`
 
 ## Phase 0 objectives
 
@@ -129,6 +129,21 @@ This directory records the independent audit and implementation plan requested f
 - [x] Harden staged review: atomic summary transaction, fail-closed session state, shared correction validation, and append-only partial→final.
 - [x] Explicitly stage only Phase 6 files and request commit authorization.
 
+## Phase 7 checklist
+
+- [x] Confirm Phase 6 HEAD and preserve all root/user working-tree state.
+- [x] Run the 163-test backend baseline and map existing evidence to scenarios 1–16.
+- [x] Audit Phase 5 feedback replacement, undo, exposure, negative guard, clinic scope,
+  role restriction, metadata, review queue, and safety-floor ordering.
+- [x] Add executable numbered scenario 1–16 acceptance tests and human-readable mapping.
+- [x] Add fresh-database and current-runtime restart/seed smoke tests.
+- [x] Run focused scenario, Phase 5, full backend, frontend logic, TypeScript, and build checks.
+- [x] Run an isolated manual browser smoke for Glance display, multilingual consult, minute-two
+  signal, Montelukast confirmation, distinct summaries, approval, and patient visibility.
+- [x] Update README, Demo Runbook, and hardening evidence without changing verdict boundaries.
+- [x] Explicitly stage only Phase 7 files and request commit authorization.
+- [ ] Create Phase 7 commit only after explicit authorization.
+
 ## Errors encountered
 
 | Error | Attempt | Resolution |
@@ -163,7 +178,15 @@ This directory records the independent audit and implementation plan requested f
 | Manual Phase 6 UI finalization immediately triggered the parent reload path, unmounting the Lab before its three summaries could remain visible. | 1 | Keep finalized Lab results local and remove the automatic Timeline reload; users can explicitly refresh/switch role when they want new Timeline entries. |
 | The first line-reference search used an unbalanced regular expression and returned no references. | 1 | Use exact literal pattern searches across the known Phase 6 files and record the resulting line numbers. |
 | Phase 6 staged-review frontend verification requested a nonexistent `npm run typecheck` script. | 1 | Use the repository's actual checks (`npx tsc --noEmit` for both tsconfigs); the production build also runs both checks before Vite and passed. |
+| The first Scenario 5 acceptance assertion required 404, but the normal outer authorization boundary correctly returned 403 before the inner 404-hiding query. | 1 | Accept the established 403/404 API boundary and assert that no patient marker is disclosed; Scenario 2 separately fault-injects the outer guard and proves inner SQL returns 404. |
+| A patch adding runtime smoke tests matched an earlier `iterator.close()` and temporarily placed the remainder of the Phase 5 audit test inside the restart test. | 1 | Inspect the exact function boundary, move the state-machine assertions back into their test, and rerun the entire scenario suite successfully. |
+| The first isolated browser attempt reused an older ignored Phase 7 database and a pre-existing port-5173 frontend, so it was not valid fresh-state evidence. | 1 | Stop only the backend process started by this task, use a uniquely named ignored database plus an isolated Vite proxy on 5175, then rerun and verify the fresh eight-entry seed before any smoke mutation. |
+| A line-reference search used a Unix-style wildcard path that PowerShell passed literally to `rg`. | 1 | Search the explicit files/directories without the unsupported wildcard and record exact scenario test lines in `scenario-test-mapping.md`. |
+| Sandbox denied process command-line inspection during final cleanup. | 1 | Read-only elevated inspection showed the frontend process had exited and the old backend PID had been reused by an unrelated service. Do not terminate reused PIDs; no unrelated process was stopped. |
 
 ## Completion gate
 
-Phase 6 is ready for commit authorization only when implementation evidence and test/build results are captured, the staged diff contains only explicitly listed Phase 6 files, and no user-owned root files are staged. The local commit remains a separate, user-authorized action.
+Phase 7 is ready for commit authorization only when final evidence and test/build results are
+captured, the staged diff contains only explicitly listed Phase 7 test/documentation files,
+and no user-owned root files are staged. The local commit remains a separate, user-authorized
+action.

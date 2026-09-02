@@ -24,6 +24,34 @@ synthetic transcript → PHI redaction → deterministic validation
 
 The reliable demo uses the offline deterministic mock. No external LLM or real patient information is required.
 
+## Real-clinic resilience rehearsal (extended, synthetic only)
+
+Run the numbered acceptance suite first:
+
+```powershell
+cd backend
+python -m pytest tests/test_real_clinic_scenarios.py -q
+```
+
+Then use a newly created local synthetic database and verify these stable surfaces without
+claiming automated browser E2E:
+
+1. Clinician: open Maya Chen; inspect Glance and open an immutable cited snapshot.
+2. Confirm the seeded failed appointment link says **Failed**, not delivered.
+3. Open Synthetic Consult Lab and verify **Post-ASR synthetic text stream — not real audio**.
+4. Load the multilingual fixture; verify the minute-two HIGH provisional allergy signal.
+5. Confirm one Montelukast candidate, finalize, and verify clinician/staff/patient summaries
+   are distinct and explicitly `rule_derived`.
+6. Refresh as Clinician, approve the patient Draft, switch to Patient, and confirm only the
+   approved instruction appears; internal consult state is absent.
+7. Use the focused automated tests for provider timeout/503, outer clinic-guard failure,
+   stale-edit 409, correction-required delivery, exact nurse/AI conflict, feedback undo,
+   review queue, and immutable-source STALE behavior. These paths are not all exposed as one
+   browser workflow, so do not describe the rehearsal as a full automated E2E test.
+
+The smoke database may be discarded after rehearsal. Never point rehearsal commands at a
+database containing real patient information.
+
 ## Presenter guardrails
 
 - Keep **Demo identity simulation** visible when changing roles; it is not production authentication.

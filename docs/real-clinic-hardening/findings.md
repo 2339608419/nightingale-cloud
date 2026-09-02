@@ -1,5 +1,36 @@
 # Phase 0 Findings
 
+## Phase 7 integration acceptance result
+
+- The pre-change baseline was 163 passing backend tests. No application regression or demo
+  blocker was found, so Phase 7 changes only tests and documentation.
+- `test_real_clinic_scenarios.py` now supplies one direct, numbered executable acceptance test
+  for every original scenario 1–16 plus a Phase 5 state-machine audit and two database smokes.
+  It deliberately reuses deeper focused assertions rather than weakening or copying them.
+- Phase 5 audit confirms: repeated same decision is a no-op without duplicate audit/contribution;
+  one actor/highlight has one active row; accept→reject replaces state; undo is idempotent;
+  negative learning needs two distinct clinician IDs (not verified independent humans, because
+  development identity headers remain forgeable); one clinician across two highlights is
+  still one rejector; Clinic A does not affect Clinic B; exposure reference is idempotent;
+  patient/staff/admin writes are denied; the review queue is outside top Glance; metrics and
+  audit metadata contain no clinical text; the importance service applies floors last.
+- Cross-stage acceptance re-proves consult→Draft→approval→patient visibility/delivery,
+  correction→STALE/approval invalidation/correction state, immutable highlight versions,
+  dual conflict evidence, phone-session filtering, tenant scope, metadata-only/no-op audits,
+  and provider-failure no-entry behavior through the numbered tests and their focused suites.
+- Fresh-file SQLite create/seed and current-schema close/reopen/create_all/reseed both pass.
+  This does not make historical schema upgrades compatible: existing databases predating
+  column changes still require rebuild, and production requires real migrations.
+- Isolated manual UI smoke used a new ignored database and an isolated local Vite proxy. It
+  verified Glance display, failed-not-delivered fixture, synthetic/no-audio labeling,
+  minute-two signal, Montelukast confirmation, three distinct rule-derived summaries, Draft
+  approval, patient-only visibility, and zero browser console warnings/errors. Provider outage,
+  clinic fault injection, stale 409, and correction flows remain TestClient/logic evidence,
+  not claimed browser E2E.
+- Immutable-source navigation was separately checked on the existing local dataset; it was
+  not repeated in the fresh eight-entry browser run. Fresh-state immutable provenance is
+  covered by TestClient, not claimed as a complete fresh-state browser rehearsal.
+
 ## Phase 6 verified design/result
 
 - Staged review hardening makes audience-summary finalization atomic. The patient-entry helper

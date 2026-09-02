@@ -1,5 +1,31 @@
 # Phase 0 Progress Log
 
+## Phase 7 — integration acceptance and demo stability
+
+- Confirmed Phase 6 HEAD `25dabb04ff8eca6f9eebb8122406c3c200408f65`; protected root
+  planning and personal/output files remain untouched and excluded.
+- Pre-change full backend baseline: **163 passed, 1 third-party warning**.
+- Added one direct named acceptance test for every original scenario 1–16, a dedicated Phase 5
+  feedback state-machine audit, and fresh/current-runtime SQLite smoke tests. Added the concise
+  scenario-test mapping document.
+- Scenario suite final: **19 passed, 1 warning**. Phase 5 audit/floor set: **13 passed, 1 warning**.
+- Complete backend final: **182 passed, 1 warning in 17.20s**. Warning is the existing
+  Starlette TestClient/httpx deprecation; no test was skipped, xfailed, deleted, or weakened.
+- Frontend logic: **3 passed**. TypeScript app and Vite-config checks passed. Production build
+  passed with **19 modules transformed in 128 ms**.
+- Fresh database create/seed and current synthetic runtime restart/reseed passed. Historical
+  pre-column-change SQLite remains a documented rebuild/migration boundary.
+- Manual isolated UI smoke passed for Glance display, failed delivery label,
+  multilingual fixture, minute-two signal, Montelukast confirmation, distinct summaries,
+  approval, and patient visibility. It used only synthetic data/local mocks and is explicitly
+  not an automated browser E2E test.
+- Immutable-source browser navigation was checked separately on existing local data;
+  fresh-state immutable-source evidence is automated TestClient coverage.
+- No application-code regression required a fix. Two acceptance-test expectation/layout errors
+  and one invalid initial browser baseline were corrected and recorded in the plan error table.
+- Precisely staged eight Phase 7 test/documentation files only. Root user changes and personal
+  materials remain unstaged; generated files remain ignored. No commit or push; Phase 8 not started.
+
 ## Phase 6 — implementation and verification
 
 - Staged-review corrections completed: atomic three-audience finalization with fail-closed

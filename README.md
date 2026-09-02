@@ -79,12 +79,20 @@ Open `http://localhost:5173`. Vite proxies `/api` to FastAPI. Use `VITE_API_URL`
 ```powershell
 cd backend
 python -m pytest -q
+python -m pytest tests/test_real_clinic_scenarios.py -q
 
 cd ..\frontend
 npm run build
 ```
 
 Required candidate micro-tests are `test_rbac_scope.py`, `test_revision_history.py`, `test_highlight_provenance.py`, `test_concurrent_edits.py`, and `test_self_learning_importance.py`.
+
+`tests/test_real_clinic_scenarios.py` is the executable, numbered acceptance index for
+original scenarios 1–16. The human-readable mapping, supporting suites, UI/API path, verdict,
+and honest capability boundary are in
+`docs/real-clinic-hardening/scenario-test-mapping.md`. These acceptance tests use synthetic
+data and local mocks only; passing a boundary test does not claim real ASR, messaging,
+production identity, infrastructure-wide PHI controls, or full Clinic B onboarding.
 
 Run exactly those micro-tests with:
 

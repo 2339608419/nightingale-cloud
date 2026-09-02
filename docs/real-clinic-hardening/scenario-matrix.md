@@ -1,5 +1,11 @@
 # Real-Clinic Failure Scenario Matrix
 
+Phase 7 direct automated acceptance index: `backend/tests/test_real_clinic_scenarios.py`.
+The scenario-by-scenario supporting-test/UI/limitation map is
+`docs/real-clinic-hardening/scenario-test-mapping.md`. Final Phase 7 evidence is 19 direct/
+integration smoke tests and 182 total backend tests; verdicts below remain capability verdicts,
+not merely test-pass labels.
+
 ## Verdict definitions
 
 - **SURVIVES**: the current implementation handles the scenario, with directly traceable code and adequate automated evidence.
