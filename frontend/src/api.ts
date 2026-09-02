@@ -5,20 +5,36 @@ import type {
   DataDecayPreview,
   EntryVersion,
   Highlight,
+  HighlightSourceSnapshot,
   ImportancePreference,
   Patient,
   PatientDelivery,
   TaskAssignment,
   TimelineEntry,
-} from "./types";
+} from "./types.ts";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL ?? "/api";
+const API_BASE_URL = import.meta.env?.VITE_API_URL ?? "/api";
 
 const identityHeaders = (identity: ApiIdentity) => ({
   "X-User-Id": identity.userId,
   "X-Role": identity.role,
   "X-Clinic-Id": identity.clinicId,
 });
+
+export class ApiError<TDetail = unknown> extends Error {
+  readonly status: number;
+  readonly detail: TDetail;
+
+  constructor(
+    status: number,
+    detail: TDetail,
+  ) {
+    super(`Request failed (${status})`);
+    this.name = "ApiError";
+    this.status = status;
+    this.detail = detail;
+  }
+}
 
 async function requestJson<T>(
   path: string,
@@ -34,7 +50,14 @@ async function requestJson<T>(
     },
   });
   if (!response.ok) {
-    throw new Error(`Request failed (${response.status})`);
+    let detail: unknown = null;
+    try {
+      const body = await response.json() as { detail?: unknown };
+      detail = body.detail ?? null;
+    } catch {
+      detail = null;
+    }
+    throw new ApiError(response.status, detail);
   }
   return response.json() as Promise<T>;
 }
@@ -47,6 +70,9 @@ export const getPatientEntries = (patientId: string, identity: ApiIdentity) =>
 
 export const getPatientHighlights = (patientId: string, identity: ApiIdentity) =>
   requestJson<Highlight[]>(`/patients/${patientId}/highlights`, identity);
+
+export const getHighlightSource = (highlightId: string, identity: ApiIdentity) =>
+  requestJson<HighlightSourceSnapshot>(`/highlights/${highlightId}/source`, identity);
 
 export const getPatientDeliveries = (patientId: string, identity: ApiIdentity) =>
   requestJson<PatientDelivery[]>(`/patients/${patientId}/deliveries`, identity);

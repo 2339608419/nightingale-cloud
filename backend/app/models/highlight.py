@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from enum import Enum
 
-from sqlalchemy import Boolean, DateTime, Enum as SqlEnum, Float, ForeignKey, Index, String, Text
+from sqlalchemy import Boolean, DateTime, Enum as SqlEnum, Float, ForeignKey, Index, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.session import Base
@@ -96,3 +96,30 @@ class Highlight(Base):
 
     patient: Mapped["Patient"] = relationship(back_populates="highlights")  # noqa: F821
     entry: Mapped["TimelineEntry"] = relationship(back_populates="highlights")  # noqa: F821
+    immutable_provenance: Mapped["HighlightProvenance | None"] = relationship(
+        back_populates="highlight", cascade="all, delete-orphan", uselist=False
+    )
+
+
+class HighlightProvenance(Base):
+    """Additive immutable binding compatible with existing runtime SQLite files."""
+
+    __tablename__ = "highlight_provenance"
+    __table_args__ = (
+        UniqueConstraint("entry_id", "source_version_number", "highlight_id"),
+    )
+
+    highlight_id: Mapped[str] = mapped_column(
+        ForeignKey("highlights.id", ondelete="CASCADE"), primary_key=True
+    )
+    entry_id: Mapped[str] = mapped_column(
+        ForeignKey("timeline_entries.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    source_version_number: Mapped[int] = mapped_column(nullable=False)
+    source_span: Mapped[str] = mapped_column(Text, nullable=False)
+    version_provenance_pointer: Mapped[str] = mapped_column(String(500), nullable=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+
+    highlight: Mapped["Highlight"] = relationship(back_populates="immutable_provenance")

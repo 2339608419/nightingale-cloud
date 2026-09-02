@@ -10,6 +10,7 @@ from app.schemas.highlight import HighlightSuggestionCreate
 from app.services.adaptive_importance_service import learned_bonus, record_feedback
 from app.services.importance_service import ImportanceEvaluation, evaluate_importance
 from app.services.audit_service import add_trust_action_audit
+from app.services.highlight_provenance_service import bind_highlight_to_current_version
 
 
 GLANCE_LIMIT = 5
@@ -72,13 +73,21 @@ def create_highlight_suggestion(
         risk_level=evaluation.final_risk,
         risk_reason=payload.risk_reason,
         status=HighlightStatus.SUGGESTED,
-        provenance_pointer=f"timeline-entry-{entry.id}",
+        provenance_pointer="pending-immutable-binding",
         created_at=datetime.now(timezone.utc),
         clinician_confirmed=False,
         unresolved_action=payload.unresolved_action,
         clinical_entity_type=payload.clinical_entity_type,
     )
     db.add(highlight)
+    db.flush()
+    bind_highlight_to_current_version(
+        db,
+        highlight=highlight,
+        entry=entry,
+        source_span=payload.source_span,
+        expected_source_version=payload.expected_source_version,
+    )
     db.commit()
     db.refresh(highlight)
     return highlight, evaluation, explanation

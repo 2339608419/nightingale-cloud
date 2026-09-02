@@ -15,6 +15,7 @@ import {
   getPatient,
   getPatientEntries,
   getPatientHighlights,
+  getHighlightSource,
   getPatientDeliveries,
   getImportancePreferences,
   setCommentResolution,
@@ -24,6 +25,7 @@ import {
   rejectPatientInstruction,
   resolveConflict,
   updateNote,
+  ApiError,
 } from "./api";
 import type {
   ApiIdentity,
@@ -33,12 +35,19 @@ import type {
   DemoRole,
   EntryVersion,
   Highlight,
+  HighlightSourceSnapshot,
+  EntryVersionConflictDetail,
   ImportancePreference,
   Patient,
   PatientDelivery,
   TaskAssignment,
   TimelineEntry,
 } from "./types";
+import {
+  cancelConflictAndKeepDraft,
+  preserveDraftOnConflict,
+  reloadCurrentServerVersion,
+} from "./conflictRecovery";
 
 const DEMO_PATIENT_ID = "patient-demo-001";
 const DEMO_IDENTITIES: Record<DemoRole, ApiIdentity> = {
@@ -76,6 +85,8 @@ export default function App() {
   const [preferences, setPreferences] = useState<ImportancePreference[]>([]);
   const [conflicts, setConflicts] = useState<ConflictRecord[]>([]);
   const [deliveries, setDeliveries] = useState<PatientDelivery[]>([]);
+  const [highlightSources, setHighlightSources] = useState<Record<string, HighlightSourceSnapshot | null>>({});
+  const [highlightSourceErrors, setHighlightSourceErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
 
@@ -91,6 +102,8 @@ export default function App() {
     setPreferences([]);
     setConflicts([]);
     setDeliveries([]);
+    setHighlightSources({});
+    setHighlightSourceErrors({});
 
     const load = async () => {
       try {
@@ -174,6 +187,27 @@ export default function App() {
     source.classList.remove("source-focus");
     requestAnimationFrame(() => source.classList.add("source-focus"));
     window.setTimeout(() => source.classList.remove("source-focus"), 2200);
+  };
+
+  const openHighlightSource = async (highlight: Highlight) => {
+    if (highlight.provenance_status === "broken") {
+      setHighlightSourceErrors((current) => ({
+        ...current,
+        [highlight.id]: "Needs review · Immutable cited evidence cannot be resolved.",
+      }));
+      return;
+    }
+    try {
+      const snapshot = await getHighlightSource(highlight.id, DEMO_IDENTITIES[demoRole]);
+      setHighlightSources((current) => ({ ...current, [highlight.id]: snapshot }));
+      setHighlightSourceErrors((current) => ({ ...current, [highlight.id]: "" }));
+      navigateToSource(`timeline-entry-${highlight.entry_id}`);
+    } catch (reason: unknown) {
+      setHighlightSourceErrors((current) => ({
+        ...current,
+        [highlight.id]: reason instanceof Error ? reason.message : "Unable to resolve cited source",
+      }));
+    }
   };
 
   const closeConflict = async (conflict: ConflictRecord) => {
@@ -314,7 +348,7 @@ export default function App() {
           <ol className="highlight-list">
             {highlights.map((highlight) => (
               <li key={highlight.id} className={`highlight-item${highlight.abstained ? " highlight-needs-review" : ""}`}>
-                <button className="highlight-source" type="button" onClick={() => navigateToSource(highlight.provenance_pointer)}>
+                <button className="highlight-source" type="button" onClick={() => void openHighlightSource(highlight)}>
                   <span className="highlight-topline">
                     <strong>{highlight.text}</strong>
                     <span className={`risk risk-${highlight.risk_level}`}>{formatLabel(highlight.risk_level)}</span>
@@ -328,9 +362,24 @@ export default function App() {
                     {highlight.unresolved_action && <span className="state-open">Action unresolved</span>}
                     {highlight.clinician_confirmed && <span className="state-confirmed">Clinician confirmed</span>}
                     <span className={`highlight-status status-${highlight.status}`}>{formatLabel(highlight.status)}</span>
-                    <span className="provenance">Open exact source ↓</span>
+                    <span className={`source-currency currency-${highlight.provenance_status}`}>
+                      {highlight.provenance_status === "current" && `Cites version ${highlight.source_version_number}`}
+                      {highlight.provenance_status === "stale" && `Cites version ${highlight.source_version_number} · Source has changed`}
+                      {highlight.provenance_status === "broken" && "Needs review · Broken provenance"}
+                    </span>
+                    <span className="provenance">Open immutable cited source ↓</span>
                   </span>
                 </button>
+                {highlightSourceErrors[highlight.id] && (
+                  <div className="source-snapshot source-broken"><strong>Needs review</strong><p>{highlightSourceErrors[highlight.id]}</p></div>
+                )}
+                {highlightSources[highlight.id] && (
+                  <div className={`source-snapshot source-${highlightSources[highlight.id]!.provenance_status}`}>
+                    <strong>Viewing immutable cited snapshot · Version {highlightSources[highlight.id]!.source_version_number}</strong>
+                    {highlightSources[highlight.id]!.source_changed && <p>Source has changed since this highlight. Review current entry separately.</p>}
+                    <blockquote>{highlightSources[highlight.id]!.content}</blockquote>
+                  </div>
+                )}
                 {demoRole === "clinician" && highlight.status === "suggested" && (
                   <div className="highlight-decisions" aria-label={`Review ${highlight.text}`}>
                     <button type="button" onClick={() => void decideHighlight(highlight, "accept")}>Accept</button>
@@ -506,6 +555,7 @@ export default function App() {
                   <RevisionHistory
                     entry={entry}
                     versions={versionsByEntry[entry.id] ?? []}
+                    citedVersions={highlights.filter((item) => item.entry_id === entry.id && item.source_version_number !== null).map((item) => item.source_version_number!)}
                     canRevert={canRevertEntry(demoRole, entry)}
                     onRevert={(versionNumber) => revertVersion(entry, versionNumber)}
                   />
@@ -574,12 +624,28 @@ function EditNote({
 }) {
   const [content, setContent] = useState(entry.content);
   const [saving, setSaving] = useState(false);
+  const [conflict, setConflict] = useState<EntryVersionConflictDetail | null>(null);
   const submit = async () => {
     const value = content.trim();
     if (!value || value === entry.content) return;
     setSaving(true);
     try {
       await onSave(value);
+      setConflict(null);
+    } catch (reason: unknown) {
+      if (
+        reason instanceof ApiError
+        && reason.status === 409
+        && typeof reason.detail === "object"
+        && reason.detail !== null
+        && (reason.detail as { error_code?: string }).error_code === "entry_version_conflict"
+      ) {
+        const next = preserveDraftOnConflict(content, reason.detail as EntryVersionConflictDetail);
+        setContent(next.draft);
+        setConflict(next.conflict);
+        return;
+      }
+      throw reason;
     } finally {
       setSaving(false);
     }
@@ -588,6 +654,27 @@ function EditNote({
     <details className="edit-note">
       <summary>Edit note <span>expected v{entry.version}</span></summary>
       <textarea value={content} onChange={(event) => setContent(event.target.value)} />
+      {conflict && (
+        <section className="edit-conflict" role="alert">
+          <strong>Another editor saved first</strong>
+          <p>Your unsaved draft is preserved. Clinical text is never merged automatically.</p>
+          <div className="conflict-compare">
+            <div><b>Your unsaved draft</b><pre>{content}</pre></div>
+            <div><b>Current server version {conflict.current_version}</b><pre>{conflict.current_content}</pre></div>
+          </div>
+          <div className="conflict-recovery-actions">
+            <button type="button" onClick={() => void navigator.clipboard.writeText(content)}>Copy local draft</button>
+            <button type="button" onClick={() => {
+              const next = reloadCurrentServerVersion({ draft: content, conflict });
+              setContent(next.draft); setConflict(next.conflict);
+            }}>Reload current server version</button>
+            <button type="button" onClick={() => {
+              const next = cancelConflictAndKeepDraft({ draft: content, conflict });
+              setContent(next.draft); setConflict(next.conflict);
+            }}>Cancel and keep draft</button>
+          </div>
+        </section>
+      )}
       <button type="button" disabled={saving || content.trim() === entry.content} onClick={() => void submit()}>
         {saving ? "Saving…" : "Save new version"}
       </button>
@@ -598,11 +685,13 @@ function EditNote({
 function RevisionHistory({
   entry,
   versions,
+  citedVersions,
   canRevert,
   onRevert,
 }: {
   entry: TimelineEntry;
   versions: EntryVersion[];
+  citedVersions: number[];
   canRevert: boolean;
   onRevert: (versionNumber: number) => Promise<void>;
 }) {
@@ -614,6 +703,7 @@ function RevisionHistory({
           <li key={version.id}>
             <div className="revision-meta">
               <strong>Version {version.version_number}</strong>
+              {citedVersions.includes(version.version_number) && <span className="cited-version">Cited by highlight</span>}
               <time dateTime={version.created_at}>{new Date(version.created_at).toLocaleString()}</time>
             </div>
             <p>Changed by {version.changed_by} · {formatLabel(version.changed_by_role)}</p>

@@ -1,5 +1,7 @@
 from datetime import datetime
 
+from enum import Enum
+
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.highlight import (
@@ -8,6 +10,12 @@ from app.models.highlight import (
     HighlightStatus,
     RiskLevel,
 )
+
+
+class ProvenanceStatus(str, Enum):
+    CURRENT = "current"
+    STALE = "stale"
+    BROKEN = "broken"
 
 
 class HighlightRead(BaseModel):
@@ -35,6 +43,10 @@ class HighlightRead(BaseModel):
     source_span_verified: bool
     structured_fact_match: bool
     open_conflict: bool
+    source_version_number: int | None
+    provenance_status: ProvenanceStatus
+    source_changed: bool
+    version_provenance_pointer: str | None
 
 
 class HighlightSuggestionCreate(BaseModel):
@@ -44,6 +56,20 @@ class HighlightSuggestionCreate(BaseModel):
     risk_reason: str = Field(min_length=1, max_length=500)
     unresolved_action: bool = False
     clinical_entity_type: ClinicalEntityType
+    expected_source_version: int | None = Field(default=None, ge=1)
+
+
+class HighlightSourceSnapshotRead(BaseModel):
+    highlight_id: str
+    entry_id: str
+    source_version_number: int
+    version_provenance_pointer: str
+    provenance_status: ProvenanceStatus
+    source_changed: bool
+    content: str
+    source_span: str
+    source_span_verified: bool
+    created_at: datetime
 
 
 class HighlightSuggestionRead(BaseModel):

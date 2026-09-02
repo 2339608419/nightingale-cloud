@@ -1,5 +1,22 @@
 # Phase 0 Findings
 
+## Phase 4 initial concurrency/provenance inspection
+
+- Two editors starting from version N are database-safe: the first creates N+1 and one audit; the second is rejected before approval, delivery, version, audit, or conflict mutation. However, the old 409 contains only current version and frontend `requestJson` discards even that detail, so there is no explicit comparison/recovery workflow and refresh can lose the local draft.
+- Highlight currently stores only mutable entry ID/span and an entry anchor. Confidence re-verifies against current content, so source edits can cause ABSTAIN or accidentally validate a repeated span in a different version; navigation cannot show the original evidence.
+- The minimum runtime-compatible design is an additive one-to-one `HighlightProvenance` table rather than columns on the existing Highlight table, because SQLite `create_all` can create a new table but cannot add columns. It binds highlight, source entry, EntryVersion number, exact span, and a non-PHI version-aware pointer.
+- Evidence Confidence answers whether the immutable cited evidence resolves and verifies. Source currency independently answers whether that cited version is still current. STALE therefore does not erase valid historical evidence or lower clinical risk; BROKEN causes abstention and no fallback to mutable content.
+- Synthetic-only compatibility backfill binds only when exactly one immutable version contains the exact span. Missing or ambiguous evidence remains BROKEN. Formal environments still require versioned migration and stronger transaction semantics than SQLite proves.
+
+## Phase 4 verified design/result
+
+- Authorized edit/revert 409 responses now provide a fixed `entry_version_conflict` structure with entry ID, submitted expected version, current version/content, and current provenance (`backend/app/routes/entries.py:41`). Authorization and clinic-scoped lookup happen first. Stale rejection precedes approval/delivery/conflict mutation and rollback leaves no draft, version, or success audit.
+- `frontend/src/api.ts:24` preserves structured error detail in typed `ApiError`; `frontend/src/App.tsx:618` keeps the local draft, compares it with current server text, and offers copy, explicit reload, or cancel-and-keep. Pure frontend recovery tests prove cancel preservation and explicit replacement; no automatic merge/retry exists.
+- Additive `HighlightProvenance` (`backend/app/models/highlight.py:104`) binds one Highlight to source entry/version/span/pointer without altering the existing Highlight table. `bind_highlight_to_current_version` (`backend/app/services/highlight_provenance_service.py:31`) verifies the immutable current snapshot and writes binding plus Highlight in one transaction.
+- Resolution (`backend/app/services/highlight_provenance_service.py:59`) produces CURRENT, STALE, or BROKEN. Evidence Confidence verifies the immutable snapshot; currency separately reports whether a newer entry version exists. STALE retains valid historical evidence and risk; BROKEN abstains and never substitutes mutable content.
+- The clinic-scoped source endpoint (`backend/app/routes/highlights.py:149`) enforces the same source visibility as the current entry. Tests prove Clinic B receives no Clinic A snapshot, a patient cannot read staff/internal evidence, and a patient can read an approved instruction snapshot.
+- Existing-runtime compatibility uses the additive table plus exact/unambiguous synthetic-only backfill. All four clean seed highlights bind to v1; missing/ambiguous matches remain BROKEN. Formal migrations and production database concurrency remain unimplemented.
+
 ## Phase 3 initial access/delivery/correction inspection
 
 - Patient access currently depends on caller-asserted `X-User-Id`, `X-Role`, and `X-Clinic-Id`. Patient has no phone/email/contact credential, challenge, session, expiry, or replay state, so a no-email patient cannot actually enter through a phone-first flow.

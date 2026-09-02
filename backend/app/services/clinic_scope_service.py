@@ -15,6 +15,7 @@ from app.models import (
     ConflictStatus,
     EntryVersion,
     Highlight,
+    HighlightProvenance,
     HighlightStatus,
     Patient,
     PatientDelivery,
@@ -147,6 +148,20 @@ def get_highlight_in_clinic(
         .join(Patient, Highlight.patient_id == Patient.id)
         .where(
             Highlight.id == highlight_id,
+            Patient.clinic_id == clinic_id,
+        )
+    )
+
+
+def get_highlight_provenance_in_clinic(
+    db: Session, highlight_id: str, clinic_id: str
+) -> HighlightProvenance | None:
+    return db.scalar(
+        select(HighlightProvenance)
+        .join(Highlight, HighlightProvenance.highlight_id == Highlight.id)
+        .join(Patient, Highlight.patient_id == Patient.id)
+        .where(
+            HighlightProvenance.highlight_id == highlight_id,
             Patient.clinic_id == clinic_id,
         )
     )

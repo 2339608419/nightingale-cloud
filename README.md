@@ -246,7 +246,49 @@ No model or API output is bundled.
 
 ## 12. Provenance design
 
-Every highlight stores `entry_id`, `source_span`, and `provenance_pointer`. The pointer uses stable DOM target `timeline-entry-{entry_id}`. Source spans are validated against source content. Clicking a Glance item scrolls to the originating entry; AI ingestion separately stores an opaque stable source such as `synthetic://ai-scribe/src_sha256_<digest>#transcript`, never the client-provided identifier.
+Every Highlight has an additive one-to-one `HighlightProvenance` binding to its source
+entry, exact `EntryVersion.version_number`, cited span, and non-PHI version-aware pointer
+`timeline-entry-version-{entry_id}-v{version}`. Creation ensures a current immutable
+version, verifies the span in that snapshot, and writes highlight plus binding in one
+transaction. An optional expected source version makes a stale creation request return
+a structured 409 instead of mixing content and version identity.
+
+`GET /highlights/{id}/source` returns the immutable cited snapshot only after clinic and
+role/source-visibility checks. Current mutable content is never substituted for missing
+historical evidence. Source currency is separate from Evidence Confidence:
+
+- `CURRENT`: cited snapshot verifies and remains the latest entry version.
+- `STALE`: cited snapshot still verifies, but the entry has a newer version; clinical
+  risk and historical evidence are not erased.
+- `BROKEN`: binding, version, pointer, or exact span cannot resolve; confidence abstains
+  and the UI shows Needs Review rather than guessed text.
+
+Editing or reverting a source always creates a new version and never rewrites an old
+Highlight binding. The Glance action opens the immutable snapshot and separately scrolls
+to the current timeline entry. Revision History labels versions cited by highlights.
+For existing synthetic SQLite files, startup creates the companion table and binds only
+an unambiguous EntryVersion containing the exact span; ambiguous/missing evidence remains
+BROKEN. Production still requires a versioned migration and stronger database concurrency
+verification.
+
+AI ingestion separately stores an opaque stable source such as
+`synthetic://ai-scribe/src_sha256_<digest>#transcript`, never the client-provided identifier.
+
+### Concurrent-edit recovery
+
+Note edits retain optimistic concurrency: the client submits `expected_version`, one
+successful write creates the next immutable EntryVersion and metadata-only audit, and a
+stale write never enters the database. After clinic scope, RBAC, and edit permission are
+confirmed, a 409 returns structured `error_code`, entry ID, expected/current versions,
+current server content, and current provenance. Unauthorized or cross-clinic callers do
+not receive that recovery content.
+
+The frontend retains the second editor's draft and shows it beside the current server
+version. The user may copy the local draft, explicitly reload the server copy, or close
+the banner while keeping the draft. There is no automatic last-write-wins, merge, or
+retry. A stale failure creates no version/audit and does not invalidate approval, change
+delivery state, or trigger clinical-conflict mutation. SQLite tests verify repository
+behavior but do not prove distributed/multi-process concurrency.
 
 Clinician note creation and editing also run a deterministic conflict check for the
 synthetic medication/dosage, allergy-status, and follow-up-status vocabulary. When a

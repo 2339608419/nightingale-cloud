@@ -9,6 +9,7 @@ from app.models.highlight import (
     ClinicalEntityType,
     EvidenceConfidenceLevel,
     Highlight,
+    HighlightProvenance,
     HighlightStatus,
     RiskLevel,
 )
@@ -39,6 +40,7 @@ __all__ = [
     "ConflictStatus",
     "ClinicalEntityType",
     "Highlight",
+    "HighlightProvenance",
     "HighlightStatus",
     "ImportancePreference",
     "Comment",

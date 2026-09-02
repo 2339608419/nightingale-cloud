@@ -74,6 +74,32 @@ export interface Highlight {
   source_span_verified: boolean;
   structured_fact_match: boolean;
   open_conflict: boolean;
+  source_version_number: number | null;
+  provenance_status: "current" | "stale" | "broken";
+  source_changed: boolean;
+  version_provenance_pointer: string | null;
+}
+
+export interface HighlightSourceSnapshot {
+  highlight_id: string;
+  entry_id: string;
+  source_version_number: number;
+  version_provenance_pointer: string;
+  provenance_status: "current" | "stale" | "broken";
+  source_changed: boolean;
+  content: string;
+  source_span: string;
+  source_span_verified: boolean;
+  created_at: string;
+}
+
+export interface EntryVersionConflictDetail {
+  error_code: "entry_version_conflict";
+  entry_id: string;
+  expected_version: number;
+  current_version: number;
+  current_content: string;
+  current_provenance_pointer: string | null;
 }
 
 export type DemoRole = "patient" | "staff" | "clinician" | "admin";

@@ -122,14 +122,14 @@ Each scenario records:
 
 ### Scenario 10 — Concurrent edits and recovery from 409
 
-- **Verdict:** PARTIAL
-- **Classification:** Database safety implemented/tested; user recovery incomplete
-- **Where:** Expected-version comparison and uniqueness race handling in `backend/app/services/revision_service.py:128-160`; 409 response in `backend/app/routes/entries.py:58-71`; local textarea in `frontend/src/App.tsx:488-515`.
-- **What breaks first:** The stale write is safely rejected, but the frontend shows no actionable conflict message because `requestJson` discards response details and edit handling has no recovery flow.
-- **What could break later:** Users may refresh and lose their local draft or manually overwrite after copying without a comparison view.
-- **Improvement:** Phase 4 should retain draft text, expose current server version/content safely, and provide refresh/copy/retry or explicit merge choices.
-- **Evidence:** `test_concurrent_edits.py::test_stale_same_entry_edit_is_rejected_with_409` and `::test_permitted_edits_to_different_entries_are_independent`.
-- **Remaining limitation:** SQLite tests do not prove multi-process transaction behavior under production load.
+- **Verdict:** SURVIVES
+- **Classification:** Stale writes remain database-safe and an explicit user recovery flow is implemented/tested for the prototype
+- **Where:** Expected-version comparison remains in `backend/app/services/revision_service.py`; authorized structured recovery detail is built only after RBAC/clinic checks in `backend/app/routes/entries.py:41`. `frontend/src/api.ts:24` preserves structured detail and `frontend/src/App.tsx:618` preserves/compares the draft with copy, explicit reload, and cancel-and-keep actions.
+- **What breaks first:** The second editor receives `entry_version_conflict`; their draft stays local and nothing is merged or retried automatically. Reloading the entire browser before copying remains a user-controlled way to lose unsaved local state.
+- **What could break later:** SQLite and TestClient do not prove distributed multi-process ordering; browser crash/offline recovery is not persisted to durable local storage.
+- **Improvement:** Production should use a concurrency-capable managed database and optionally encrypted time-bounded local draft recovery, without automatic clinical-text merge.
+- **Evidence:** `test_concurrent_edits.py` proves N→N+1 first save, structured 409, first content retained, rejected draft absent, exactly one new version/audit, unchanged post-first approval/delivery state, no unauthorized/cross-clinic content leak, and independent-entry success. `frontend/tests/conflictRecovery.test.ts` proves typed detail, draft retention, and explicit reload. Manual UI review confirmed the comparison/actions. Phase 4 regression: 83 passed; full backend: 143 passed; frontend logic: 3 passed.
+- **Remaining limitation:** No browser E2E or multi-worker production database test exists.
 
 ### Scenario 11 — Appointment link generated but never received
 
@@ -188,14 +188,14 @@ Each scenario records:
 
 ### Scenario 16 — Source edited after highlight creation
 
-- **Verdict:** PARTIAL
-- **Classification:** Staleness is detected; original evidence is not resolvable from the highlight
-- **Where:** Highlight stores mutable `entry_id`, substring, and entry anchor (`backend/app/models/highlight.py`; `backend/app/services/highlight_service.py:65-80`). Confidence rechecks current content and abstains when span is missing (`backend/app/services/evidence_confidence_service.py:29-68`). Entry versions retain snapshots (`backend/app/models/revision.py:9-26`).
-- **What breaks first:** After source editing, clicking the highlight opens the new entry content, not the original evidence; confidence may say Needs Review but cannot navigate to the original version.
-- **What could break later:** A coincidentally repeated span could still verify against the wrong version/context.
-- **Improvement:** Phase 4 should store source version/snapshot identity and mark stale or resolve directly to the immutable version.
-- **Evidence:** Existing provenance tests validate only current entry/span; no source-mutation test exists.
-- **Remaining limitation:** External synthetic URI targets are identifiers only; raw transcript source viewing is not implemented.
+- **Verdict:** SURVIVES
+- **Classification:** Highlight evidence is immutably version-bound and source currency is explicit
+- **Where:** Additive `HighlightProvenance` in `backend/app/models/highlight.py:104` binds source entry/version/span/pointer. Binding and resolution live in `backend/app/services/highlight_provenance_service.py:31-138`; the protected snapshot endpoint is `backend/app/routes/highlights.py:149`. Glance and Revision History distinguish cited snapshot/current entry in `frontend/src/App.tsx:365` and the revision panel.
+- **What breaks first:** If the bound version, pointer, or exact span is missing/corrupt, status becomes BROKEN and confidence abstains; the system does not guess from current content.
+- **What could break later:** Existing databases with multiple historical versions containing the same exact span remain deliberately unbound/BROKEN rather than guessed. SQLite cannot prove a multi-process creation/edit race under production load.
+- **Improvement:** Add a formal migration/backfill report and production transaction/isolation tests; retain manual review for stale clinical currency.
+- **Evidence:** `test_highlight_provenance.py` proves exact creation binding, expected-version conflict, stable pointer/snapshot after edit and revert, STALE/current separation, missing-version and corrupted-span BROKEN behavior, clinic/role visibility, seed resolution, and existing-runtime synthetic backfill. Confidence remains deterministic/no-model through existing confidence tests. Manual UI verified CURRENT, STALE, and BROKEN presentations.
+- **Remaining limitation:** The companion-table compatibility path is synthetic-only; external raw transcript viewing is still absent and no browser E2E suite exists.
 
 ### Scenario 17 — Complete consult intelligence and audience-readiness rubric
 

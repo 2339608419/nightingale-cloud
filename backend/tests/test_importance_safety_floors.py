@@ -114,7 +114,7 @@ def test_safety_floor_preserves_existing_highlight_provenance(client: TestClient
     result = suggest(client, "entry-demo-006", ALLERGY)
 
     assert result["highlight"]["entry_id"] == "entry-demo-006"
-    assert result["highlight"]["provenance_pointer"] == "timeline-entry-entry-demo-006"
+    assert result["highlight"]["provenance_pointer"] == "timeline-entry-version-entry-demo-006-v1"
     assert result["highlight"]["source_span"] == ALLERGY["source_span"]
 
 

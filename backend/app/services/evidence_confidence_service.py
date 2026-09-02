@@ -8,11 +8,10 @@ from app.models import (
     ConflictStatus,
     EvidenceConfidenceLevel,
     Highlight,
-    TimelineEntry,
 )
 from app.schemas.highlight import HighlightRead
 from app.services.conflict_service import extract_clinical_facts
-from app.services.clinic_scope_service import get_entry_in_clinic
+from app.services.highlight_provenance_service import resolve_highlight_provenance
 
 
 @dataclass(frozen=True)
@@ -31,14 +30,14 @@ def evaluate_evidence_confidence(
     db: Session, highlight: Highlight, clinic_id: str | None = None
 ) -> EvidenceConfidence:
     """Evaluate confidence only from resolvable evidence and deterministic state."""
-    source = (
-        get_entry_in_clinic(db, highlight.entry_id, clinic_id)
-        if clinic_id is not None
-        else db.get(TimelineEntry, highlight.entry_id)
+    resolved = resolve_highlight_provenance(db, highlight, clinic_id)
+    source = resolved.snapshot
+    provenance_resolved = (
+        resolved.binding is not None
+        and source is not None
+        and resolved.status.value != "broken"
     )
-    expected_pointer = f"timeline-entry-{highlight.entry_id}"
-    provenance_resolved = source is not None and highlight.provenance_pointer == expected_pointer
-    source_span_verified = bool(source and highlight.source_span in source.content)
+    source_span_verified = resolved.source_span_verified
 
     if source is None:
         return EvidenceConfidence(
@@ -144,4 +143,19 @@ def highlight_read(
     db: Session, highlight: Highlight, clinic_id: str | None = None
 ) -> HighlightRead:
     confidence = evaluate_evidence_confidence(db, highlight, clinic_id)
-    return HighlightRead.model_validate({**highlight.__dict__, **confidence.__dict__})
+    resolved = resolve_highlight_provenance(db, highlight, clinic_id)
+    binding = resolved.binding
+    return HighlightRead.model_validate(
+        {
+            **highlight.__dict__,
+            **confidence.__dict__,
+            "source_version_number": (
+                binding.source_version_number if binding is not None else None
+            ),
+            "provenance_status": resolved.status,
+            "source_changed": resolved.source_changed,
+            "version_provenance_pointer": (
+                binding.version_provenance_pointer if binding is not None else None
+            ),
+        }
+    )

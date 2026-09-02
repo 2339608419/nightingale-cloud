@@ -18,6 +18,7 @@ from app.schemas.highlight import (
     HighlightRead,
     HighlightSuggestionCreate,
     HighlightSuggestionRead,
+    HighlightSourceSnapshotRead,
     ImportancePreferenceRead,
 )
 from app.schemas.internal_comment import InternalCommentRead
@@ -36,6 +37,7 @@ __all__ = [
     "HighlightRead",
     "HighlightSuggestionCreate",
     "HighlightSuggestionRead",
+    "HighlightSourceSnapshotRead",
     "ImportancePreferenceRead",
     "AiScribeRequest",
     "AiScribeResponse",

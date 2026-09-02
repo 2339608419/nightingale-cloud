@@ -12,10 +12,10 @@ This directory records the independent audit and implementation plan requested f
 
 ## Current phase
 
-- Phase: 3 — phone-first access, traceable mock delivery, and post-send correction
+- Phase: 4 — concurrent-edit recovery and immutable Highlight provenance
 - Status: in progress
-- Application-code changes allowed: only the minimum changes for original scenarios 1, 11, and 12
-- Commit target after explicit authorization: `feat: add phone-first access and traceable patient delivery`
+- Application-code changes allowed: only the minimum changes for original scenarios 10 and 16
+- Commit target after explicit authorization: `feat: preserve concurrent edits and immutable provenance`
 
 ## Phase 0 objectives
 
@@ -91,6 +91,19 @@ This directory records the independent audit and implementation plan requested f
 - [x] Restrict delivery failure reason to a fixed safe enum with no-side-effect rejection tests.
 - [x] Re-run all Phase 3 verification and precisely restage after staged review.
 
+## Phase 4 checklist
+
+- [x] Confirm Phase 3 HEAD and preserve all root/user working-tree state.
+- [x] Inspect optimistic concurrency, 409 handling, frontend draft state, EntryVersion, Highlight provenance, confidence, seed, and SQLite compatibility.
+- [x] Add authorized structured 409 recovery data without changing stale-write rejection.
+- [x] Add frontend typed error handling and explicit local-draft recovery controls.
+- [x] Add an additive immutable HighlightProvenance companion model and version-aware source endpoint.
+- [x] Separate CURRENT/STALE/BROKEN currency from Evidence Confidence.
+- [x] Add scenario 10/16 focused backend and frontend logic tests.
+- [x] Run complete regression, frontend checks/build, manual CURRENT/STALE/BROKEN UI review, and diff checks.
+- [x] Update README and scenarios 10/16 from final verified evidence.
+- [x] Explicitly stage only Phase 4 files and request commit authorization.
+
 ## Errors encountered
 
 | Error | Attempt | Resolution |
@@ -108,7 +121,14 @@ This directory records the independent audit and implementation plan requested f
 | The first post-review focused run could not import `Base` from `app.models`. | 1 | Import the existing public `Base` export from `app.database`; no application change was needed. |
 | The first duplicate-phone test used the fixture database without requesting the `client` fixture that installs its dependency override. | 1 | Add the fixture dependency to the test signature; the corrected focused suite passed. |
 | The first requested regression command named a nonexistent `test_audit_trust_actions.py`. | 1 | Inspect the test inventory and rerun once with the existing `test_trust_action_audit.py`; 85 tests passed. |
+| The first immutable provenance schema made the version pointer globally unique, but two highlights may legitimately cite different spans in the same immutable entry version. | 1 | Keep the version-aware pointer indexed but non-unique; highlight identity remains unique while the pointer correctly identifies the shared source version. |
+| The first Phase 4 stylesheet patch expected a standalone `.source-focus` selector, while the file uses `.entry-card.source-focus`. | 1 | Inspect the exact stylesheet and add the minimal styles beside the existing error/media section. |
+| The first combined focused/build command ran `npm` from the repository root rather than `frontend`. | 1 | Record the path error and run frontend commands from the frontend directory. |
+| The first Node strip-types frontend test used a TypeScript parameter property unsupported in strip-only mode. | 1 | Expand `ApiError` to ordinary declared fields plus constructor assignments; three frontend recovery tests then passed. |
+| The initial isolated UI backend could not bind port 8000, and direct 5174→8002 requests initially failed CORS. | 1 | Do not terminate unknown processes; verify the old ports were later free, then use allowed frontend origin 5173 with isolated backend 8002. |
+| The first temporary SQLite command for BROKEN UI state had PowerShell/Python quote syntax failure. | 1 | Use a corrected single nonclinical companion-row update against only the ignored temporary Phase 4 database. |
+| Two final verification invocations used repository-relative backend paths while already running from the repository or backend directory, so pytest did not start. | 1 | Correct the working-directory/path pairing and rerun the focused and complete suites; treat these as invocation errors, not test failures. |
 
 ## Completion gate
 
-Phase 0 is complete only when all checklist items are complete, evidence is recorded without unsupported claims, the test/build results are captured, the staged diff contains only this directory, and the local commit succeeds.
+Phase 4 is ready for commit authorization only when implementation evidence and test/build results are captured, the staged diff contains only explicitly listed Phase 4 files, and no user-owned root files are staged. The local commit remains a separate, user-authorized action.

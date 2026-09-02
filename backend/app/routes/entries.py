@@ -38,6 +38,32 @@ DbSession = Annotated[Session, Depends(get_db)]
 Identity = Annotated[CurrentUser, Depends(get_current_user)]
 
 
+def _version_conflict_detail(
+    db: Session,
+    *,
+    entry_id: str,
+    clinic_id: str,
+    expected_version: int,
+    current_version: int,
+) -> dict:
+    current = get_entry_in_clinic(db, entry_id, clinic_id)
+    if current is None:
+        return {
+            "error_code": "entry_version_conflict",
+            "entry_id": entry_id,
+            "expected_version": expected_version,
+            "current_version": current_version,
+        }
+    return {
+        "error_code": "entry_version_conflict",
+        "entry_id": entry_id,
+        "expected_version": expected_version,
+        "current_version": current_version,
+        "current_content": current.content,
+        "current_provenance_pointer": current.provenance_pointer,
+    }
+
+
 @router.patch("/{entry_id}", response_model=TimelineEntryRead)
 def edit_note(
     entry_id: str,
@@ -73,7 +99,13 @@ def edit_note(
     except VersionConflictError as conflict:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail={"message": "Entry version conflict", "current_version": conflict.current_version},
+            detail=_version_conflict_detail(
+                db,
+                entry_id=entry_id,
+                clinic_id=user.clinic_id,
+                expected_version=payload.expected_version,
+                current_version=conflict.current_version,
+            ),
         ) from conflict
     detect_conflicts_for_entry(db, updated)
     return TimelineEntryRead.model_validate(updated)
@@ -178,7 +210,13 @@ def revert_note(
     except VersionConflictError as conflict:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail={"message": "Entry version conflict", "current_version": conflict.current_version},
+            detail=_version_conflict_detail(
+                db,
+                entry_id=entry_id,
+                clinic_id=user.clinic_id,
+                expected_version=payload.expected_version,
+                current_version=conflict.current_version,
+            ),
         ) from conflict
     if reverted is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Version not found")

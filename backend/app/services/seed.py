@@ -25,6 +25,10 @@ from app.models import (
 )
 from app.services.contact_security_service import mask_phone, phone_digest
 from app.services.importance_service import evaluate_importance
+from app.services.highlight_provenance_service import (
+    backfill_synthetic_highlight_provenance,
+    version_pointer,
+)
 
 
 SYNTHETIC_PATIENT_ID = "patient-demo-001"
@@ -389,9 +393,11 @@ def seed_demo_data(db: Session) -> None:
             Highlight(
                 **{**spec, "risk_level": evaluation.final_risk},
                 patient_id=SYNTHETIC_PATIENT_ID,
-                provenance_pointer=f"timeline-entry-{entry_id}",
+                provenance_pointer=version_pointer(entry_id, 1),
                 importance_score=evaluation.final_score,
                 created_at=DEMO_REFERENCE_TIME,
             )
         )
+    db.flush()
+    backfill_synthetic_highlight_provenance(db)
     db.commit()

@@ -1,5 +1,21 @@
 # Phase 0 Progress Log
 
+## Phase 4 — started
+
+- Confirmed Phase 3 HEAD `dd926de9e06c3cbb2365e3acf8de27b8ce82b8fc`; root planning files and personal/output materials remain untouched and excluded.
+- Audited version conflict, revision transaction, authorization/tenant ordering, Highlight/confidence, seed, frontend edit state, and runtime SQLite behavior; reported the exact current failure behavior before modification.
+- Added authorized structured 409 detail and a typed frontend ApiError. The edit component now preserves and compares the local draft, supports copy, explicit server reload, and cancel-with-draft, with no automatic merge or overwrite.
+- Added additive `HighlightProvenance`, deterministic CURRENT/STALE/BROKEN resolution, immutable snapshot endpoint, exact version/span binding, guarded expected-source-version conflict, seed/backfill support, and separate source-currency UI.
+- First focused run failed at seed because version pointers were incorrectly globally unique; two highlights legitimately cite entry 006 version 1. Removed that uniqueness while retaining the index.
+- A first stylesheet patch missed the compound selector and was corrected after inspection. A first combined npm invocation used the repository root; the backend focused suite still completed. The first Node strip-only test exposed unsupported parameter-property syntax; ordinary fields fixed it.
+- Final Phase 4 focused backend suite (concurrency, provenance, and evidence confidence): **19 passed, 1 third-party warning in 1.45s**. Frontend recovery logic: **3 passed**.
+- Added patient visibility parity assertion: approved instruction evidence is readable to its patient, while internal staff evidence is denied. Added both missing-version and corrupted-span BROKEN assertions.
+- Phase 4 security regression set covering concurrency, revision, provenance, confidence, RBAC, clinic isolation, approval, delivery, and audit: **83 passed, 1 warning in 7.36s**.
+- Final complete backend suite: **143 passed, 1 third-party warning in 11.53s**.
+- Frontend Node recovery tests: **3 passed**. TypeScript checks and production build passed (18 modules transformed, 93 ms).
+- Manual isolated-DB browser review verified CURRENT “Cites version 1”, STALE “Source has changed” with immutable v1 snapshot after source v2, and BROKEN “Needs review · Immutable cited evidence cannot be resolved.” No user/runtime database was used.
+- Port 8000 was initially unavailable and the first 5174 direct-origin load failed CORS; after verifying old ports were no longer bound, the isolated review used allowed origin 5173 with backend 8002. A first temporary SQLite mutation command had quoting syntax failure; a corrected nonclinical binding-only command was used once.
+
 ## Phase 3 — started
 
 - Staged review identified four required corrections before commit: enrollment enumeration, non-atomic challenge consumption, globally unique phone digest, and free-text delivery failure reason. Commit remains blocked while these are corrected and reverified.

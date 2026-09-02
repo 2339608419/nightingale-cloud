@@ -8,6 +8,7 @@ from app.database import get_db
 from app.models import Highlight, HighlightStatus
 from app.schemas import (
     HighlightRead,
+    HighlightSourceSnapshotRead,
     HighlightSuggestionCreate,
     HighlightSuggestionRead,
     ImportancePreferenceRead,
@@ -17,6 +18,7 @@ from app.services.authorization_service import (
     require_entry_collaboration_access,
     require_highlight_decision_access,
     require_patient_access,
+    can_view_entry,
 )
 from app.services.highlight_service import create_highlight_suggestion, set_highlight_status
 from app.services.evidence_confidence_service import highlight_read
@@ -24,7 +26,12 @@ from app.services.patient_service import get_entry, get_patient
 from app.services.clinic_scope_service import (
     get_entry_in_clinic,
     get_highlight_in_clinic,
+    get_highlight_provenance_in_clinic,
     get_patient_in_clinic,
+)
+from app.services.highlight_provenance_service import (
+    HighlightSourceVersionConflict,
+    resolve_highlight_provenance,
 )
 
 
@@ -61,12 +68,27 @@ def suggest_highlight(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="Source span must occur in the timeline entry",
         )
-    highlight, evaluation, explanation = create_highlight_suggestion(
-        db,
-        patient=scoped_patient,
-        entry=scoped_entry,
-        payload=payload,
-    )
+    try:
+        highlight, evaluation, explanation = create_highlight_suggestion(
+            db,
+            patient=scoped_patient,
+            entry=scoped_entry,
+            payload=payload,
+        )
+    except HighlightSourceVersionConflict as conflict:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "error_code": "highlight_source_version_conflict",
+                "entry_id": scoped_entry.id,
+                "expected_version": payload.expected_source_version,
+                "current_version": conflict.current_version,
+            },
+        ) from conflict
+    except ValueError as error:
+        db.rollback()
+        raise HTTPException(status_code=422, detail=str(error)) from error
     return HighlightSuggestionRead(
         highlight=highlight_read(db, highlight, user.clinic_id),
         base_score=evaluation.base_score,
@@ -118,6 +140,44 @@ def accept_highlight(highlight_id: str, db: DbSession, user: Identity) -> Highli
 @router.post("/highlights/{highlight_id}/reject", response_model=HighlightRead)
 def reject_highlight(highlight_id: str, db: DbSession, user: Identity) -> HighlightRead:
     return _decide_highlight(highlight_id, HighlightStatus.REJECTED, db, user)
+
+
+@router.get(
+    "/highlights/{highlight_id}/source",
+    response_model=HighlightSourceSnapshotRead,
+)
+def read_highlight_source(
+    highlight_id: str, db: DbSession, user: Identity
+) -> HighlightSourceSnapshotRead:
+    highlight = get_highlight_in_clinic(db, highlight_id, user.clinic_id)
+    binding = get_highlight_provenance_in_clinic(db, highlight_id, user.clinic_id)
+    if highlight is None or binding is None:
+        raise HTTPException(status_code=404, detail="Highlight source not found")
+    patient = get_patient_in_clinic(db, highlight.patient_id, user.clinic_id)
+    entry = get_entry_in_clinic(db, binding.entry_id, user.clinic_id)
+    if patient is None or entry is None:
+        raise HTTPException(status_code=404, detail="Highlight source not found")
+    require_patient_access(user, patient)
+    if not can_view_entry(user, entry):
+        raise HTTPException(status_code=403, detail="Role cannot view this source")
+    resolved = resolve_highlight_provenance(db, highlight, user.clinic_id)
+    if resolved.snapshot is None or resolved.status.value == "broken":
+        raise HTTPException(
+            status_code=409,
+            detail={"error_code": "highlight_provenance_broken", "highlight_id": highlight.id},
+        )
+    return HighlightSourceSnapshotRead(
+        highlight_id=highlight.id,
+        entry_id=binding.entry_id,
+        source_version_number=binding.source_version_number,
+        version_provenance_pointer=binding.version_provenance_pointer,
+        provenance_status=resolved.status,
+        source_changed=resolved.source_changed,
+        content=resolved.snapshot.content,
+        source_span=binding.source_span,
+        source_span_verified=resolved.source_span_verified,
+        created_at=resolved.snapshot.created_at,
+    )
 
 
 @router.get("/importance-preferences", response_model=list[ImportancePreferenceRead])

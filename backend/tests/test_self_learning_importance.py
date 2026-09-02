@@ -20,7 +20,7 @@ def test_acceptance_increases_similar_future_highlight_score(client: TestClient)
     first_body = first.json()
     assert first_body["learned_bonus"] == 0.0
     assert first_body["highlight"]["risk_reason"]
-    assert first_body["highlight"]["provenance_pointer"] == "timeline-entry-entry-demo-006"
+    assert first_body["highlight"]["provenance_pointer"] == "timeline-entry-version-entry-demo-006-v1"
 
     accepted = client.post(f"/highlights/{first_body['highlight']['id']}/accept")
     assert accepted.status_code == 200
