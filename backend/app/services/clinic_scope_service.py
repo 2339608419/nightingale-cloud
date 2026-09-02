@@ -23,6 +23,11 @@ from app.models import (
     TaskAssignment,
     TaskStatus,
     TimelineEntry,
+    ConsultSession,
+    TranscriptSegment,
+    ClinicalCapture,
+    ProvisionalSafetySignal,
+    ConsultSummary,
 )
 
 
@@ -338,3 +343,71 @@ def get_active_entry_deliveries_in_clinic(
         )
     )
     return list(db.scalars(statement))
+
+
+def get_consult_session_in_clinic(db: Session, session_id: str, clinic_id: str) -> ConsultSession | None:
+    return db.scalar(select(ConsultSession).join(Patient, ConsultSession.patient_id == Patient.id).where(
+        ConsultSession.id == session_id,
+        ConsultSession.clinic_id == clinic_id,
+        Patient.clinic_id == clinic_id,
+    ))
+
+
+def get_consult_segments_in_clinic(db: Session, session_id: str, clinic_id: str) -> list[TranscriptSegment]:
+    return list(db.scalars(select(TranscriptSegment).join(
+        ConsultSession, TranscriptSegment.session_id == ConsultSession.id
+    ).join(Patient, ConsultSession.patient_id == Patient.id).where(
+        TranscriptSegment.session_id == session_id,
+        ConsultSession.clinic_id == clinic_id,
+        Patient.clinic_id == clinic_id,
+    ).order_by(TranscriptSegment.sequence_number, TranscriptSegment.version_number)))
+
+
+def get_consult_segment_in_clinic(db: Session, segment_id: str, clinic_id: str) -> TranscriptSegment | None:
+    return db.scalar(select(TranscriptSegment).join(
+        ConsultSession, TranscriptSegment.session_id == ConsultSession.id
+    ).join(Patient, ConsultSession.patient_id == Patient.id).where(
+        TranscriptSegment.id == segment_id,
+        ConsultSession.clinic_id == clinic_id,
+        Patient.clinic_id == clinic_id,
+    ))
+
+
+def get_consult_captures_in_clinic(db: Session, session_id: str, clinic_id: str) -> list[ClinicalCapture]:
+    return list(db.scalars(select(ClinicalCapture).join(
+        ConsultSession, ClinicalCapture.session_id == ConsultSession.id
+    ).join(Patient, ConsultSession.patient_id == Patient.id).where(
+        ClinicalCapture.session_id == session_id,
+        ConsultSession.clinic_id == clinic_id,
+        Patient.clinic_id == clinic_id,
+    ).order_by(ClinicalCapture.created_at)))
+
+
+def get_consult_capture_in_clinic(db: Session, capture_id: str, clinic_id: str) -> ClinicalCapture | None:
+    return db.scalar(select(ClinicalCapture).join(
+        ConsultSession, ClinicalCapture.session_id == ConsultSession.id
+    ).join(Patient, ConsultSession.patient_id == Patient.id).where(
+        ClinicalCapture.id == capture_id,
+        ConsultSession.clinic_id == clinic_id,
+        Patient.clinic_id == clinic_id,
+    ))
+
+
+def get_consult_signals_in_clinic(db: Session, session_id: str, clinic_id: str) -> list[ProvisionalSafetySignal]:
+    return list(db.scalars(select(ProvisionalSafetySignal).join(
+        ConsultSession, ProvisionalSafetySignal.session_id == ConsultSession.id
+    ).join(Patient, ConsultSession.patient_id == Patient.id).where(
+        ProvisionalSafetySignal.session_id == session_id,
+        ConsultSession.clinic_id == clinic_id,
+        Patient.clinic_id == clinic_id,
+    ).order_by(ProvisionalSafetySignal.created_at)))
+
+
+def get_consult_summaries_in_clinic(db: Session, session_id: str, clinic_id: str) -> list[ConsultSummary]:
+    return list(db.scalars(select(ConsultSummary).join(
+        ConsultSession, ConsultSummary.session_id == ConsultSession.id
+    ).join(Patient, ConsultSession.patient_id == Patient.id).where(
+        ConsultSummary.session_id == session_id,
+        ConsultSession.clinic_id == clinic_id,
+        Patient.clinic_id == clinic_id,
+    ).order_by(ConsultSummary.audience)))

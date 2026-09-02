@@ -193,3 +193,63 @@ export interface ConflictRecord {
   authoritative_version_pointer: string | null;
   conflicting_version_pointer: string | null;
 }
+
+export interface ConsultSession {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  mode: "synthetic_text_stream";
+  state: "created" | "receiving" | "finalizing" | "completed" | "failed";
+  synthetic: boolean;
+  noise_profile: string;
+  generation_mode: string;
+  provider_status: string;
+}
+
+export interface TranscriptSegment {
+  id: string;
+  session_id: string;
+  sequence_number: number;
+  version_number: number;
+  start_offset_ms: number;
+  end_offset_ms: number;
+  speaker: string;
+  original_synthetic_text: string;
+  language_spans: Array<{ start: number; end: number; language: string }>;
+  state: "partial" | "final" | "superseded";
+  capture_uncertainty: string | null;
+  alternatives: string[];
+  correction_status: string;
+  is_current: boolean;
+  provenance_pointer: string;
+}
+
+export interface SafetySignal {
+  id: string;
+  entity_type: string;
+  status: string;
+  risk_level: string;
+  source_offset_ms: number;
+  provenance_pointer: string;
+}
+
+export interface ClinicalCapture {
+  id: string;
+  captured_term: string;
+  exact_source_phrase: string;
+  candidate_values: string[];
+  state: string;
+  reference_title: string | null;
+  reference_scope: string | null;
+  confirmed_value: string | null;
+  provenance_pointer: string;
+}
+
+export interface ConsultSummary {
+  id: string;
+  audience: "clinician" | "staff" | "patient";
+  generation_mode: string;
+  source_provenance: string[];
+  source_status: string;
+  timeline_entry: TimelineEntry;
+}

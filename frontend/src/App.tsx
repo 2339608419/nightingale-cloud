@@ -53,6 +53,7 @@ import {
   preserveDraftOnConflict,
   reloadCurrentServerVersion,
 } from "./conflictRecovery";
+import { SyntheticConsultLab } from "./SyntheticConsultLab";
 
 const DEMO_PATIENT_ID = "patient-demo-001";
 const DEMO_IDENTITIES: Record<DemoRole, ApiIdentity> = {
@@ -573,6 +574,11 @@ export default function App() {
           })}
         </ul>
       </section>
+
+      {demoRole === "clinician" && <SyntheticConsultLab
+        patientId={DEMO_PATIENT_ID}
+        identity={DEMO_IDENTITIES.clinician}
+      />}
 
       <section className="timeline" aria-labelledby="timeline-heading">
         <div className="section-heading">

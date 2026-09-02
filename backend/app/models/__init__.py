@@ -31,6 +31,11 @@ from app.models.patient_instruction import (
 )
 from app.models.revision import AuditLog, EntryVersion
 from app.models.timeline_entry import AuthorRole, TimelineEntry, TimelineEntryType
+from app.models.consult import (
+    CaptureState, ClinicalCapture, ConsultMode, ConsultSession, ConsultState,
+    ConsultSummary, ProvisionalSafetySignal, SegmentState, SummaryAudience,
+    TranscriptSegment,
+)
 
 __all__ = [
     "AuthorRole",
@@ -67,4 +72,14 @@ __all__ = [
     "TimelineEntryType",
     "TaskAssignment",
     "TaskStatus",
+    "CaptureState",
+    "ClinicalCapture",
+    "ConsultMode",
+    "ConsultSession",
+    "ConsultState",
+    "ConsultSummary",
+    "ProvisionalSafetySignal",
+    "SegmentState",
+    "SummaryAudience",
+    "TranscriptSegment",
 ]

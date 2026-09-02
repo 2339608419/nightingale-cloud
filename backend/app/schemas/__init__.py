@@ -38,6 +38,11 @@ from app.schemas.patient_access import (
 from app.schemas.delivery import DeliveryCreate, DeliveryRead, DeliveryStatusUpdate
 from app.schemas.revision import AuditLogRead, EntryVersionRead, RevertRequest
 from app.schemas.timeline_entry import TimelineEntryCreate, TimelineEntryRead, TimelineEntryUpdate
+from app.schemas.consult import (
+    ClinicalCaptureConfirm, ClinicalCaptureRead, ConsultSessionCreate,
+    ConsultSessionRead, ConsultSummaryRead, SafetySignalRead,
+    TranscriptSegmentCorrect, TranscriptSegmentCreate, TranscriptSegmentRead,
+)
 
 __all__ = [
     "HighlightRead",
@@ -76,4 +81,13 @@ __all__ = [
     "TimelineEntryRead",
     "TimelineEntryUpdate",
     "RevertRequest",
+    "ClinicalCaptureConfirm",
+    "ClinicalCaptureRead",
+    "ConsultSessionCreate",
+    "ConsultSessionRead",
+    "ConsultSummaryRead",
+    "SafetySignalRead",
+    "TranscriptSegmentCorrect",
+    "TranscriptSegmentCreate",
+    "TranscriptSegmentRead",
 ]

@@ -45,6 +45,7 @@ def create_patient_entry(
     provenance_pointer: str | None,
     ai_derived: bool = False,
     source_entry_id: str | None = None,
+    commit: bool = True,
 ) -> TimelineEntry:
     entry = TimelineEntry(
         id=str(uuid4()),
@@ -74,6 +75,9 @@ def create_patient_entry(
         )
         db.flush()
     ensure_initial_version(db, entry)
-    db.commit()
-    db.refresh(entry)
+    if commit:
+        db.commit()
+        db.refresh(entry)
+    else:
+        db.flush()
     return entry

@@ -1,5 +1,29 @@
 # Phase 0 Findings
 
+## Phase 6 verified design/result
+
+- Staged review hardening makes audience-summary finalization atomic. The patient-entry helper
+  retains default commit behavior for existing callers but supports transaction ownership by
+  consult finalization. All entries, initial versions, Draft approval, summary companion rows,
+  final state, and metadata audit commit once; injected failure rolls everything back and marks
+  the session `failed` in a separate safe transaction. Failed sessions require a new session.
+- Partial observations now have an explicit append-only finalization path for staff/clinician:
+  a conditional current-partial claim supersedes v1, creates final v2 with a new immutable
+  pointer, and only v2 derives facts. Correction and create share language-span/alternative
+  validation; invalid corrections cause no state, summary, approval, or audit change.
+- A Timeline Entry retains its single primary pointer. Complete multi-segment provenance lives
+  in `ConsultSummary.source_provenance`; the patient instruction points through the clinician
+  summary and approval gate. Correction marks summaries STALE and does not regenerate them.
+- The contract is explicitly `synthetic_text_stream`: it starts after hypothetical ASR and stores no audio. Session state, simulated noise label, provider state, timed speakers, partial/final state, alternatives, uncertainty, and per-character language spans are structured rather than inferred from one blob.
+- English/Malay/Hokkien code switching and English/Mandarin/Tamil readiness fixtures retain original synthetic language evidence. Unsupported labels remain unsupported and deterministic extraction emits Needs Confirmation instead of pretending the content is English or confirmed.
+- A finalized minute-two allergy segment creates an internal HIGH provisional signal as soon as that text segment is received. This is not a real-time microphone/ASR claim; partial text does not generate a confirmed fact, final summaries wait for session completion, and patient visibility remains gated.
+- The Montelukast 20/50 mg capture stores the exact synthetic phrase, both candidates, uncertainty, segment/version pointer, and curated prototype reference metadata. Reference scope is term/unit plausibility only. It cannot select the patient's dose; only clinician confirmation can, with metadata-only audit.
+- Rule-derived completion creates different clinician, staff, and patient texts. The clinician output carries unresolved uncertainty and safety-review context; staff receives operational action language; patient receives plain language without an asserted uncertain dose and enters the existing AI-derived instruction approval/delivery workflow as Draft.
+- Segment correction is append-only/versioned. It supersedes old signals/captures, makes all summaries STALE, invalidates patient approval, and never migrates old confirmation automatically. BROKEN/missing linked evidence returns a safe error rather than guessed content.
+- All patient-linked consult queries constrain ConsultSession and owning Patient clinic in SQL. Patients cannot access raw consult state, segments, captures, signals, or internal summaries; staff sees only its audience summary; clinician-only actions remain server enforced.
+- Synthetic source text is stored for the immutable provenance demonstration only. Logs contain opaque UUIDs, states, enums, sequence/counts; audit contains status metadata only. The Phase 6 rule generator does not invoke a Provider.
+- This remains additive `create_all` compatibility, not a migration. Real audio, noisy-clinic ASR accuracy, WER/language confidence, speaker diarization, clinical validation, live reference search, and production transcript governance remain unimplemented.
+
 ## Phase 5 verified design/result
 
 - Exact synthetic ordering is now supported: a staff/nurse `Penicillin allergy is active` entry followed by an AI/patient-derived `No known allergies` entry retains both TimelineEntries and creates an open ConflictRecord (`backend/app/services/conflict_service.py:134`). Staff-over-AI is an explicit prototype authority policy, while `unresolved_requires_review` remains true until a clinician resolves it.

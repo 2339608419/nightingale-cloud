@@ -12,10 +12,10 @@ This directory records the independent audit and implementation plan requested f
 
 ## Current phase
 
-- Phase: 5 — contradiction visibility, Evidence Confidence, and feedback-bias controls
+- Phase: 6 — multilingual consult ingestion and audience-specific summaries
 - Status: in progress
-- Application-code changes allowed: only the minimum changes for original scenarios 13, 14, and 15
-- Commit target after explicit authorization: `feat: harden clinical trust and ranking feedback`
+- Application-code changes allowed: only the minimum changes for original scenarios 6, 7, and 17
+- Commit target after explicit authorization: `feat: add multilingual consult and audience-aware summaries`
 
 ## Phase 0 objectives
 
@@ -118,6 +118,17 @@ This directory records the independent audit and implementation plan requested f
 - [x] Update README and scenarios 13–15 without overstating residual bias.
 - [x] Explicitly stage only Phase 5 files and request commit authorization.
 
+## Phase 6 checklist
+
+- [x] Confirm Phase 5 HEAD and preserve all root/user working-tree state.
+- [x] Inspect text ingestion, visibility, provenance, conflict, approval, timeout/abstention, and frontend paths.
+- [x] Report the pre-change audio/ASR/language/timing/dose/audience gaps and minimum vertical slice.
+- [x] Implement synthetic post-ASR session/segment state, multilingual spans, provisional signals, captures, summaries, and immutable correction behavior.
+- [x] Add focused scenario 6/7/17 tests and complete regression/build/manual verification.
+- [x] Update README and scenarios 6/7/17 dimension by dimension without claiming real ASR/audio.
+- [x] Harden staged review: atomic summary transaction, fail-closed session state, shared correction validation, and append-only partial→final.
+- [x] Explicitly stage only Phase 6 files and request commit authorization.
+
 ## Errors encountered
 
 | Error | Attempt | Resolution |
@@ -147,7 +158,12 @@ This directory records the independent audit and implementation plan requested f
 | First Phase 5 frontend patch expected type aliases and a multiline CSS selector while the repository uses interfaces and compact selectors. | 1 | No partial frontend change was applied; inspect actual declarations and apply smaller exact-context patches. |
 | First manual UI load used an older local frontend process pointed at an unavailable/older backend and exposed a missing-field render error. | 1 | Make label rendering defensive, then use isolated ignored Phase 5 databases and an isolated allowed-origin frontend/backend pair; manual UI review passed. |
 | A final combined regression command referenced the nonexistent historical filename `test_clinic_isolation.py`, so that invocation collected no tests. | 1 | Enumerate the repository's actual test filenames, rerun the intended regression with `test_clinic_isolation_defense.py`, then run the complete suite; 93 and 152 tests passed respectively. |
+| Global `python` was unavailable for the planning skill catch-up command at Phase 6 start. | 1 | Do not repeat it; recover from the committed hardening documents and Git state, and use the backend virtual-environment interpreter for project commands. |
+| First Phase 6 focused test exposed a greedy Montelukast ambiguity regex that captured `0 mg` instead of `20 mg`. | 1 | Make the prefix match non-greedy so both complete candidate values are retained; rerun the focused suite. |
+| Manual Phase 6 UI finalization immediately triggered the parent reload path, unmounting the Lab before its three summaries could remain visible. | 1 | Keep finalized Lab results local and remove the automatic Timeline reload; users can explicitly refresh/switch role when they want new Timeline entries. |
+| The first line-reference search used an unbalanced regular expression and returned no references. | 1 | Use exact literal pattern searches across the known Phase 6 files and record the resulting line numbers. |
+| Phase 6 staged-review frontend verification requested a nonexistent `npm run typecheck` script. | 1 | Use the repository's actual checks (`npx tsc --noEmit` for both tsconfigs); the production build also runs both checks before Vite and passed. |
 
 ## Completion gate
 
-Phase 5 is ready for commit authorization only when implementation evidence and test/build results are captured, the staged diff contains only explicitly listed Phase 5 files, and no user-owned root files are staged. The local commit remains a separate, user-authorized action.
+Phase 6 is ready for commit authorization only when implementation evidence and test/build results are captured, the staged diff contains only explicitly listed Phase 6 files, and no user-owned root files are staged. The local commit remains a separate, user-authorized action.

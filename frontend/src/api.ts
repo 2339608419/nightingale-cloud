@@ -12,6 +12,11 @@ import type {
   TaskAssignment,
   TimelineEntry,
   TrustMetrics,
+  ClinicalCapture,
+  ConsultSession,
+  ConsultSummary,
+  SafetySignal,
+  TranscriptSegment,
 } from "./types.ts";
 
 const API_BASE_URL = import.meta.env?.VITE_API_URL ?? "/api";
@@ -216,3 +221,29 @@ export const revertEntry = (
     method: "POST",
     body: JSON.stringify({ expected_version: expectedVersion }),
   });
+
+export const startSyntheticConsult = (patientId: string, identity: ApiIdentity) =>
+  requestJson<ConsultSession>("/consults", identity, {
+    method: "POST",
+    body: JSON.stringify({ patient_id: patientId, synthetic: true, mode: "synthetic_text_stream", noise_profile: "simulated_clinic_noise" }),
+  });
+
+export const addSyntheticSegment = (
+  sessionId: string, payload: Record<string, unknown>, identity: ApiIdentity,
+) => requestJson<TranscriptSegment>(`/consults/${sessionId}/segments`, identity, {
+  method: "POST", body: JSON.stringify(payload),
+});
+
+export const getConsultSignals = (sessionId: string, identity: ApiIdentity) =>
+  requestJson<SafetySignal[]>(`/consults/${sessionId}/signals`, identity);
+
+export const getConsultCaptures = (sessionId: string, identity: ApiIdentity) =>
+  requestJson<ClinicalCapture[]>(`/consults/${sessionId}/captures`, identity);
+
+export const confirmConsultCapture = (sessionId: string, captureId: string, value: string, identity: ApiIdentity) =>
+  requestJson<ClinicalCapture>(`/consults/${sessionId}/captures/${captureId}/confirm`, identity, {
+    method: "POST", body: JSON.stringify({ selected_value: value }),
+  });
+
+export const finalizeSyntheticConsult = (sessionId: string, identity: ApiIdentity) =>
+  requestJson<ConsultSummary[]>(`/consults/${sessionId}/finalize`, identity, { method: "POST" });

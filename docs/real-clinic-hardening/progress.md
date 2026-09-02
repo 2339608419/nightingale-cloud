@@ -1,5 +1,28 @@
 # Phase 0 Progress Log
 
+## Phase 6 — implementation and verification
+
+- Staged-review corrections completed: atomic three-audience finalization with fail-closed
+  `failed` semantics, shared create/correct validation, and explicit append-only partial→final.
+- Fault injection on the second entry proves zero partial TimelineEntry, EntryVersion,
+  PatientInstructionApproval, ConsultSummary, or successful finalization-audit persistence.
+  Normal completion creates exactly three summaries once; repeated completion returns 409.
+- Post-review verification: Phase 6 focused **11 passed**; relevant AI/redaction/provenance/
+  conflict/approval/delivery/RBAC/clinic/audit regression **120 passed**; complete backend
+  **163 passed** (each backend run has one third-party deprecation warning). Frontend logic
+  **3 passed**; direct TypeScript checks and production build passed (19 modules, 92 ms).
+- Confirmed Phase 5 HEAD `385ef1667541c9ce84e863c389b3414cf60c93b5`; root planning changes and personal/output files remain excluded.
+- Added additive synthetic consult session, immutable/versioned transcript segment, provisional safety signal, clinical capture, and audience summary tables. No real audio or ASR path was added.
+- Added state- and clinic-scoped APIs for contiguous segment ingestion, correction, capture confirmation, finalization, and audience-filtered summary retrieval.
+- Finalized minute-two allergy text produces an internal HIGH provisional signal immediately; partial input produces no confirmed fact or final summary.
+- Montelukast ambiguity retains both candidates and a curated-reference boundary; clinician confirmation is metadata-audited and never selected by reference or LLM.
+- Completed sessions generate distinct rule-derived clinician/staff/patient outputs; patient output reuses Draft → clinician approval → immutable mock delivery.
+- Segment correction preserves v1, creates v2, supersedes old captures/signals, marks summaries STALE, and invalidates approved patient visibility.
+- Initial Phase 6 focused result before staged-review hardening: **7 passed, 1 third-party warning in 1.00s**. Initial AI/redaction/provenance/conflict/approval/delivery/RBAC/clinic/audit regression: **109 passed, 1 warning in 8.69s**. Initial complete backend: **159 passed, 1 warning in 14.38s**.
+- Frontend logic: **3 passed**; final TypeScript and Vite production build passed (19 modules, 92 ms).
+- Manual isolated synthetic UI verified the explicit post-ASR/not-audio label, receiving/completed states, minute-two HIGH provisional allergy signal, Montelukast 20/50 confirmation, reference boundary, provider-not-invoked label, and three visibly distinct rule-derived summaries. The first automatic-refresh behavior was corrected and the final state reverified.
+- Documentation line references, manual UI evidence, diff checks, and explicit 20-file Phase 6 staging are complete. Root user files remain unstaged; no commit has been created.
+
 ## Phase 5 — implementation and verification
 
 - Confirmed Phase 4 HEAD `551a4a5128ce027b172ae593f2bc31dfce44b14d`; pre-existing root planning changes and personal/output materials remain excluded.

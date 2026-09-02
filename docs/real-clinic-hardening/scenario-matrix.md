@@ -78,25 +78,25 @@ Each scenario records:
 
 ### Scenario 6 — Multilingual/code-switched clinical transcript
 
-- **Verdict:** DOES NOT
-- **Classification:** Missing
-- **Where:** `AiScribeRequest` accepts one undifferentiated text string in `backend/app/schemas/ai_scribe.py:15-20`; no language segment, speaker, timestamp, or uncertainty schema exists.
-- **What breaks first:** If a trilingual sentence is manually submitted as text, the deterministic mock normalizes and truncates it without language awareness (`backend/app/services/summarization_provider.py:13-22`). The system cannot state what ASR produced, preserve which phrase was Malay/English/Hokkien, or connect extracted facts to timed multilingual evidence. Conflict extraction recognizes only a small English demo vocabulary, so downstream facts, conflicts, confidence and ranking may omit or misclassify non-English content.
-- **What could break later:** Medication names/dosages may be normalized incorrectly without visible uncertainty or human confirmation.
-- **Improvement:** Phase 6 should add a synthetic transcript-segment contract with language, speaker, timestamp, text, and confirmation state.
-- **Evidence:** No multilingual fixtures/tests or matching model/API/UI were found.
-- **Remaining limitation:** Real ASR accuracy and dialect support would remain provider/device concerns.
+- **Verdict:** PARTIAL
+- **Classification:** Structured multilingual post-ASR synthetic text is implemented and tested; real audio/ASR quality is absent
+- **Where:** `backend/app/models/consult.py:42-129` stores sessions, immutable/versioned segments, captures, and summaries; validation is in `backend/app/schemas/consult.py`; ingestion/derivation starts at `backend/app/services/consult_service.py:82`; the clinician demo is `frontend/src/SyntheticConsultLab.tsx:65`.
+- **What breaks first:** The system starts from synthetic text supplied after hypothetical ASR. It cannot prove the microphone, recognizer, speaker attribution, translation, or dialect accuracy that produced those characters.
+- **What could break later:** Deterministic extraction still recognizes only narrow demo vocabulary; an unfamiliar multilingual phrase is retained and marked Needs Confirmation, not clinically interpreted.
+- **Improvement:** Integrate an evaluated streaming ASR adapter with consent, encrypted media handling, per-language test sets, diarization, and human correction while preserving the current immutable contract.
+- **Evidence:** Phase 6 tests preserve one-sentence English/Malay/Hokkien spans plus English/Mandarin/Tamil spans, reject duplicate ordering, retain unsupported language labels, validate correction spans, and keep stable versioned provenance through explicit partial→final and correction versions.
+- **Remaining limitation:** No real audio, WER, language-confidence score, translation validation, or production dialect coverage is claimed.
 
 ### Scenario 7 — Allergy mentioned at minute two: during or after consult
 
-- **Verdict:** DOES NOT
-- **Classification:** Missing; only post-submission text processing exists
-- **Where:** `/ai-scribe` processes a complete transcript synchronously (`backend/app/routes/ai_scribe.py:21-63`). No stream/session state, partial transcript, timed segment ingestion, or live allergy warning exists.
-- **What breaks first:** The product cannot honestly warn during a live consultation; it can only create or withhold a note after receiving complete text.
-- **What could break later:** Users may mistake post-processing conflict detection for real-time safety monitoring.
-- **Improvement:** Phase 6 should explicitly model received/partial/final/withheld states and label allergy detection as post-session unless a real streaming contract is implemented.
-- **Evidence:** No streaming endpoints, state models, tests, or UI were found; README already states voice capture is absent.
-- **Remaining limitation:** Production streaming ASR, latency, speaker diarization, and medical term accuracy remain out of scope.
+- **Verdict:** PARTIAL
+- **Classification:** Finalized post-ASR text segment detection occurs before consult completion; audio-time detection is absent
+- **Where:** `append_segment` at `backend/app/services/consult_service.py:82` derives a provisional signal only from finalized text. Session/segment endpoints start at `backend/app/routes/consults.py:61`; the UI at `frontend/src/SyntheticConsultLab.tsx:65` explicitly says “Post-ASR synthetic text stream — not real audio.”
+- **What breaks first:** A minute-two offset is caller-supplied synthetic transcript timing. The system cannot know the allergy before an ASR or human source finalizes that segment.
+- **What could break later:** Unsupported allergy phrasing may require confirmation and noisy ASR could omit the word entirely; this prototype provides no measured latency or recall.
+- **Improvement:** Add clinically evaluated streaming ASR and latency/recall monitoring, retaining partial-versus-final semantics and clinician confirmation.
+- **Evidence:** Tests prove a final segment at 120,000 ms immediately creates a HIGH, unconfirmed, provenance-linked signal; partial text derives nothing; explicit append-only finalization supersedes partial v1 and derives only from final v2; summaries remain absent until completion; correction supersedes old derived state.
+- **Remaining limitation:** This is post-ASR finalized-text timing, not microphone/audio-time safety monitoring.
 
 ### Scenario 8 — External provider timeout
 
@@ -199,11 +199,24 @@ Each scenario records:
 
 ### Scenario 17 — Complete consult intelligence and audience-readiness rubric
 
-- **Verdict:** DOES NOT
-- **Classification:** Some downstream text trust components exist, but the end-to-end consult-audio capability and most scoring dimensions are absent
-- **Where:** The only ingestion contract accepts one completed text transcript and interaction type (`backend/app/schemas/ai_scribe.py:9-20`); it has no audio stream, acoustic metadata, language/speaker/timestamp segments, captured-term uncertainty, or audience target. Existing provenance, deterministic extraction, conflicts, revisions, and role filtering are separate partial building blocks, not this complete product.
-- **What breaks first:** A real noisy consult cannot enter the system as streaming audio. Therefore code-switching, exact medication/dosage confirmation, live facts, and distinct audience summaries cannot be reliably produced from the actual consultation.
-- **What could break later:** Even if an ASR transcript were pasted in, unsupported languages and clinical phrasing can corrupt deterministic extraction; highlights cite mutable entries; a journal lookup could be mistaken for proof of what this patient said; one summary reused across roles could expose internal detail or omit necessary clinical evidence.
-- **Improvement:** Phase 6 must cover every original scoring dimension, while depending on Phase 4 immutable provenance: **real consult audio streaming**—define honest received/partial/final/failed session states rather than claiming existing support; **noisy-clinic ASR**—record synthetic acoustic/noise metadata, segment confidence/alternatives and human correction; **code-switching**—preserve per-segment language for English/Mandarin/Tamil and mixed statements; **medical terminology and dosage capture**—store the captured phrase, alternatives such as Montelukast 20 mg versus 50 mg, source timestamp, and explicit clinician/patient confirmation; **journal/reference-assisted verification**—use references only to validate terminology/plausibility and surface citations, never to decide what the patient actually took; final patient fact requires human confirmation; **multilingual readiness**—test synthetic multilingual fixtures without claiming production ASR quality; **intact provenance**—link facts and all summaries to immutable audio/transcript segments/versions; **fact extraction and mutation robustness**—test edits, corrections, stale facts, conflicts and re-extraction without silently changing old evidence; **distinct summaries**—Clinician Summary retains evidence/conflicts/clinical detail, Staff Summary contains operational tasks/follow-up, and Patient Summary uses plain approved language and remains behind the clinician approval gate.
-- **Evidence:** Dimension-by-dimension current state: real streaming audio—absent; noisy-clinic ASR—absent; code-switching—absent; medical terminology/dosage capture—PARTIAL only for deterministic completed English text in `backend/app/services/conflict_service.py:32-91`; journal/reference boundary—absent, while clinician approval exists only for patient instructions; multilingual readiness—absent; intact provenance—PARTIAL because current highlights target mutable entries; fact extraction/mutation robustness—PARTIAL due limited demo vocabulary, conflict/revision support, and missing immutable-source mutation tests; distinct audience summaries—absent, because `can_view_entry` role filtering in `backend/app/services/authorization_service.py:42-62` is not audience-specific generation.
-- **Remaining limitation:** A prototype contract and synthetic fixtures cannot validate real microphones, noisy-clinic ASR, language coverage, clinical accuracy, journal quality, or patient comprehension; those require provider evaluation and clinical/human studies.
+- **Overall Verdict:** PARTIAL
+- **Classification:** A trustworthy synthetic post-ASR vertical slice exists, while real audio/ASR and production clinical-language validation remain absent.
+- **Where:** Additive contract: `backend/app/models/consult.py:42-129`; request validation: `backend/app/schemas/consult.py`; ingestion/correction/confirmation/finalization: `backend/app/services/consult_service.py:82,122,182,202`; tenant queries: `backend/app/services/clinic_scope_service.py:348`; API: `backend/app/routes/consults.py:61-144`; demo: `frontend/src/SyntheticConsultLab.tsx:65`; evidence: `backend/tests/test_phase6_multilingual_consult.py`.
+
+| Original scoring dimension | Verdict | Verified behavior / boundary |
+|---|---|---|
+| Real consult audio streaming | DOES NOT | No microphone, audio upload, waveform, or audio retention exists. Input is explicitly `synthetic_text_stream` after hypothetical ASR. |
+| Noisy-clinic ASR | DOES NOT | `simulated_clinic_noise` is metadata for a fixture, not measured noise or accuracy. No WER, confidence, provider evaluation, or diarization claim. |
+| Code-switching | SURVIVES (synthetic text) | Ordered language spans preserve English/Malay/Hokkien in one sentence and English/Mandarin/Tamil readiness without replacing original text. |
+| Medical terminology and dosage capture | SURVIVES (demo vocabulary) | Montelukast exact phrase, 20 mg and 50 mg alternatives, uncertainty, timestamped segment, and human confirmation are retained; no automatic choice. |
+| Journal/reference-assisted verification and human confirmation boundary | PARTIAL | A named curated prototype catalog checks term/unit plausibility only. It is not a live journal search and cannot establish the patient's dose; clinician confirmation remains mandatory. |
+| Multilingual readiness | PARTIAL | Five requested language labels and unsupported-language fail-closed behavior are tested on synthetic strings; production language accuracy is unmeasured. |
+| Intact provenance | SURVIVES (prototype) | Signals/captures bind exact immutable segment versions. `ConsultSummary.source_provenance` contains the complete multi-segment pointer list; each Timeline Entry retains one primary pointer, and the patient instruction points through the clinician summary/approval gate. Corrections retain old versions and mark derived state superseded/STALE. |
+| Fact extraction and mutation robustness | PARTIAL | Duplicate/out-of-order/late writes fail; partial→final and correction are append-only; shared span validation rejects malformed correction without mutation; atomic summary failure leaves no partial output and closes the session as failed. Vocabulary, SQLite concurrency evidence, and conflict integration remain narrow. |
+| Clinician/patient/staff distinct summaries | SURVIVES (rule-derived prototype) | Three different texts/metadata are produced: clinical uncertainty/safety context, operational actions, and plain patient language. Patient output is Draft and reuses clinician approval plus immutable mock delivery. |
+
+- **What breaks first:** Real noisy audio cannot enter this contract; therefore success on fixture text says nothing about ASR capture accuracy.
+- **What could break later:** Unsupported terminology, correlated transcription errors, untranslated nuance, or clinically inappropriate deterministic templates require governed evaluation and human review.
+- **Improvement:** Add consented, encrypted, evaluated ASR adapters and clinical/language test sets; formal migrations; production membership; reference governance; and wider fact/conflict validation without weakening immutable evidence or approval.
+- **Evidence:** Phase 6 tests cover state transitions, language spans, minute-two finalized signal, append-only partial→final, invalid-correction non-mutation, fault-injected atomic summary rollback, duplicate finalization, two-dose ambiguity, reference/human boundary, clinician-only confirmation, metadata audit, different summaries, patient approval and immutable delivery, clinic isolation, correction/staleness, runtime table creation, safe logs, and no Provider call.
+- **Remaining limitation:** Synthetic fixtures cannot validate microphones, noisy-clinic ASR, language coverage, clinical correctness, journal quality, or patient comprehension; these require real provider evaluation and clinical/human studies.

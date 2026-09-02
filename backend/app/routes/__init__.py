@@ -7,6 +7,7 @@ from app.routes.highlights import router as highlights_router
 from app.routes.patients import router as patients_router
 from app.routes.patient_access import router as patient_access_router
 from app.routes.deliveries import router as deliveries_router
+from app.routes.consults import router as consults_router
 
 __all__ = [
     "ai_scribe_router",
@@ -18,4 +19,5 @@ __all__ = [
     "patients_router",
     "patient_access_router",
     "deliveries_router",
+    "consults_router",
 ]

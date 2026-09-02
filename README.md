@@ -435,7 +435,66 @@ The prototype implements a safe, read-only preview at `GET /patients/{patient_id
 
 The service never mutates or deletes `TimelineEntry`. It demonstrates future hot/cold storage while remaining reversible and auditable.
 
-## 16. Known limitations
+## 16. Synthetic multilingual consult contract
+
+Phase 6 adds a deliberately narrow **post-ASR synthetic text stream**, not microphone,
+audio upload, or real ASR. `ConsultSession` accepts only `synthetic=true` and mode
+`synthetic_text_stream`; states are `created → receiving → finalizing → completed`, with
+`failed` reserved for safe failure handling. `noise_profile` is a simulated fixture label,
+not a measured noise level or accuracy claim.
+
+Each append-only `TranscriptSegment` stores speaker, sequence, millisecond offsets,
+partial/final state, alternatives, uncertainty, original synthetic text, and character-level
+language spans. Fixtures cover English, Malay, Hokkien, Mandarin, and Tamil. Unsupported
+labels are preserved rather than silently treated as English. Duplicate/out-of-order/late
+segments are rejected. A partial observation can be explicitly finalized by staff or a
+clinician: the partial version becomes superseded, a new immutable final version/pointer is
+created, and only that final version triggers extraction. A correction uses the same bounded,
+ordered, non-overlapping language-span validation and likewise creates a new version rather
+than overwriting evidence. Existing captures/signals are superseded and generated summaries
+become STALE; any approved patient instruction is returned to Draft.
+
+A finalized segment mentioning an allergy can create a HIGH provisional signal immediately
+at its supplied offset (for example minute two). This is finalized **post-ASR text timing**,
+not audio-time detection, and it remains unconfirmed/internal. Partial text cannot become a
+confirmed fact or patient-visible instruction.
+
+The deterministic Montelukast fixture retains the exact phrase and both `20 mg` / `50 mg`
+candidates. A curated prototype catalog confirms only that the medication term and dosage
+unit are plausible; it is not a live journal search and cannot determine the patient's dose.
+Only a clinician may choose a captured candidate. Confirmation is provenance-linked and
+metadata-audited without clinical text.
+
+On completion, the rule-derived offline generator creates three genuinely different outputs:
+
+- clinician: confirmed facts, unresolved uncertainty, provisional safety signals, and evidence;
+- staff: operational review/follow-up actions without full clinical reasoning;
+- patient: plain-language instruction omitting unconfirmed dosage.
+
+The patient output reuses the existing AI-derived `instruction` workflow. It begins Draft,
+is invisible until clinician approval, binds an immutable approved `EntryVersion` for mock
+delivery, and returns to Draft if its content or underlying consult evidence changes. Patients
+cannot read raw segments, captures, signals, clinician summaries, or staff summaries. Every
+consult lookup joins through the owning Patient and clinic in the database query.
+
+Finalization is one database transaction covering receiving → finalizing, all three Timeline
+Entries and initial EntryVersions, patient Draft approval metadata, all three ConsultSummary
+rows, metadata-only audit, and completed state. Any generation/persistence failure rolls back
+the whole unit and then marks the session `failed`; failed sessions are closed and require a
+new session. Completed/failed duplicate finalize attempts return 409 and never duplicate
+summaries. Each Timeline Entry has one primary pointer because of the existing entry contract;
+the companion `ConsultSummary.source_provenance` is the authoritative complete list of all
+immutable segment-version pointers. The patient instruction points to the clinician summary
+that enters approval, not directly to every segment. Corrections never silently regenerate old
+summaries.
+
+The **Synthetic Consult Lab** in clinician view demonstrates these states. Its provider status
+is `not_invoked`; it does not bypass or replace the separately redacted `/ai-scribe` provider
+boundary. Synthetic source text is stored only to demonstrate immutable provenance. A real
+deployment needs consent/retention policy, encrypted media/transcript storage, production
+identity, ASR evaluation, migration tooling, and clinical/language validation.
+
+## 17. Known limitations
 
 - Development headers are not production authentication.
 - SQLite and metadata `create_all` are prototype persistence, not a migration strategy.
@@ -445,7 +504,7 @@ The service never mutates or deletes `TimelineEntry`. It demonstrates future hot
 - External-provider retries, rate limits, and operational monitoring are not implemented.
 - Preference updates are not designed for multi-process high-contention workloads.
 - Data decay is a representation preview, not physical cold-tier storage.
-- No browser E2E suite, voice capture, real notification provider/receipt, phone-message
+- No browser E2E suite, real voice/audio capture, streaming ASR, real notification provider/receipt, phone-message
   recall, production OTP/identity proofing, or deployment configuration.
 - Phase 3 adds tables through prototype `create_all`; there is still no migration
   framework. Existing synthetic runtime databases must be recreated for this schema.
@@ -466,6 +525,6 @@ includes routing, authorization, SQLAlchemy query work, and serialization, but
 excludes network latency, other frontend requests, and browser rendering. It is a
 warm-path approximation, not a production SLA result.
 
-## 17. Synthetic-data security notice
+## 18. Synthetic-data security notice
 
 **Use synthetic data only.** Seeded names, identifiers, encounters, comments, transcripts, and clinical facts are fictional. This prototype is not an EHR, does not provide medical advice, and is not approved for real PHI. TLS and encryption at rest are deployment assumptions, not implemented infrastructure here.
