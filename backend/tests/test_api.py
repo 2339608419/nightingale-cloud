@@ -56,6 +56,7 @@ def test_entries_have_supported_roles_types_and_required_fields(client: TestClie
         "patient_facing_status",
         "approved_by",
         "approved_at",
+        "approved_version_number",
         "ai_derived",
         "source_entry_id",
     }

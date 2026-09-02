@@ -4,6 +4,7 @@ import {
   approvePatientInstruction,
   completeAssignment,
   createComment,
+  createMockDelivery,
   createNote,
   getCompletedAssignments,
   getOpenConflicts,
@@ -14,8 +15,10 @@ import {
   getPatient,
   getPatientEntries,
   getPatientHighlights,
+  getPatientDeliveries,
   getImportancePreferences,
   setCommentResolution,
+  setMockDeliveryStatus,
   revertEntry,
   rejectHighlight,
   rejectPatientInstruction,
@@ -32,6 +35,7 @@ import type {
   Highlight,
   ImportancePreference,
   Patient,
+  PatientDelivery,
   TaskAssignment,
   TimelineEntry,
 } from "./types";
@@ -71,6 +75,7 @@ export default function App() {
   const [decayByEntry, setDecayByEntry] = useState<Record<string, DataDecayPreview>>({});
   const [preferences, setPreferences] = useState<ImportancePreference[]>([]);
   const [conflicts, setConflicts] = useState<ConflictRecord[]>([]);
+  const [deliveries, setDeliveries] = useState<PatientDelivery[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
 
@@ -85,14 +90,16 @@ export default function App() {
     setCompletedAssignments([]);
     setPreferences([]);
     setConflicts([]);
+    setDeliveries([]);
 
     const load = async () => {
       try {
-        const [patientData, entryData, highlightData, decayData] = await Promise.all([
+        const [patientData, entryData, highlightData, decayData, deliveryData] = await Promise.all([
           getPatient(DEMO_PATIENT_ID, identity),
           getPatientEntries(DEMO_PATIENT_ID, identity),
           getPatientHighlights(DEMO_PATIENT_ID, identity),
           getDataDecayPreview(DEMO_PATIENT_ID, identity),
+          getPatientDeliveries(DEMO_PATIENT_ID, identity),
         ]);
         if (cancelled) return;
         // Render the patient and Glance View as soon as their core requests finish.
@@ -102,6 +109,7 @@ export default function App() {
         setEntries(entryData);
         setHighlights(highlightData);
         setDecayByEntry(Object.fromEntries(decayData.map((item) => [item.entry_id, item])));
+        setDeliveries(deliveryData);
         let commentData: Record<string, Comment[]> = {};
         let assignmentData: TaskAssignment[] = [];
         let completedAssignmentData: TaskAssignment[] = [];
@@ -251,6 +259,37 @@ export default function App() {
     }
   };
 
+  const createDelivery = async (
+    entryId: string,
+    purpose: "instruction" | "appointment_link" | "correction",
+    replacesDeliveryId: string | null = null,
+  ) => {
+    try {
+      await createMockDelivery(
+        entryId,
+        DEMO_IDENTITIES[demoRole],
+        purpose,
+        replacesDeliveryId,
+      );
+      setReloadToken((value) => value + 1);
+    } catch (reason: unknown) {
+      setError(reason instanceof Error ? reason.message : "Unable to create mock delivery");
+    }
+  };
+
+  const advanceDelivery = async (delivery: PatientDelivery) => {
+    const next = delivery.status === "created"
+      ? "queued"
+      : delivery.status === "queued"
+        ? "simulated_sent"
+        : delivery.status === "simulated_sent"
+          ? "simulated_delivered"
+          : null;
+    if (!next) return;
+    await setMockDeliveryStatus(delivery.id, next, DEMO_IDENTITIES[demoRole]);
+    setReloadToken((value) => value + 1);
+  };
+
   return (
     <main className="page">
       <DemoIdentity role={demoRole} onChange={setDemoRole} />
@@ -366,6 +405,47 @@ export default function App() {
         </section>
       )}
 
+      <section className="delivery-panel" aria-labelledby="delivery-heading">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">Synthetic local mock</p>
+            <h2 id="delivery-heading">Phone access & delivery trace</h2>
+          </div>
+          <span>Not real SMS or WhatsApp</span>
+        </div>
+        <p className="delivery-boundary">
+          Phone-first access uses a one-time token and masked destination. Created, queued,
+          simulated sent, and simulated delivered are separate states; sent copies cannot be recalled.
+        </p>
+        {(demoRole === "staff" || demoRole === "clinician") && (
+          <button className="delivery-create" type="button" onClick={() => void createDelivery("entry-demo-006", "appointment_link")}>Create mock appointment-link delivery</button>
+        )}
+        <ul className="delivery-list">
+          {deliveries.map((delivery) => {
+            const entry = entries.find((item) => item.id === delivery.entry_id);
+            const canReplace = delivery.status === "correction_required" && entry?.patient_facing_status === "approved";
+            return (
+              <li key={delivery.id}>
+                <div>
+                  <strong>{formatLabel(delivery.purpose)}</strong>
+                  <span>{formatLabel(delivery.channel)} · {delivery.masked_destination} · approved v{delivery.approved_version_number}</span>
+                  {delivery.replaces_delivery_id && <span>Replacement for {delivery.replaces_delivery_id}</span>}
+                  {delivery.status === "correction_required" && <b>Old copy already sent · correction required</b>}
+                  {delivery.status === "correction_required" && entry?.patient_facing_status !== "approved" && <span>Corrected copy pending clinician approval</span>}
+                </div>
+                <span className={`delivery-status delivery-${delivery.status}`}>{formatLabel(delivery.status)}</span>
+                {(demoRole === "staff" || demoRole === "clinician") && ["created", "queued", "simulated_sent"].includes(delivery.status) && (
+                  <button type="button" onClick={() => void advanceDelivery(delivery)}>Advance mock state</button>
+                )}
+                {(demoRole === "staff" || demoRole === "clinician") && canReplace && (
+                  <button type="button" onClick={() => void createDelivery(delivery.entry_id, "correction", delivery.id)}>Create correction</button>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+
       <section className="timeline" aria-labelledby="timeline-heading">
         <div className="section-heading">
           <div><p className="eyebrow">Patient history</p><h2 id="timeline-heading">Timeline</h2></div>
@@ -403,7 +483,7 @@ export default function App() {
                 <p className="entry-type">{formatLabel(entry.type)}</p>
                 <p>{entry.content}</p>
                 {entry.type === "instruction" && entry.patient_facing_status === "approved" && demoRole !== "patient" && (
-                  <p className="approval-detail">Approved by: {entry.approved_by} · {entry.approved_at ? new Date(entry.approved_at).toLocaleString() : "Clinician-authored"}</p>
+                  <p className="approval-detail">Approved by: {entry.approved_by} · {entry.approved_at ? new Date(entry.approved_at).toLocaleString() : "Clinician-authored"} · Version {entry.approved_version_number}</p>
                 )}
                 {entry.type === "instruction" && entry.ai_derived && demoRole === "clinician" && entry.patient_facing_status !== "approved" && (
                   <div className="approval-actions" aria-label="Review patient-facing instruction">

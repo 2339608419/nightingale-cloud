@@ -69,6 +69,7 @@ def create_patient_entry(
                 source_entry_id=source_entry_id,
                 approved_by=None,
                 approved_at=None,
+                approved_version_number=None,
             )
         )
         db.flush()

@@ -108,12 +108,17 @@ def _invalidate_patient_instruction_approval(
 ) -> None:
     if new_content == entry.content:
         return
+    if entry.type.value == "instruction":
+        from app.services.delivery_service import invalidate_deliveries_after_content_change
+
+        invalidate_deliveries_after_content_change(db, entry, user)
     approval = db.get(PatientInstructionApproval, entry.id)
     if approval is None or approval.patient_facing_status != PatientFacingStatus.APPROVED:
         return
     approval.patient_facing_status = PatientFacingStatus.DRAFT
     approval.approved_by = None
     approval.approved_at = None
+    approval.approved_version_number = None
     add_trust_action_audit(
         db,
         actor=user,

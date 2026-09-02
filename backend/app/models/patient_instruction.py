@@ -38,3 +38,4 @@ class PatientInstructionApproval(Base):
     )
     approved_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    approved_version_number: Mapped[int | None] = mapped_column(nullable=True)

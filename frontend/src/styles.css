@@ -84,6 +84,18 @@ dd { margin: 4px 0 0; font-weight: 650; }
 .approval-detail { margin: 8px 0; color: #526d66; font-size: .75rem; }
 .approval-actions { display: flex; gap: 8px; margin: 10px 0; }
 .approval-actions button { padding: 6px 10px; border: 1px solid #8aa79f; border-radius: 6px; color: #245f53; background: #fff; cursor: pointer; }
+.delivery-panel { margin-top: 22px; padding: 20px 22px; border: 1px solid #cbdad6; border-radius: 12px; background: #fff; }
+.delivery-boundary { color: #58706a; font-size: .8rem; line-height: 1.5; }
+.delivery-create, .delivery-list button { padding: 6px 9px; border: 1px solid #8aa79f; border-radius: 6px; color: #245f53; background: #fff; cursor: pointer; font: inherit; font-size: .72rem; }
+.delivery-list { display: grid; gap: 8px; margin: 14px 0 0; padding: 0; list-style: none; }
+.delivery-list li { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; padding: 11px; border: 1px solid #dfe7e5; border-radius: 8px; }
+.delivery-list li::before { display: none; }
+.delivery-list div { display: grid; gap: 3px; color: #60756f; font-size: .7rem; }
+.delivery-list strong { color: #294e46; font-size: .78rem; }
+.delivery-list b { color: #8a2929; }
+.delivery-status { padding: 4px 7px; border-radius: 5px; color: #4f5f5b; background: #e9efed; font-size: .68rem; font-weight: 800; }
+.delivery-failed, .delivery-correction_required { color: #8a2929; background: #f7dada; }
+.delivery-simulated_delivered { color: #245f53; background: #dceee8; }
 .open-actions { padding-top: 15px; border-top: 1px solid #dce6e3; }
 .open-actions-heading { display: flex; justify-content: space-between; align-items: center; margin-bottom: 9px; }
 .open-actions h3 { margin: 0; font-size: .84rem; letter-spacing: .06em; text-transform: uppercase; }
@@ -167,6 +179,7 @@ li:last-child { border-left-color: transparent; }
   .highlight-decisions { grid-template-columns: auto auto; justify-content: end; }
   .open-actions li { align-items: flex-start; flex-direction: column; }
   .conflict-panel li { grid-template-columns: 1fr; }
+  .delivery-list li { grid-template-columns: 1fr; }
   .conflict-actions { justify-content: start; }
   .entry-meta { align-items: flex-start; flex-direction: column; }
   .page { padding-top: 28px; }

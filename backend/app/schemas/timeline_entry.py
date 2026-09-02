@@ -20,6 +20,7 @@ class TimelineEntryRead(BaseModel):
     patient_facing_status: str | None
     approved_by: str | None
     approved_at: datetime | None
+    approved_version_number: int | None
     ai_derived: bool
     source_entry_id: str | None
 

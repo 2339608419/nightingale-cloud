@@ -106,6 +106,48 @@ The role selector is labeled **Demo identity simulation**. It sends `X-User-Id`,
 
 All primary identities use clinic `clinic-demo-001`. A second synthetic clinic record demonstrates isolation.
 
+### Synthetic phone-first access
+
+Phase 3 adds a local-only phone-first vertical slice for the seeded patient. It does
+not require email and it does not contact a real phone provider:
+
+```text
+synthetic E.164 input + clinic context
+→ normalize and domain-separated SHA-256 lookup
+→ securely random, 10-minute one-time challenge
+→ POST token exchange (never a query-string credential)
+→ one-hour patient session
+→ self-only approved instructions and safe delivery status
+```
+
+The database stores only the synthetic contact digest and masked destination. Challenge
+and session credentials are stored only as irreversible digests with server-generated
+expiry and consumed/revoked state. The local mock returns the challenge token once in
+the response so the flow is demonstrable; production must deliver it out-of-band and
+must never return it to the requesting browser. Tokens, full phone numbers, and clinical
+content are not written to logs or audit metadata.
+
+Valid known and unknown numbers intentionally receive the same HTTP status, fields,
+`accepted=true`, mode, warning, and caller-derived masked-destination shape. For an
+unknown number, the local mock returns a secure random, short-lived-looking decoy
+challenge/token that is not persisted and can never be exchanged. Production wording
+must remain generic: “If that number is available, we sent verification information.”
+Invalid E.164 formatting is rejected separately as input validation; it never reports
+whether an account exists. A live challenge is consumed with one conditional SQL update
+(`token digest`, unused, unexpired), and the claim plus session creation commit in one
+transaction. This is database atomicity rather than a process-local lock.
+
+Phone lookup uniqueness is tenant-scoped through `(clinic_id, phone_digest)`: the same
+synthetic number may identify different synthetic patients in different clinics, while
+duplicates inside one clinic are rejected. Existing Phase 3 SQLite files must be rebuilt
+for this prototype schema change; production requires a versioned migration. SQLite
+tests exercise two independent database sessions, but do not prove multi-worker behavior
+on a production database.
+
+The existing development-header identities remain available for the original demo and
+are not production authentication. The phone-first route is also a synthetic prototype,
+not production OTP, account recovery, consent, device binding, or identity proofing.
+
 ## Demo runbook
 
 Use [`DEMO_RUNBOOK.md`](DEMO_RUNBOOK.md) for a timed 5–7 minute walkthrough. It covers Glance/provenance, multi-date context, staff–clinician collaboration, adaptive importance, revision/revert, conflict review, and the clinician approval gate for AI-derived patient instructions.
@@ -230,6 +272,38 @@ versions, and requires re-approval. Existing manually clinician-authored instruc
 remain inherently clinician-approved for backward compatibility. Approval, rejection,
 and invalidation audits store status transitions only—never instruction or AI text.
 
+### Mock delivery and post-send correction
+
+Patient delivery is explicitly simulated. A delivery binds clinic, patient, instruction,
+masked destination, channel/purpose, actor, and the exact immutable EntryVersion approved
+by the clinician. It never reads mutable TimelineEntry content as the sent copy.
+
+```text
+created → queued → simulated_sent → simulated_delivered
+              ↘ failed
+
+approved copy edited/reverted:
+created/queued → superseded
+simulated_sent/simulated_delivered → correction_required
+corrected version → clinician re-approval → new replacement delivery
+old correction_required delivery → superseded
+```
+
+Only allowlisted server transitions are accepted. No receipt means the record remains
+`simulated_sent`; generated/queued never means delivered. Invalid and no-op transitions
+create no successful audit. Delivery audits store status metadata only. Patients see
+masked destinations and safe states, not provider references or internal content.
+
+The seeded failed `appointment_link` fixture demonstrates that creating a link/message
+does not prove receipt. This repository sends no SMS or WhatsApp and has no real delivery
+receipt. An already sent copy cannot be recalled: the safe workflow sends a separately
+approved correction and preserves both immutable versions and both delivery records.
+Failed deliveries accept only server-defined safe reason codes:
+`invalid_destination`, `channel_unavailable`, `receipt_unavailable`,
+`provider_timeout`, or `provider_rejected`. Free text, provider error bodies, clinical
+content, names, phone numbers, and unknown codes are rejected before persistence; audit
+metadata continues to contain only status transitions.
+
 Evidence confidence is computed when highlights are read; it is not stored as a
 model-generated opinion. An exact entry pointer and exact source-span match are
 required. A recognized deterministic clinical fact with no open conflict is `HIGH`;
@@ -297,7 +371,10 @@ The service never mutates or deletes `TimelineEntry`. It demonstrates future hot
 - External-provider retries, rate limits, and operational monitoring are not implemented.
 - Preference updates are not designed for multi-process high-contention workloads.
 - Data decay is a representation preview, not physical cold-tier storage.
-- No browser E2E suite, voice capture, notification delivery, or deployment configuration.
+- No browser E2E suite, voice capture, real notification provider/receipt, phone-message
+  recall, production OTP/identity proofing, or deployment configuration.
+- Phase 3 adds tables through prototype `create_all`; there is still no migration
+  framework. Existing synthetic runtime databases must be recreated for this schema.
 
 ### Warm-path Glance benchmark
 

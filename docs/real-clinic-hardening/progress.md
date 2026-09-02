@@ -1,5 +1,35 @@
 # Phase 0 Progress Log
 
+## Phase 3 — started
+
+- Staged review identified four required corrections before commit: enrollment enumeration, non-atomic challenge consumption, globally unique phone digest, and free-text delivery failure reason. Commit remains blocked while these are corrected and reverified.
+- Replaced the enrollment-revealing response with a uniform accepted response for all valid numbers. Unknown numbers now receive a secure random non-persisted decoy challenge/token; exchange always fails, and the mask is derived solely from submitted input.
+- Replaced SELECT/check/update consumption with one conditional SQL UPDATE over digest, unused state, and expiry. Claim and patient-session creation share a transaction; a two-independent-session file-SQLite test proves only the first claim succeeds.
+- Replaced global phone uniqueness with `(clinic_id, phone_digest)` and seeded the same synthetic phone in Clinic A and Clinic B. Tests prove correct clinic resolution and same-clinic duplicate rejection.
+- Replaced arbitrary delivery failure strings with a five-value safe enum. Failed requires an enum value, non-Failed forbids it, and rejected unknown/PHI-bearing inputs leave delivery state and AuditLog unchanged.
+- The first corrected focused collection failed because the test imported `Base` from the wrong module; corrected to `app.database`. The next run had one fixture-setup failure because the duplicate constraint test had not requested `client`; corrected without changing application behavior.
+- Post-review focused Phase 3 suite: **16 passed, 1 third-party warning in 1.66s**.
+- The first regression command used the wrong audit test filename and collected no tests; after inspecting the test inventory, the corrected RBAC/clinic-isolation/revision/approval/audit/AI regression set passed **85 tests, 1 warning in 7.08s**.
+- Complete backend suite after all four corrections: **135 passed, 1 third-party warning in 9.77s**.
+- Frontend TypeScript checks and production Vite build passed (17 modules transformed, 94 ms). Diff and precise staged verification follow.
+
+- Confirmed Phase 2 HEAD `1036572c4f80e3bf1deeaffb44b539c599f9e25f` on `master`.
+- Confirmed root `findings.md`, `progress.md`, `task_plan.md`, video, resume, `output/`, and `read.md` remain user-owned and excluded.
+- Re-read all four hardening documents and began the phone identity, patient visibility, instruction approval, revision, seed, and frontend inventory.
+- Planning-session catchup could not use a global `python` executable; the failure is recorded in the hardening plan and no root planning file was touched.
+- Added additive Patient synthetic-contact metadata, one-time phone challenge/session models, and patient-delivery state with tenant, immutable version, masked destination, opaque mock reference, and replacement linkage.
+- Added domain-separated contact/token hashing, secure random single-use challenge exchange, expiring patient sessions, and self-only approved-instruction/delivery portal routes. The local mock token is returned once and is never persisted in plaintext.
+- Added server-controlled delivery creation/transitions, clinic-scoped delivery/version queries, metadata-only audits, approval-version binding, and edit/revert hooks that supersede unsent copies or mark simulated-sent/delivered copies correction-required.
+- First focused run: 10 passed and 1 failed because the test fixture's default clinician headers were still present during a bearer-only restriction assertion. The application path was not bypassed; the test now explicitly removes those fixture headers before retrying.
+- Corrected Phase 3 focused suite: **11 passed, 1 third-party warning in 1.02s**.
+- Required Phase 3, approval, clinic-isolation, RBAC, revision/concurrency, audit, and AI-scribe regression set: **80 passed, 1 third-party warning in 6.17s**.
+- Added a compact frontend delivery/access panel that labels the local mock boundary, displays immutable approved version and masked destination, distinguishes all delivery/correction states, and exposes only server-allowed mock transitions/replacement creation.
+- First complete backend run: **129 passed, 1 failed** because the exact-field API test did not yet include the additive `approved_version_number`; updated that compatibility assertion. Frontend TypeScript checks and production build passed on the same run (`vite v8.2.2`, 17 modules, 99 ms).
+- Corrected complete backend suite: **130 passed, 1 third-party warning in 8.21s**.
+- Manual local UI inspection on a fresh Phase 3 database verified the visible “Synthetic local mock / Not real SMS or WhatsApp” boundary, masked `+65••••0001` destination, failed appointment-link state, immutable approved v1 label, and clinician-approved Version 1 timeline detail. Correction-required and replacement behavior is proven by the focused API test rather than mutating the manual inspection dataset.
+- Tightened the phone bootstrap lookup to require clinic context in its SQL predicate and moved edit/revert delivery lookup behind a reusable Patient-joined Phase 2 scoped query, so no new patient/delivery path relies on a global object read as its effective tenant boundary.
+- Final post-tightening verification: Phase 3 focused suite **11 passed in 1.01s**; complete backend suite **130 passed in 8.53s**; frontend TypeScript checks and production build passed (`vite v8.2.2`, 17 modules, 96 ms). The sole warning remains the third-party Starlette/httpx deprecation.
+
 ## Phase 2 — started
 
 - Confirmed Phase 1 HEAD `b0fe21256da4363b938f7ceb6713c8d0b201ea9f` on `master`.

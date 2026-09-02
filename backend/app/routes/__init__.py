@@ -5,6 +5,8 @@ from app.routes.entries import router as entries_router
 from app.routes.health import router as health_router
 from app.routes.highlights import router as highlights_router
 from app.routes.patients import router as patients_router
+from app.routes.patient_access import router as patient_access_router
+from app.routes.deliveries import router as deliveries_router
 
 __all__ = [
     "ai_scribe_router",
@@ -14,4 +16,6 @@ __all__ = [
     "health_router",
     "highlights_router",
     "patients_router",
+    "patient_access_router",
+    "deliveries_router",
 ]

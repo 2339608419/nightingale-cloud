@@ -12,10 +12,10 @@ This directory records the independent audit and implementation plan requested f
 
 ## Current phase
 
-- Phase: 2 — clinic-isolation defense in depth and multi-clinic readiness
+- Phase: 3 — phone-first access, traceable mock delivery, and post-send correction
 - Status: in progress
-- Application-code changes allowed: only the minimum changes for original scenarios 2 and 5
-- Commit target after explicit authorization: `feat: add defense-in-depth clinic isolation`
+- Application-code changes allowed: only the minimum changes for original scenarios 1, 11, and 12
+- Commit target after explicit authorization: `feat: add phone-first access and traceable patient delivery`
 
 ## Phase 0 objectives
 
@@ -72,16 +72,42 @@ This directory records the independent audit and implementation plan requested f
 - [x] Update scenarios 2 and 5 plus the Clinic B onboarding categories without overclaiming.
 - [x] Explicitly stage only Phase 2 files and request commit authorization.
 
+## Phase 3 checklist
+
+- [x] Confirm Phase 2 HEAD and preserve all pre-existing root/user working-tree state.
+- [x] Inspect identity, patient visibility, approval, revision, seed, and frontend patient paths.
+- [x] Define the minimum phone-token, immutable delivery, and correction state machines.
+- [x] Implement synthetic phone-first access without exposing plaintext credentials or destinations.
+- [x] Implement clinic-scoped mock delivery bound to approved immutable versions.
+- [x] Invalidate approval and mark previously sent copies correction-required after edit/revert.
+- [x] Add focused scenario 1, 11, and 12 tests plus required regressions.
+- [x] Add minimal frontend visibility for access, delivery, and correction states.
+- [x] Update README and scenarios 1, 11, and 12 without overstating mock delivery.
+- [x] Run focused, relevant, full-backend, frontend-build, and diff verification.
+- [x] Explicitly stage only Phase 3 files and request commit authorization.
+- [x] Remove phone-enrollment enumeration from the public challenge response.
+- [x] Replace challenge SELECT/check/update with an atomic database claim.
+- [x] Change phone uniqueness to `(clinic_id, phone_digest)` and prove per-clinic resolution.
+- [x] Restrict delivery failure reason to a fixed safe enum with no-side-effect rejection tests.
+- [x] Re-run all Phase 3 verification and precisely restage after staged review.
+
 ## Errors encountered
 
 | Error | Attempt | Resolution |
 |---|---:|---|
+| Global `python` was unavailable for the planning skill session-catchup command at Phase 3 start. | 1 | Do not repeat the same command; use the repository virtual-environment Python for any required project scripts and recover context from the four hardening documents plus Git state. |
+| The first Phase 3 focused run expected a bearer-only internal request to return `401`, but the shared TestClient fixture automatically supplied clinician development headers in addition to the bearer token. | 1 | Explicitly blank the three development identity headers for bearer-only negative checks; this tests the intended credential boundary instead of accidentally authenticating as the fixture clinician. |
+| The first complete backend run had 129 passes and one API contract assertion failure because the intentionally additive `approved_version_number` response field was absent from the test's exact field set. | 1 | Update the existing contract test to include the new immutable approval-version field; no response field was removed or renamed. |
+| The first local browser wait requested unsupported `networkidle` state from the in-app adapter. | 1 | Use the documented `domcontentloaded` state and then inspect a fresh semantic DOM snapshot; do not repeat the unsupported wait. |
 | Global `python` command was unavailable when running the planning skill's session-catchup script. | 1 | Record the failure and use the repository's existing backend virtual-environment interpreter for project verification. No retry of the same command. |
 | Initial explicit `git add` could not create `.git/index.lock` because the managed workspace exposes `.git` as read-only by default. | 1 | Record the environment failure and retry the same narrow four-file staging operation with repository-scoped elevated Git permission. |
 | The first combined Phase 1 documentation patch expected `# Phase 0 Progress`, but the actual heading is `# Phase 0 Progress Log`. | 1 | No partial edit was applied; inspect the exact heading and split the patch into exact-file updates. |
 | The first focused-test command used a repository-relative virtual-environment path while its working directory was already `backend`. | 1 | Use the backend-local `.venv\\Scripts\\python.exe` path on the next invocation. |
 | The first focused run had one test false positive because it asserted that the common word `and` was absent from the entire structured response. | 1 | Keep the privacy assertion precise: check complete PHI values and meaningful clinical phrases rather than generic words used by safe validation metadata. |
 | The first Phase 2 focused matrix setup queried comments on `entry-demo-006`, but seeded comments belong to `entry-demo-007`; all 17 parameterized cases therefore failed before exercising isolation. | 1 | Inspect the seed relationship, correct the fixture entry ID to `entry-demo-007`, and rerun the focused matrix; the three setup-independent cases already passed. |
+| The first post-review focused run could not import `Base` from `app.models`. | 1 | Import the existing public `Base` export from `app.database`; no application change was needed. |
+| The first duplicate-phone test used the fixture database without requesting the `client` fixture that installs its dependency override. | 1 | Add the fixture dependency to the test signature; the corrected focused suite passed. |
+| The first requested regression command named a nonexistent `test_audit_trust_actions.py`. | 1 | Inspect the test inventory and rerun once with the existing `test_trust_action_audit.py`; 85 tests passed. |
 
 ## Completion gate
 

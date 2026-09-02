@@ -23,14 +23,14 @@ Each scenario records:
 
 ### Scenario 1 — Patient without email / phone-first access
 
-- **Verdict:** DOES NOT
-- **Classification:** Missing
-- **Where:** Current identity is only three development headers in `backend/app/auth.py:22-39`; no User, phone identity, OTP, session, or delivery model exists. `frontend/src/App.tsx:39-49` hard-codes demo identities.
-- **What breaks first:** A patient cannot enroll, authenticate, or access the system using a phone number; they can only be simulated by selecting a demo role.
-- **What could break later:** Treating client-supplied headers as identity would allow impersonation outside the local demo.
-- **Improvement:** Phase 3 should add a synthetic phone-first identity contract and explicit prototype verification/session boundary without requiring email.
-- **Evidence:** Repository model/route inventory; `test_rbac_scope.py::test_protected_endpoint_requires_development_identity` proves only that headers are required, not that identity is authenticated.
-- **Remaining limitation:** Production OTP, account recovery, consent, device binding, and identity proofing would remain external services.
+- **Verdict:** PARTIAL
+- **Classification:** A real, tested synthetic phone-first portal slice exists; verification delivery and production identity remain deliberately mocked/missing
+- **Where:** Patient stores only a synthetic phone digest/mask with tenant-scoped `(clinic_id, phone_digest)` uniqueness (`backend/app/models/patient.py`); one-time challenges and expiring sessions store only token digests (`backend/app/models/patient_access.py`). `backend/app/services/patient_access_service.py` returns the same public accepted response shape for known and unknown valid numbers, uses an unpersisted non-redeemable secure-random decoy for unknown numbers, and masks only submitted input. Live consumption is an atomic conditional SQL update over digest/unused/unexpired state; only a successful claim creates a one-hour session in the same transaction. Routes expose only self-scoped approved instructions and safe delivery states.
+- **What breaks first:** The local mock returns the one-time token once in the HTTP response because there is no real SMS/WhatsApp provider. Anyone with the known synthetic demo number can complete this local flow; it is not identity proofing.
+- **What could break later:** Production use would need out-of-band OTP delivery, throttling, recovery, consent, device/session management, authenticated clinic membership, fraud controls, a production concurrency-capable database, and versioned migrations. Format validation is separately observable by design, but account existence is not.
+- **Improvement:** Replace the one-time response token with a compliant external verification adapter, add rate/attempt limits and recovery/session revocation UX, and bind verified identities to production membership without changing the self-only portal contract.
+- **Evidence:** `backend/tests/test_phone_access_delivery_correction.py` proves known/unknown response equivalence, non-redeemable decoy behavior, no email requirement, digest-only storage, expiry/replay rejection, two-session atomic claim, same-phone per-clinic resolution, same-clinic uniqueness, self-only approved filtering, and denial of internal data. Post-review focused result: 16 passed; complete backend result: 135 passed.
+- **Remaining limitation:** This is explicitly `synthetic_local_mock`; it is not production OTP or authenticated telecom delivery. SQLite two-session evidence is not a production multi-worker/load proof, and existing runtime databases require rebuild because no migration framework exists.
 
 ### Scenario 2 — Clinic-isolation single point fails
 
@@ -133,25 +133,25 @@ Each scenario records:
 
 ### Scenario 11 — Appointment link generated but never received
 
-- **Verdict:** DOES NOT
-- **Classification:** Missing
-- **Where:** Patient instructions have approval status only (`backend/app/models/patient_instruction.py`); no Message/DeliveryAttempt model or adapter exists.
-- **What breaks first:** The application can create an instruction/action but has no appointment-link generator or sender. The first failed assumption is that creating or displaying a link inside the application means a phone/WhatsApp/SMS provider accepted and delivered it; no destination, queue, provider response, receipt, retry, or failure state exists.
-- **What could break later:** Staff could assume an approved instruction reached the patient when it only became visible inside the prototype.
-- **Improvement:** Phase 3 should add a clearly labeled mock delivery adapter, delivery state machine, timestamps, actor, version, and synthetic destination.
-- **Evidence:** No delivery code/tests/UI; README explicitly lists notification delivery as absent.
-- **Remaining limitation:** Real delivery receipts and channel compliance require an external provider.
+- **Verdict:** PARTIAL
+- **Classification:** Traceable immutable mock delivery is implemented/tested; no real channel or receipt exists
+- **Where:** `backend/app/models/delivery.py:8-66` records clinic/patient, mock channel, masked destination, purpose, entry, immutable approved version, actor, opaque provider reference, replacement, timestamps, and distinct status. `backend/app/services/delivery_service.py:29-155` enforces created → queued → simulated_sent → simulated_delivered or queued → failed. The seed's failed appointment-link fixture (`backend/app/services/seed.py:300-323`) and frontend delivery panel (`frontend/src/App.tsx:408-446`) explicitly label all states as synthetic mock.
+- **What breaks first:** There is no actual appointment domain or provider call. The prototype can prove a link-purpose record was created, queued, and failed or remained without receipt; it cannot prove a handset received anything.
+- **What could break later:** A real adapter would need idempotency, provider callbacks/signature verification, retries with budgets, number/channel validation, consent, rate limits, and operational monitoring.
+- **Improvement:** Implement a compliant provider adapter and verified delivery-receipt webhook while preserving the current state meanings, immutable version binding, tenant scope, and safe audit fields.
+- **Evidence:** `test_delivery_states_are_distinct_and_invalid_transition_has_no_audit` proves generated/queued/sent/delivered/failed distinction and no audit on denial. `test_delivery_failure_reason_is_allowlisted_and_rejections_have_no_side_effects` proves safe enum acceptance plus 422/no mutation/no audit for unknown, PHI-bearing, missing, or status-inapplicable reasons. Clinic-fault-injection and replacement-injection tests prove tenant isolation. Complete backend result: 135 passed.
+- **Remaining limitation:** `simulated_sent` and `simulated_delivered` are never represented as real provider outcomes; scenario 11 cannot SURVIVE without a real provider and receipt.
 
 ### Scenario 12 — Patient-facing summary contains one wrong dosage
 
 - **Verdict:** PARTIAL
-- **Classification:** Human gate and revision protection exist before in-app patient visibility; phone delivery and post-send correction do not
-- **Where:** AI-scribe summary generation persists an internal AI entry after redaction/validation (`backend/app/services/ai_scribe_service.py:69-87`). An AI-derived patient instruction must reference an AI source, starts Draft, and only a clinician may approve it (`backend/app/routes/patients.py:93-136`; `backend/app/services/patient_instruction_service.py:16-68`). Editing approved content invalidates approval and preserves versions (`backend/app/services/revision_service.py:102-160`). There is no phone delivery record.
-- **What breaks first:** A wrong dosage cannot directly reach the prototype patient view because the clinician gate blocks Draft content, but the gate only requires resolvable provenance—not a structured dosage comparison or explicit checklist confirming dose/current version. If a clinician approves the error, it becomes visible in the portal; there is no real phone path to trace.
-- **What could break later:** Editing the current instruction could make the internal record correct while the patient retains an untracked obsolete message.
-- **Improvement:** Before approval, require the clinician to inspect the immutable source, extracted medication/dose, conflict state, and exact instruction version. Delivery must reference that approved immutable version. If already sent, preserve the original delivered copy, mark it superseded/corrected, create and reapprove a corrected version, and send a separately traceable correction; never imply the old phone message can be silently edited.
-- **Evidence:** `test_patient_instruction_approval.py::test_editing_approved_instruction_invalidates_approval_and_preserves_version` covers pre-delivery approval invalidation only.
-- **Remaining limitation:** Channel-specific recall is generally impossible; correction delivery must be explicit.
+- **Classification:** Approval, immutable sent-copy trace, invalidation, and replacement correction are implemented/tested locally; real phone recall/delivery remain unavailable
+- **Where:** Approval now stores the exact immutable `approved_version_number` (`backend/app/models/patient_instruction.py:41`; `backend/app/services/patient_instruction_service.py:23-80`). Delivery creation resolves that EntryVersion through the clinic-scoped SQL boundary (`backend/app/services/clinic_scope_service.py:86-99`) and refuses Draft/Rejected/invalidated content. `backend/app/services/revision_service.py:102-132` keeps old versions and returns AI-derived content to Draft; `backend/app/services/delivery_service.py:158-197` supersedes unsent copies or marks simulated-sent/delivered copies correction-required. A corrected version must be clinician re-approved before `delivery_service.py:53-124` creates a new correction with `replaces_delivery_id`; the old record remains as superseded.
+- **What breaks first:** If a clinician approves a wrong dose, the simulated copy can still be sent; the system is a human gate and trace/correction mechanism, not a guarantee the reviewer catches every clinical error.
+- **What could break later:** A real handset may retain screenshots, notification previews, offline caches, or the original message even after the correction arrives. The system must never claim recall.
+- **Improvement:** Add a clinically reviewed medication/dose confirmation checklist before approval and a real provider's separately traceable correction delivery/receipt; retain immutable old evidence and escalation if correction delivery fails.
+- **Evidence:** `test_delivery_binds_approved_snapshot_and_edit_requires_traceable_correction` proves v1 binding, simulated send, edit-to-Draft, correction-required, preserved v1/v2, blocked pre-approval resend, clinician reapproval, v2 replacement, and old-record supersession. Role tests keep correction approval clinician-only; audit tests prove no dose/text/phone in metadata.
+- **Remaining limitation:** No external message was sent and no phone copy can be recalled; safe behavior is “send correction, do not pretend recall.”
 
 ### Scenario 13 — Nurse allergy vs AI “no known allergy” contradiction
 

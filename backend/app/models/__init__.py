@@ -14,6 +14,14 @@ from app.models.highlight import (
 )
 from app.models.importance_preference import ImportancePreference
 from app.models.patient import Patient
+from app.models.patient_access import PatientPortalSession, PhoneAccessChallenge
+from app.models.delivery import (
+    DeliveryChannel,
+    DeliveryFailureReason,
+    DeliveryPurpose,
+    DeliveryStatus,
+    PatientDelivery,
+)
 from app.models.patient_instruction import (
     PatientFacingStatus,
     PatientInstructionApproval,
@@ -37,6 +45,13 @@ __all__ = [
     "EntryVersion",
     "EvidenceConfidenceLevel",
     "Patient",
+    "PatientDelivery",
+    "PatientPortalSession",
+    "PhoneAccessChallenge",
+    "DeliveryChannel",
+    "DeliveryFailureReason",
+    "DeliveryPurpose",
+    "DeliveryStatus",
     "PatientFacingStatus",
     "PatientInstructionApproval",
     "RiskLevel",

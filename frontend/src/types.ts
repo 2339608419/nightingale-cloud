@@ -19,8 +19,25 @@ export interface TimelineEntry {
   patient_facing_status: "draft" | "approved" | "rejected" | null;
   approved_by: string | null;
   approved_at: string | null;
+  approved_version_number: number | null;
   ai_derived: boolean;
   source_entry_id: string | null;
+}
+
+export interface PatientDelivery {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  entry_id: string;
+  approved_version_number: number;
+  channel: "whatsapp_mock" | "sms_mock";
+  purpose: "instruction" | "appointment_link" | "correction";
+  masked_destination: string;
+  status: "created" | "queued" | "simulated_sent" | "simulated_delivered" | "failed" | "correction_required" | "superseded";
+  replaces_delivery_id: string | null;
+  failure_reason_code: "invalid_destination" | "channel_unavailable" | "receipt_unavailable" | "provider_timeout" | "provider_rejected" | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface EntryVersion {

@@ -7,6 +7,7 @@ import type {
   Highlight,
   ImportancePreference,
   Patient,
+  PatientDelivery,
   TaskAssignment,
   TimelineEntry,
 } from "./types";
@@ -46,6 +47,35 @@ export const getPatientEntries = (patientId: string, identity: ApiIdentity) =>
 
 export const getPatientHighlights = (patientId: string, identity: ApiIdentity) =>
   requestJson<Highlight[]>(`/patients/${patientId}/highlights`, identity);
+
+export const getPatientDeliveries = (patientId: string, identity: ApiIdentity) =>
+  requestJson<PatientDelivery[]>(`/patients/${patientId}/deliveries`, identity);
+
+export const createMockDelivery = (
+  entryId: string,
+  identity: ApiIdentity,
+  purpose: "instruction" | "appointment_link" | "correction" = "instruction",
+  replacesDeliveryId: string | null = null,
+) => requestJson<PatientDelivery>(`/entries/${entryId}/deliveries`, identity, {
+  method: "POST",
+  body: JSON.stringify({
+    channel: "whatsapp_mock",
+    purpose,
+    replaces_delivery_id: replacesDeliveryId,
+  }),
+});
+
+export const setMockDeliveryStatus = (
+  deliveryId: string,
+  status: "queued" | "simulated_sent" | "simulated_delivered" | "failed",
+  identity: ApiIdentity,
+) => requestJson<PatientDelivery>(`/deliveries/${deliveryId}/status`, identity, {
+  method: "PATCH",
+  body: JSON.stringify({
+    status,
+    failure_reason_code: status === "failed" ? "channel_unavailable" : null,
+  }),
+});
 
 export const acceptHighlight = (highlightId: string, identity: ApiIdentity) =>
   requestJson<Highlight>(`/highlights/${highlightId}/accept`, identity, { method: "POST" });

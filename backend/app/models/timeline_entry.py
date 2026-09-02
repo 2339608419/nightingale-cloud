@@ -112,6 +112,14 @@ class TimelineEntry(Base):
         return None
 
     @property
+    def approved_version_number(self) -> int | None:
+        if self.patient_instruction_approval is not None:
+            return self.patient_instruction_approval.approved_version_number
+        if self.type == TimelineEntryType.INSTRUCTION and self.author_role == AuthorRole.CLINICIAN:
+            return self.version
+        return None
+
+    @property
     def ai_derived(self) -> bool:
         return bool(
             self.patient_instruction_approval

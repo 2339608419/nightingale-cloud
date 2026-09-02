@@ -17,7 +17,13 @@ from app.models import (
     TaskAssignment,
     TaskStatus,
     EntryVersion,
+    DeliveryChannel,
+    DeliveryFailureReason,
+    DeliveryPurpose,
+    DeliveryStatus,
+    PatientDelivery,
 )
+from app.services.contact_security_service import mask_phone, phone_digest
 from app.services.importance_service import evaluate_importance
 
 
@@ -73,6 +79,9 @@ def seed_demo_data(db: Session) -> None:
         clinic_id="clinic-demo-001",
         name="Maya Chen (Synthetic)",
         date_of_birth=date(1984, 3, 12),
+        phone_digest=phone_digest("+6590000001"),
+        phone_masked=mask_phone("+6590000001"),
+        phone_is_synthetic=True,
         created_at=datetime(2026, 8, 20, 8, 0, tzinfo=timezone.utc),
     )
     db.merge(patient)
@@ -82,6 +91,9 @@ def seed_demo_data(db: Session) -> None:
             clinic_id="clinic-demo-002",
             name="Jordan Lee (Synthetic)",
             date_of_birth=date(1978, 11, 2),
+            phone_digest=phone_digest("+6590000001"),
+            phone_masked=mask_phone("+6590000001"),
+            phone_is_synthetic=True,
             created_at=datetime(2026, 8, 20, 8, 0, tzinfo=timezone.utc),
         )
     )
@@ -287,6 +299,28 @@ def seed_demo_data(db: Session) -> None:
     ]
     for assignment in assignments:
         db.merge(assignment)
+
+    if db.get(PatientDelivery, "delivery-demo-appointment-failed") is None:
+        db.add(
+            PatientDelivery(
+                id="delivery-demo-appointment-failed",
+                clinic_id="clinic-demo-001",
+                patient_id=SYNTHETIC_PATIENT_ID,
+                entry_id="entry-demo-006",
+                approved_version_number=1,
+                channel=DeliveryChannel.WHATSAPP_MOCK,
+                purpose=DeliveryPurpose.APPOINTMENT_LINK,
+                masked_destination=mask_phone("+6590000001"),
+                status=DeliveryStatus.FAILED,
+                actor_id="staff-demo-001",
+                actor_role="staff",
+                provider_message_reference="mock_msg_demo_appointment_failed",
+                replaces_delivery_id=None,
+                failure_reason_code=DeliveryFailureReason.RECEIPT_UNAVAILABLE,
+                created_at=datetime(2026, 8, 25, 8, 20, tzinfo=timezone.utc),
+                updated_at=datetime(2026, 8, 25, 8, 21, tzinfo=timezone.utc),
+            )
+        )
 
     entry_timestamps = {entry.id: entry.timestamp for entry in entries}
     highlight_specs = [

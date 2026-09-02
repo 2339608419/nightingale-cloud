@@ -17,6 +17,7 @@ from app.models import (
     Highlight,
     HighlightStatus,
     Patient,
+    PatientDelivery,
     PatientInstructionApproval,
     TaskAssignment,
     TaskStatus,
@@ -80,6 +81,21 @@ def get_entry_versions_in_clinic(
         .order_by(EntryVersion.version_number.desc())
     )
     return list(db.scalars(statement))
+
+
+def get_entry_version_in_clinic(
+    db: Session, entry_id: str, version_number: int, clinic_id: str
+) -> EntryVersion | None:
+    return db.scalar(
+        select(EntryVersion)
+        .join(TimelineEntry, EntryVersion.entry_id == TimelineEntry.id)
+        .join(Patient, TimelineEntry.patient_id == Patient.id)
+        .where(
+            EntryVersion.entry_id == entry_id,
+            EntryVersion.version_number == version_number,
+            Patient.clinic_id == clinic_id,
+        )
+    )
 
 
 def get_entry_audit_logs_in_clinic(
@@ -245,3 +261,54 @@ def get_patient_instruction_approval_in_clinic(
             Patient.clinic_id == clinic_id,
         )
     )
+
+
+def get_patient_deliveries_in_clinic(
+    db: Session, patient_id: str, clinic_id: str
+) -> list[PatientDelivery]:
+    statement = (
+        select(PatientDelivery)
+        .join(Patient, PatientDelivery.patient_id == Patient.id)
+        .where(
+            PatientDelivery.patient_id == patient_id,
+            PatientDelivery.clinic_id == clinic_id,
+            Patient.clinic_id == clinic_id,
+        )
+        .order_by(PatientDelivery.created_at.desc(), PatientDelivery.id.desc())
+    )
+    return list(db.scalars(statement))
+
+
+def get_delivery_in_clinic(
+    db: Session, delivery_id: str, clinic_id: str
+) -> PatientDelivery | None:
+    return db.scalar(
+        select(PatientDelivery)
+        .join(Patient, PatientDelivery.patient_id == Patient.id)
+        .where(
+            PatientDelivery.id == delivery_id,
+            PatientDelivery.clinic_id == clinic_id,
+            Patient.clinic_id == clinic_id,
+        )
+    )
+
+
+def get_active_entry_deliveries_in_clinic(
+    db: Session,
+    entry_id: str,
+    patient_id: str,
+    clinic_id: str,
+    statuses: list,
+) -> list[PatientDelivery]:
+    statement = (
+        select(PatientDelivery)
+        .join(Patient, PatientDelivery.patient_id == Patient.id)
+        .where(
+            PatientDelivery.entry_id == entry_id,
+            PatientDelivery.patient_id == patient_id,
+            PatientDelivery.clinic_id == clinic_id,
+            Patient.clinic_id == clinic_id,
+            PatientDelivery.status.in_(statuses),
+        )
+    )
+    return list(db.scalars(statement))

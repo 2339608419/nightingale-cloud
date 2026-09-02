@@ -22,6 +22,13 @@ from app.schemas.highlight import (
 )
 from app.schemas.internal_comment import InternalCommentRead
 from app.schemas.patient import PatientRead
+from app.schemas.patient_access import (
+    PatientSessionRead,
+    PhoneAccessChallengeRead,
+    PhoneAccessExchange,
+    PhoneAccessRequest,
+)
+from app.schemas.delivery import DeliveryCreate, DeliveryRead, DeliveryStatusUpdate
 from app.schemas.revision import AuditLogRead, EntryVersionRead, RevertRequest
 from app.schemas.timeline_entry import TimelineEntryCreate, TimelineEntryRead, TimelineEntryUpdate
 
@@ -38,6 +45,13 @@ __all__ = [
     "InteractionType",
     "RedactionValidationMetadata",
     "PatientRead",
+    "PatientSessionRead",
+    "PhoneAccessChallengeRead",
+    "PhoneAccessExchange",
+    "PhoneAccessRequest",
+    "DeliveryCreate",
+    "DeliveryRead",
+    "DeliveryStatusUpdate",
     "CommentCreate",
     "CommentRead",
     "CommentResolutionUpdate",

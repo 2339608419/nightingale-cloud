@@ -78,6 +78,14 @@ def require_ai_scribe_access(user: CurrentUser) -> None:
         )
 
 
+def require_delivery_action_access(user: CurrentUser) -> None:
+    if user.role not in {UserRole.STAFF, UserRole.CLINICIAN}:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only staff or clinicians can manage simulated delivery",
+        )
+
+
 def require_highlight_decision_access(user: CurrentUser) -> None:
     if user.role != UserRole.CLINICIAN:
         raise HTTPException(

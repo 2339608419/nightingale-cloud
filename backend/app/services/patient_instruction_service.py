@@ -15,6 +15,7 @@ from app.services.clinic_scope_service import (
     get_entry_in_clinic,
     get_patient_instruction_approval_in_clinic,
 )
+from app.services.revision_service import ensure_initial_version, get_versions
 
 
 def set_patient_instruction_status(
@@ -44,6 +45,10 @@ def set_patient_instruction_status(
                 status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail="Needs review: patient-facing provenance cannot be resolved",
             )
+        ensure_initial_version(db, entry)
+        approved_version_number = get_versions(db, entry.id)[0].version_number
+    else:
+        approved_version_number = None
     if approval.patient_facing_status == new_status:
         return entry
 
@@ -52,9 +57,11 @@ def set_patient_instruction_status(
     if new_status == PatientFacingStatus.APPROVED:
         approval.approved_by = actor.user_id
         approval.approved_at = datetime.now(timezone.utc)
+        approval.approved_version_number = approved_version_number
     else:
         approval.approved_by = None
         approval.approved_at = None
+        approval.approved_version_number = None
     add_trust_action_audit(
         db,
         actor=actor,
